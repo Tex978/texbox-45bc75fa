@@ -6,13 +6,13 @@ const HOSTS: Record<string, string> = { eu: "https://openapi.tuyaeu.com", us: "h
 const tokens = new Map<string, { t: string; e: number }>();
 
 async function call(id: string, secret: string, region: string, method: string, path: string, body?: unknown, tok?: string) {
-  const host = HOSTS[region] || HOSTS.eu!;
+  const host = HOSTS[region] || HOSTS["eu"]!;
   const b = body ? JSON.stringify(body) : "";
   const t = Date.now().toString();
   const str = `${method}\n${await sha(b)}\n\n${path}`;
   const sign = await hmac(secret, id + (tok || "") + t + str);
   const h: Record<string, string> = { client_id: id, t, sign, sign_method: "HMAC-SHA256", "Content-Type": "application/json" };
-  if (tok) h.access_token = tok;
+  if (tok) h["access_token"] = tok;
   const r = await fetch(host + path, { method, headers: h, body: b || null });
   const j = await r.json() as { success: boolean; result?: unknown; msg?: string; code?: number };
   if (!j.success) throw new Error(`Tuya: ${j.msg || "hiba"} (${j.code ?? r.status})`);
