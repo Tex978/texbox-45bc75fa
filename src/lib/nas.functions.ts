@@ -316,7 +316,7 @@ export const renameBlind = createServerFn({ method: "POST" })
     const cfg = readCfg();
     const names: Record<string, string> = blindNames();
     if (data.name) names[data.mac] = data.name; else delete names[data.mac];
-    cfg.BLINDS_NAMES = Object.entries(names).map(([k, v]) => `${k}=${v}`).join(", ");
+    cfg["BLINDS_NAMES"] = Object.entries(names).map(([k, v]) => `${k}=${v}`).join(", ");
     writeCfg(cfg);
     return { ok: true };
   });
