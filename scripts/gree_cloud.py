@@ -98,14 +98,18 @@ class Account:
         elif prop == "fanSpeed":
             opts, vals = ["WdSpd"], [FANS[value]]
         elif prop == "temperature":
-            opts, vals = ["SetTem", "TemUn", "TemRec"], [value, 0, 0]
-            if device.get_property("HalfTemEn") == 1:
-                opts += ["SetDeciTem"]
-                vals += [value * 10]
+            # The library expects Props enums, not strings, for get_property.
+            # Its setters also keep decimal setpoints synchronized on models
+            # that report SetDeciTem even with HalfTemEn disabled.
+            device.temperature_units = 0
+            device.target_temperature = value
         else:
             raise ValueError("Érvénytelen klímabeállítás.")
         self.cache = None
-        await asyncio.wait_for(device.send_command(opts, vals), 12)
+        if prop == "temperature":
+            await asyncio.wait_for(device.push_state_update(), 12)
+        else:
+            await asyncio.wait_for(device.send_command(opts, vals), 12)
         await asyncio.wait_for(device.update_state(), 12)
         actual = self.state(record, device)["properties"].get(prop)
         if actual != value:
