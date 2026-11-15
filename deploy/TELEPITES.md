@@ -1,9 +1,13 @@
 # Telepítés Synologyra
 
-1. Töltsd le a projekt kódját (GitHub-on keresztül), és másold fel a NAS-ra, pl. `/volume1/docker/nas-vezerlo`.
-2. Írd át a `deploy/docker-compose.yml` fájlban az IP-címet, a portokat és a kulcsokat.
-   - Radarr/Sonarr API kulcs: Settings → General → API Key
-   - Plex token: https://support.plex.tv/articles/204059436
-   - qBittorrent: WebUI felhasználónév és jelszó
-3. Container Manager → Projekt → Létrehozás → útvonal: `/volume1/docker/nas-vezerlo/deploy` → Build és indítás.
-4. Nyisd meg: `http://<NAS-IP>:3050`, a Kapcsolatok oldalon látod, mi működik.
+1. GitHubon: a repó → **Actions** fül → várd meg, hogy a "Docker image" zöld legyen.
+2. GitHubon: a profilod → **Packages** → a csomag → **Package settings** → **Change visibility → Public**
+   (vagy hagyd privátnak, és a Synologyn add hozzá a ghcr.io regisztrációt egy tokennel).
+3. Synology: **File Station** → hozz létre egy `docker/nas-vezerlo` mappát.
+4. **Container Manager → Projekt → Létrehozás** → útvonal: a fenti mappa → forrás: "docker-compose.yml létrehozása" → másold be a `docker-compose.yml` tartalmát, írd át a repó nevét és a jelszót.
+5. Nyisd meg: `http://NAS-IP:3050` → jelszó → Kapcsolatok oldalon add meg a címeket (itt már a helyi 192.168.x.x címek működnek).
+
+Frissítés: magától történik – a Lovable-ben tett változás után kb. 10 percen belül.
+
+Telefonról kívülről: Vezérlőpult → Bejelentkezési portál → Speciális → Fordított proxy
+(pl. `https://nas.sajatddns.synology.me` → `localhost:3050`), vagy Tailscale.
