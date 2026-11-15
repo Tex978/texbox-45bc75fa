@@ -30,6 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 <!-- AGENT-MEMORY:BEGIN -->
+- Plex poster requests use the same shared-store-first configuration and legacy cookie fallback as overview reads; send the Plex token in a server-side header so other browsers can load posters without exposing credentials.
 - Thermometer metadata shares the existing server store; retain all discovered sensors for restoration while applying one visibility filter to tiles and summaries, and migrate browser names without overwriting shared choices.
 - Shared settings migrate legacy cookies only for missing keys, commit disk writes atomically before updating cache, and surface filesystem failures instead of claiming browser-only saves are shared; this prevents silent cross-device loss.
 - Docker builds use native runners per architecture and slash-free matrix architecture labels for artifact names, because GitHub rejects platform strings containing `/` as artifact names.
