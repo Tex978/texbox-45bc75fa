@@ -14,6 +14,7 @@ export const Route = createFileRoute("/settings")({
   component: Settings,
 });
 const services = [
+  { key: "dsm", name: "Synology (DSM)", fields: [["DSM_URL", "Cím", "https://valami.synology.me:5001"], ["DSM_USER", "Felhasználónév", "admin"], ["DSM_PASS", "Jelszó", ""]] },
   { key: "qbit", name: "qBittorrent", fields: [["QBIT_URL", "Cím", "http://valami.synology.me:8080"], ["QBIT_USER", "Felhasználónév", "admin"], ["QBIT_PASS", "Jelszó", ""]] },
   { key: "radarr", name: "Radarr", fields: [["RADARR_URL", "Cím", "http://valami.synology.me:7878"], ["RADARR_KEY", "API kulcs", ""]] },
   { key: "sonarr", name: "Sonarr", fields: [["SONARR_URL", "Cím", "http://valami.synology.me:8989"], ["SONARR_KEY", "API kulcs", ""]] },

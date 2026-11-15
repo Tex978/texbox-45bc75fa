@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, setCookie, getRequest } from "@tanstack/react-start/server";
-import { volumes, streams, recent, torrents, catalog } from "./mock";
+import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN"] as const;
-const SECRET = ["QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS"] as const;
+const SECRET = ["DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => { const v = readCfg()[k] || process.env[k] || ""; return SECRET.includes(k) ? v : v.trim().replace(/\/$/, ""); };
 
@@ -28,12 +28,21 @@ export const saveConfig = createServerFn({ method: "POST" })
     return { ok: true };
   });
 const has = (...k: string[]) => k.every((x) => env(x));
-const isDemo = () => !has("QBIT_URL") && !has("RADARR_URL") && !has("SONARR_URL") && !has("PLEX_URL");
+const isDemo = () => !has("DSM_URL") && !has("QBIT_URL") && !has("RADARR_URL") && !has("SONARR_URL") && !has("PLEX_URL");
 
 async function arr(app: "RADARR" | "SONARR", path: string, init?: RequestInit) {
   const r = await fetch(`${env(app + "_URL")}/api/v3${path}`, { ...init, headers: { "X-Api-Key": env(app + "_KEY"), "Content-Type": "application/json" } });
   if (!r.ok) throw new Error(`${app} ${r.status}`);
   return r.json();
+}
+async function dsmVolumes() {
+  const base = env("DSM_URL");
+  const a = await (await fetch(`${base}/webapi/entry.cgi?api=SYNO.API.Auth&version=6&method=login&account=${encodeURIComponent(env("DSM_USER"))}&passwd=${encodeURIComponent(env("DSM_PASS"))}&format=sid`)).json();
+  if (!a.success) throw new Error(`Synology belépés sikertelen (kód ${a.error?.code}${a.error?.code === 403 ? ": kétlépcsős azonosítás be van kapcsolva" : ""})`);
+  const r = await (await fetch(`${base}/webapi/entry.cgi?api=SYNO.Storage.CGI.Storage&version=1&method=load_info&_sid=${a.data.sid}`)).json();
+  if (!r.success) throw new Error(`Synology tárhely lekérés hiba (kód ${r.error?.code})`);
+  return (r.data.volumes as any[]).map((v) => ({ name: `${v.display_name || v.vol_path}${v.status && v.status !== "normal" ? ` · ${v.status}` : ""}`,
+    used: +(Number(v.size.used) / 1e12).toFixed(2), total: +(Number(v.size.total) / 1e12).toFixed(2) }));
 }
 async function plex(path: string) {
   const sep = path.includes("?") ? "&" : "?";
@@ -63,12 +72,15 @@ const fmtSize = (b: number) => (b > 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${(b /
 const fmtEta = (s: number) => (s >= 8640000 ? "—" : s > 3600 ? `${Math.round(s / 3600)} óra` : `${Math.max(1, Math.round(s / 60))} perc`);
 
 export const getOverview = createServerFn({ method: "GET" }).handler(async () => {
-  if (isDemo()) return { demo: true, volumes, streams, recent: recent.map((r) => ({ ...r, thumb: "" })) };
-  const disks = has("RADARR_URL") ? await safe(arr("RADARR", "/diskspace"), []) : [];
+  if (isDemo()) return { demo: true, volumes, streams, recent: recent.map((r) => ({ ...r, thumb: "" })), watched: recent.slice().reverse().map((r) => ({ ...r, thumb: "", who: "Apa" })) };
+  const dsm = has("DSM_URL") ? await safe(dsmVolumes(), []) : [];
+  const disks = dsm.length ? [] : has("RADARR_URL") ? await safe(arr("RADARR", "/diskspace"), []) : [];
   const seen = new Set<number>();
   const vols = (disks as { path: string; freeSpace: number; totalSpace: number }[])
     .filter((d) => d.totalSpace > 1e11 && !seen.has(d.totalSpace) && seen.add(d.totalSpace))
     .map((d) => ({ name: d.path, used: +((d.totalSpace - d.freeSpace) / 1e12).toFixed(1), total: +(d.totalSpace / 1e12).toFixed(1) }));
+  if (dsm.length) vols.push(...dsm);
+  let watched: { title: string; year: number; type: string; hue: number; thumb: string; who: string }[] = [];
   let st: typeof streams = [], rc: { title: string; year: number; type: string; hue: number; thumb: string }[] = [];
   if (has("PLEX_URL")) {
     const s = await safe(plex("/status/sessions"), { Metadata: [] });
@@ -79,8 +91,19 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
     const r = await safe(plex("/library/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size=12"), { Metadata: [] });
     rc = (r.Metadata || []).map((m: any, i: number) => ({ title: m.parentTitle && m.type === "season" ? m.parentTitle : m.title, year: m.year || m.parentYear || 0,
       type: m.type === "movie" ? "Film" : "Sorozat", hue: (i * 47) % 360, thumb: m.thumb || m.parentThumb || "" }));
+    const h = await safe(plex("/status/sessions/history/all?sort=viewedAt:desc&X-Plex-Container-Start=0&X-Plex-Container-Size=30"), { Metadata: [] });
+    const accts = await safe(plex("/accounts"), { Account: [] });
+    const names = new Map((accts.Account || []).map((a: any) => [a.id, a.name]));
+    const seenT = new Set<string>();
+    for (const m of h.Metadata || []) {
+      const title = m.grandparentTitle || m.title;
+      if (seenT.has(title)) continue; seenT.add(title);
+      watched.push({ title, year: m.year || 0, type: m.type === "movie" ? "Film" : "Sorozat", hue: (watched.length * 61) % 360,
+        thumb: m.grandparentThumb || m.thumb || "", who: String(names.get(m.accountID) || "") });
+      if (watched.length >= 12) break;
+    }
   }
-  return { demo: false, volumes: vols, streams: st, recent: rc };
+  return { demo: false, volumes: vols, streams: st, recent: rc, watched };
 });
 
 export const getTorrents = createServerFn({ method: "GET" }).handler(async () => {
@@ -109,15 +132,15 @@ export const searchMedia = createServerFn({ method: "GET" })
     const q = data.q.trim();
     if (!q) return [];
     if (!has("RADARR_URL") && !has("SONARR_URL"))
-      return catalog.filter((c) => c.title.toLowerCase().includes(q.toLowerCase())).map((c, i) => ({ ...c, id: i, inLibrary: false }));
+      return catalog.filter((c) => c.title.toLowerCase().includes(q.toLowerCase())).map((c, i) => ({ ...c, id: i, inLibrary: false, poster: "", overview: "" }));
     const t = encodeURIComponent(q);
     const [m, s] = await Promise.all([
       has("RADARR_URL") ? safe(arr("RADARR", `/movie/lookup?term=${t}`), []) : [],
       has("SONARR_URL") ? safe(arr("SONARR", `/series/lookup?term=${t}`), []) : [],
     ]);
     return [
-      ...(m as any[]).slice(0, 10).map((x) => ({ id: x.tmdbId, title: x.title, year: x.year, type: "Film", inLibrary: !!x.id })),
-      ...(s as any[]).slice(0, 10).map((x) => ({ id: x.tvdbId, title: x.title, year: x.year, type: "Sorozat", inLibrary: !!x.id })),
+      ...(m as any[]).slice(0, 10).map((x) => ({ id: x.tmdbId, title: x.title, year: x.year, type: "Film", inLibrary: !!x.id, poster: posterOf(x), overview: x.overview || "" })),
+      ...(s as any[]).slice(0, 10).map((x) => ({ id: x.tvdbId, title: x.title, year: x.year, type: "Sorozat", inLibrary: !!x.id, poster: posterOf(x), overview: x.overview || "" })),
     ];
   });
 
@@ -146,5 +169,38 @@ export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
     radarr: await ping(has("RADARR_URL", "RADARR_KEY"), () => arr("RADARR", "/system/status")),
     sonarr: await ping(has("SONARR_URL", "SONARR_KEY"), () => arr("SONARR", "/system/status")),
     plex: await ping(has("PLEX_URL", "PLEX_TOKEN"), () => plex("/identity")),
+    dsm: await ping(has("DSM_URL", "DSM_USER"), () => dsmVolumes()),
   };
 });
+
+const posterOf = (x: any): string => x.remotePoster || (x.images || []).find((i: any) => i.coverType === "poster")?.remoteUrl || "";
+
+export const getRecommendations = createServerFn({ method: "GET" }).handler(async () => {
+  if (!has("RADARR_URL")) return catalog.map((c, i) => ({ ...c, id: i, inLibrary: false, poster: "", overview: "" }));
+  const l = await safe(arr("RADARR", "/importlist/movie?includeRecommendations=true&includeTrending=true&includePopular=true"), []);
+  return (l as any[]).filter((x) => !x.isExisting && !x.isExcluded).slice(0, 24)
+    .map((x) => ({ id: x.tmdbId, title: x.title, year: x.year, type: "Film", inLibrary: false, poster: posterOf(x), overview: x.overview || "" }));
+});
+
+export const getLibrary = createServerFn({ method: "GET" }).handler(async () => {
+  if (!has("RADARR_URL") && !has("SONARR_URL")) return { demo: true, items: library };
+  const [m, s] = await Promise.all([
+    has("RADARR_URL") ? safe(arr("RADARR", "/movie"), []) : [],
+    has("SONARR_URL") ? safe(arr("SONARR", "/series"), []) : [],
+  ]);
+  return { demo: false, items: [
+    ...(m as any[]).filter((x) => x.sizeOnDisk > 0).map((x) => ({ id: x.id, title: x.title, year: x.year, type: "Film", size: x.sizeOnDisk, added: (x.movieFile?.dateAdded || x.added || "").slice(0, 10), poster: posterOf(x) })),
+    ...(s as any[]).filter((x) => x.statistics?.sizeOnDisk > 0).map((x) => ({ id: x.id, title: x.title, year: x.year, type: "Sorozat", size: x.statistics.sizeOnDisk, added: (x.added || "").slice(0, 10), poster: posterOf(x) })),
+  ] };
+});
+
+export const deleteMedia = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: number; type: string }) => d)
+  .handler(async ({ data }) => {
+    const app = data.type === "Film" ? "RADARR" : "SONARR";
+    if (!has(app + "_URL")) return { ok: true };
+    const r = await fetch(`${env(app + "_URL")}/api/v3/${app === "RADARR" ? "movie" : "series"}/${data.id}?deleteFiles=true&addImportExclusion=false&addImportListExclusion=false`,
+      { method: "DELETE", headers: { "X-Api-Key": env(app + "_KEY") } });
+    if (!r.ok) throw new Error(`${app} ${r.status}`);
+    return { ok: true };
+  });

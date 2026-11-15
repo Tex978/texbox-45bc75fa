@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { Shell, Card, Bar } from "@/components/Shell";
+import { Shell, Card, Bar, Poster } from "@/components/Shell";
 import { getOverview } from "@/lib/nas.functions";
 const q = queryOptions({ queryKey: ["overview"], queryFn: () => getOverview(), refetchInterval: 10000 });
 export const Route = createFileRoute("/")({
@@ -29,6 +29,12 @@ function Index() {
             <div key={i}><div className="flex justify-between gap-2 text-sm"><span className="font-medium">{s.title}</span><span className="font-mono text-xs text-primary">{s.mode}</span></div>
               <div className="mb-1 text-xs text-muted-foreground">{s.user} · {s.device} · {s.quality}</div><Bar value={s.progress} /></div>))}
             {data.streams.length === 0 && <p className="text-sm text-muted-foreground">Most senki nem néz semmit.</p>}</div>
+        </Card>
+        <Card title="Nemrég nézett" className="md:col-span-2">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">{data.watched.map((r, i) => (
+            <div key={i}><Poster src={r.thumb ? `/api/plex-thumb?path=${encodeURIComponent(r.thumb)}` : ""} title={r.title} hue={r.hue} />
+              <div className="mt-1 truncate text-xs text-muted-foreground">{r.title}{r.who && ` · ${r.who}`}</div></div>))}
+            {data.watched.length === 0 && <p className="col-span-full text-sm text-muted-foreground">Nincs megtekintési előzmény (Plex szükséges).</p>}</div>
         </Card>
         <Card title="Legutóbb hozzáadva" className="md:col-span-2">
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">{data.recent.map((r, i) => (

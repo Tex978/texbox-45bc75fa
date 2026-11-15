@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 const nav = [
   { to: "/", label: "Áttekintő" }, { to: "/search", label: "Keresés" },
-  { to: "/downloads", label: "Letöltések" }, { to: "/settings", label: "Kapcsolatok" },
+  { to: "/downloads", label: "Letöltések" }, { to: "/library", label: "Tárhely" }, { to: "/settings", label: "Kapcsolatok" },
 ] as const;
 export function Shell({ children, demo }: { children: ReactNode; demo?: boolean }) {
   return (
@@ -34,4 +34,9 @@ export function Card({ title, children, className = "" }: { title?: string; chil
 }
 export function Bar({ value }: { value: number }) {
   return <div className="h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} /></div>;
+}
+
+export function Poster({ src, title, hue = 30 }: { src?: string; title: string; hue?: number }) {
+  return src ? <img src={src} alt={title} loading="lazy" className="aspect-[2/3] w-full rounded-lg bg-secondary object-cover" />
+    : <div className="flex aspect-[2/3] items-end rounded-lg p-2 text-sm font-bold" style={{ background: `linear-gradient(160deg, oklch(0.45 0.12 ${hue}), oklch(0.2 0.04 ${hue}))` }}>{title}</div>;
 }
