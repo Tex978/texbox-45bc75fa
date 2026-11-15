@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, setCookie, getRequest } from "@tanstack/react-start/server";
-import { volumes, streams, recent, torrents, catalog, library } from "./mock";
+import { volumes, streams, recent, torrents, catalog, library, haDemo } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS"] as const;
-const SECRET = ["DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "HA_URL", "HA_TOKEN"] as const;
+const SECRET = ["HA_TOKEN", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -179,6 +179,7 @@ export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
     radarr: await ping(has("RADARR_URL", "RADARR_KEY"), () => arr("RADARR", "/system/status")),
     sonarr: await ping(has("SONARR_URL", "SONARR_KEY"), () => arr("SONARR", "/system/status")),
     plex: await ping(has("PLEX_URL", "PLEX_TOKEN"), () => plex("/identity")),
+    ha: await ping(has("HA_URL", "HA_TOKEN"), () => ha("/api/")),
     dsm: await ping(has("DSM_URL", "DSM_USER"), () => dsmVolumes()),
   };
 });
@@ -214,5 +215,35 @@ export const deleteMedia = createServerFn({ method: "POST" })
     if (!r.ok && r.status !== 404) throw new Error(`${app} ${r.status}`);
     // let Plex notice the removed files
     if (has("PLEX_URL")) await safe(plex("/library/sections/all/refresh"), null);
+    return { ok: true };
+  });
+
+async function ha(path: string, body?: unknown) {
+  const r = await fetch(`${env("HA_URL")}${path}`, { method: body ? "POST" : "GET",
+    headers: { Authorization: `Bearer ${env("HA_TOKEN")}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : null });
+  if (!r.ok) throw new Error(`Home Assistant ${r.status}`);
+  return r.json();
+}
+type Entity = { entity_id: string; state: string; attributes: Record<string, any> };
+const DOMAINS = ["sensor", "light", "switch", "cover", "vacuum", "media_player", "climate", "fan"];
+export const getHome = createServerFn({ method: "GET" }).handler(async () => {
+  if (!has("HA_URL")) return { demo: true, entities: haDemo as Entity[] };
+  const all = (await ha("/api/states")) as Entity[];
+  return { demo: false, entities: all.filter((e) => {
+    const d = e.entity_id.split(".")[0];
+    if (!DOMAINS.includes(d) || e.state === "unavailable") return false;
+    if (d === "sensor") return ["power", "energy"].includes(e.attributes.device_class) || /growatt|solar|napelem|pv/i.test(e.entity_id);
+    return true;
+  }).map((e) => ({ entity_id: e.entity_id, state: e.state, attributes: { friendly_name: e.attributes.friendly_name, unit_of_measurement: e.attributes.unit_of_measurement, device_class: e.attributes.device_class } })) };
+});
+export const homeAction = createServerFn({ method: "POST" })
+  .inputValidator((d: { entity_id: string; service: string }) => {
+    if (!/^[a-z_]+\.[a-z0-9_]+$/.test(d.entity_id) || !/^[a-z_]+$/.test(d.service)) throw new Error("bad input");
+    return d;
+  })
+  .handler(async ({ data }) => {
+    if (!has("HA_URL")) return { ok: true };
+    const domain = data.entity_id.split(".")[0];
+    await ha(`/api/services/${domain}/${data.service}`, { entity_id: data.entity_id });
     return { ok: true };
   });
