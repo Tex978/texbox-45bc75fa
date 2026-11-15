@@ -1,18 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Shell, Card } from "@/components/Shell";
-import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify } from "@/lib/nas.functions";
-import { useState } from "react";
+import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify, getPurifiers, purifierAction } from "@/lib/nas.functions";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
+const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const q = queryOptions({ queryKey: ["solar"], queryFn: () => getSolar(), refetchInterval: 60000 });
 export const Route = createFileRoute("/home")({
   head: () => ({ meta: [
     { title: "Okosotthon – NAS Vezérlő" }, { name: "description", content: "Napelem termelés és okosotthon eszközök egy helyen." },
     { property: "og:title", content: "Okosotthon – NAS Vezérlő" }, { property: "og:description", content: "Napelem termelés és okosotthon eszközök." },
   ] }),
-  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq)]),
+  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq), context.queryClient.ensureQueryData(pq)]),
   component: Home,
 });
 function Stat({ value, unit, label }: { value: string; unit: string; label: string }) {
@@ -37,20 +38,63 @@ function XiaomiVerify({ url }: { url: string }) {
     {err && <p className="break-all font-mono text-destructive">● {err}</p>}
   </div>;
 }
+const inp = "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring";
+type Names = Record<string, { name?: string; room?: string }>;
 function Thermometers() {
   const { data } = useSuspenseQuery(tq);
+  const [names, setNames] = useState<Names>({});
+  const [edit, setEdit] = useState(false);
+  useEffect(() => { try { setNames(JSON.parse(localStorage.getItem("thermo-names") || "{}")); } catch { /* ignore */ } }, []);
+  const upd = (did: string, k: "name" | "room", v: string) => setNames((n) => {
+    const next = { ...n, [did]: { ...n[did], [k]: v } }; localStorage.setItem("thermo-names", JSON.stringify(next)); return next; });
   return (
     <Card title="Hőmérők (Xiaomi)" className="mt-4">
+      {!data.verifyUrl && !data.error && data.sensors.length > 0 && <div className="-mt-2 mb-2 text-right">
+        <button onClick={() => setEdit(!edit)} className="text-sm text-muted-foreground hover:text-foreground" aria-label="Hőmérők átnevezése">{edit ? "✓ Kész" : "⚙ Átnevezés"}</button></div>}
       {data.verifyUrl ? <XiaomiVerify url={data.verifyUrl} /> : data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
+        {edit && <div className="mb-4 space-y-2 rounded-lg border border-border p-3">{data.sensors.map((t) => (
+          <div key={t.did} className="grid grid-cols-2 gap-2">
+            <input value={names[t.did]?.name ?? ""} placeholder={t.name} onChange={(e) => upd(t.did, "name", e.target.value)} className={inp} />
+            <input value={names[t.did]?.room ?? ""} placeholder="Hely (pl. Nappali)" onChange={(e) => upd(t.did, "room", e.target.value)} className={inp} />
+          </div>))}</div>}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.sensors.map((t) => (
           <div key={t.did} className="rounded-lg border border-border bg-secondary/40 p-3">
-            <div className="truncate text-sm font-medium">{t.name}</div>
+            <div className="truncate text-sm font-medium">{names[t.did]?.name || t.name}</div>
+            {names[t.did]?.room && <div className="truncate text-xs text-muted-foreground">{names[t.did]!.room}</div>}
             <div className="mt-1 font-mono text-2xl font-bold text-primary">{t.temp != null ? `${t.temp.toLocaleString("hu-HU", { maximumFractionDigits: 1 })}°` : "–"}</div>
             <div className="font-mono text-xs text-muted-foreground">{t.hum != null ? `${t.hum}% pára` : ""}{t.battery != null ? ` · 🔋${t.battery}%` : ""}{!t.online ? " · offline" : ""}</div>
           </div>))}</div>
         {data.sensors.length === 0 && <p className="text-sm text-muted-foreground">Nem találtunk hőmérőt a Mi fiókban.</p>}
         {data.raw && <details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{data.raw}</pre></details>}
       </>}
+    </Card>
+  );
+}
+const MODES = ["Auto", "Alvó", "Kedvenc", "Kézi"];
+function Purifiers() {
+  const { data } = useSuspenseQuery(pq);
+  const qc = useQueryClient();
+  const [err, setErr] = useState("");
+  const act = async (did: string, key: "on" | "mode", value: boolean | number) => {
+    setErr(""); try { await purifierAction({ data: { did, key, value } }); await qc.invalidateQueries({ queryKey: ["purifier"] }); } catch (e) { setErr(String((e as Error).message || e)); } };
+  if (!data.error && data.purifiers.length === 0) return null;
+  const b = (on: boolean) => `rounded-md px-3 py-1.5 text-sm ${on ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`;
+  return (
+    <Card title="Légtisztító" className="mt-4">
+      {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : data.purifiers.map((p) => (
+        <div key={p.did} className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium">{p.name}{!p.online && <span className="ml-2 text-xs text-muted-foreground">offline</span>}</span>
+            <button className={b(!!p.on)} onClick={() => act(p.did, "on", !p.on)}>{p.on ? "Bekapcsolva" : "Kikapcsolva"}</button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[["PM2.5", p.pm25 != null ? `${p.pm25} µg/m³` : "–"], ["Pára", p.hum != null ? `${p.hum}%` : "–"], ["Hőmérséklet", p.temp != null ? `${p.temp}°` : "–"], ["Szűrő", p.filter != null ? `${p.filter}%` : "–"]].map(([l, v]) => (
+              <div key={l} className="rounded-lg bg-secondary p-3"><div className="text-xs text-muted-foreground">{l}</div><div className="font-mono text-sm font-medium">{v}</div></div>))}
+          </div>
+          <div className="flex flex-wrap gap-2">{MODES.map((m, i) => <button key={m} className={b(p.mode === i)} disabled={!p.on} onClick={() => act(p.did, "mode", i)}>{m}</button>)}</div>
+        </div>))}
+      {err && <p className="mt-2 break-all font-mono text-sm text-destructive">● {err}</p>}
+      {data.raw && <details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{data.raw}</pre></details>}
     </Card>
   );
 }
@@ -82,6 +126,7 @@ function Home() {
         </>}
       </Card>
       <Thermometers />
+      <Purifiers />
       <Blinds />
       <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Bosch, Tapo, Xiaomi) bekötése folyamatban.</p>
     </Shell>
