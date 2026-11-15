@@ -298,27 +298,47 @@ export const getSolar = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 const blindNames = () => Object.fromEntries(env("BLINDS_NAMES").split(",").map((p) => p.split("=").map((x) => x.trim())).filter((p) => p.length === 2));
-type BlindsResult = { demo: boolean; error: string; blinds: { mac: string; deviceType: string; name: string; position: number; battery: number; state: number }[] };
+type BlindsResult = { demo: boolean; error: string; blinds: { mac: string; deviceType: string; name: string; room: string; position: number; battery: number; state: number }[] };
+const META = "nas-blinds";
+type BlindMeta = Record<string, { name?: string; room?: string }>;
+const readMeta = (): BlindMeta => { try { return JSON.parse(getCookie(META) || "{}"); } catch { return {}; } };
 export const getBlinds = createServerFn({ method: "GET" }).handler(async (): Promise<BlindsResult> => {
+  const meta = readMeta();
+  const apply = (b: BlindsResult["blinds"][number], fallback: string) => ({ ...b, name: meta[b.mac]?.name || fallback, room: meta[b.mac]?.room || b.room });
   if (!has("BLINDS_IP")) return { demo: true, error: "", blinds: [
-    { mac: "demo1", deviceType: "10000000", name: "Nappali", position: 0, battery: 0, state: 0 },
-    { mac: "demo2", deviceType: "10000000", name: "Hálószoba", position: 100, battery: 0, state: 0 } ] };
+    { mac: "demo1", deviceType: "10000000", name: "Nappali bal", room: "Nappali", position: 0, battery: 0, state: 0 },
+    { mac: "demo2", deviceType: "10000000", name: "Nappali jobb", room: "Nappali", position: 0, battery: 0, state: 0 },
+    { mac: "demo3", deviceType: "10000000", name: "Hálószoba", room: "Hálószoba", position: 100, battery: 0, state: 0 },
+    { mac: "demo4", deviceType: "10000000", name: "Konyha", room: "", position: 50, battery: 0, state: 0 } ].map((b) => apply(b, b.name)) };
   try {
     const { listBlinds } = await import("./blinds.server");
     const names = blindNames();
     const l = await listBlinds(env("BLINDS_IP"), env("BLINDS_KEY"));
-    return { demo: false, error: "", blinds: l.map((b, i) => ({ ...b, name: names[b.mac] || names[String(i + 1)] || `Redőny ${i + 1}` })) };
+    return { demo: false, error: "", blinds: l.map((b, i) => apply({ ...b, name: "", room: "" }, names[b.mac] || names[String(i + 1)] || `Redőny ${i + 1}`)) };
   } catch (e) { return { demo: false, error: String((e as Error).message || e), blinds: [] }; }
 });
-export const renameBlind = createServerFn({ method: "POST" })
-  .inputValidator((d: { mac: string; name: string }) => ({ mac: String(d.mac).replace(/[,=]/g, ""), name: String(d.name).replace(/[,=]/g, " ").trim().slice(0, 40) }))
+export const saveBlindMeta = createServerFn({ method: "POST" })
+  .inputValidator((d: { items: { mac: string; name: string; room: string }[] }) => ({ items: d.items.slice(0, 100).map((i) => ({ mac: String(i.mac).slice(0, 40), name: String(i.name).trim().slice(0, 40), room: String(i.room).trim().slice(0, 30) })) }))
   .handler(async ({ data }) => {
-    const cfg = readCfg();
-    const names: Record<string, string> = blindNames();
-    if (data.name) names[data.mac] = data.name; else delete names[data.mac];
-    cfg["BLINDS_NAMES"] = Object.entries(names).map(([k, v]) => `${k}=${v}`).join(", ");
-    writeCfg(cfg);
+    const meta = readMeta();
+    for (const i of data.items) meta[i.mac] = { ...(i.name ? { name: i.name } : {}), ...(i.room ? { room: i.room } : {}) };
+    const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
+    setCookie(META, JSON.stringify(meta), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365,
+      ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
     return { ok: true };
+  });
+export const blindGroupAction = createServerFn({ method: "POST" })
+  .inputValidator((d: { blinds: { mac: string; deviceType: string }[]; action: "open" | "close" | "stop" }) => d)
+  .handler(async ({ data }) => {
+    if (!has("BLINDS_IP")) return { ok: true, failed: 0 };
+    const { writeBlind } = await import("./blinds.server");
+    const operation = data.action === "open" ? 1 : data.action === "close" ? 0 : 2;
+    let failed = 0;
+    for (const b of data.blinds.slice(0, 50)) {
+      try { await writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), b.mac, b.deviceType, { operation }); } catch { failed++; }
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    return { ok: failed === 0, failed };
   });
 export const blindAction = createServerFn({ method: "POST" })
   .inputValidator((d: { mac: string; deviceType: string; action: "open" | "close" | "stop" | "position"; position?: number }) => d)

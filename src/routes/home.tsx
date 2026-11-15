@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Shell, Card } from "@/components/Shell";
-import { getSolar, getBlinds, blindAction, renameBlind } from "@/lib/nas.functions";
-const bq = queryOptions({ queryKey: ["blinds"], queryFn: () => getBlinds(), refetchInterval: 15000 });
+import { getSolar } from "@/lib/nas.functions";
+import { Blinds, blindsQuery as bq } from "@/components/Blinds";
 const q = queryOptions({ queryKey: ["solar"], queryFn: () => getSolar(), refetchInterval: 60000 });
 export const Route = createFileRoute("/home")({
   head: () => ({ meta: [
@@ -50,53 +49,4 @@ function Home() {
   );
 }
 
-function Blinds() {
-  const { data } = useSuspenseQuery(bq); const qc = useQueryClient();
-  const [err, setErr] = useState("");
-  const act = async (b: (typeof data.blinds)[number], action: "open" | "close" | "stop" | "position", position?: number) => {
-    setErr("");
-    const pos = action === "open" ? 0 : action === "close" ? 100 : position;
-    if (data.demo) { if (pos != null) qc.setQueryData(bq.queryKey, { ...data, blinds: data.blinds.map((x) => x.mac === b.mac ? { ...x, position: pos } : x) }); return; }
-    try { await blindAction({ data: { mac: b.mac, deviceType: b.deviceType, action, ...(position != null ? { position } : {}) } }); setTimeout(() => qc.invalidateQueries({ queryKey: bq.queryKey }), 3000); }
-    catch (e) { setErr(String((e as Error).message || e)); }
-  };
-  const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
-  const saveName = async (b: (typeof data.blinds)[number]) => {
-    const name = draft.trim(); setEditing(null);
-    if (!name || name === b.name) return;
-    qc.setQueryData(bq.queryKey, { ...data, blinds: data.blinds.map((x) => x.mac === b.mac ? { ...x, name } : x) });
-    if (data.demo) return;
-    try { await renameBlind({ data: { mac: b.mac, name } }); } catch (e) { setErr(String((e as Error).message || e)); }
-  };
-  const btn = "rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary";
-  return (
-    <Card title="Redőnyök" className="mt-4">
-      {data.error ? <p className="font-mono text-sm text-destructive">● {data.error}</p> : (
-        <div className="space-y-4">{data.blinds.map((b) => (
-          <div key={b.mac} className="flex flex-wrap items-center gap-3">
-            {editing === b.mac ? (
-              <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="Redőny neve"
-                onBlur={() => saveName(b)} onKeyDown={(e) => { if (e.key === "Enter") saveName(b); if (e.key === "Escape") setEditing(null); }}
-                className="w-32 rounded-md border border-border bg-background px-2 py-1 text-sm" />
-            ) : (
-              <button onClick={() => { setEditing(b.mac); setDraft(b.name); }} title="Átnevezés"
-                className="group flex w-32 items-center gap-1 text-left text-sm font-medium">
-                <span className="truncate">{b.name}</span><span className="text-xs text-muted-foreground opacity-60 group-hover:opacity-100">✎</span>
-              </button>
-            )}
-            <div className="text-xs text-muted-foreground w-24">{b.position < 0 ? "?" : b.position === 0 ? "Nyitva" : b.position === 100 ? "Zárva" : `${100 - b.position}% nyitva`}</div>
-            <input type="range" min={0} max={100} defaultValue={100 - Math.max(0, b.position)} key={b.position} aria-label={`${b.name} nyitottság`}
-              onPointerUp={(e) => act(b, "position", 100 - Number((e.target as HTMLInputElement).value))} className="flex-1 min-w-32 accent-current text-primary" />
-            <div className="flex gap-1">
-              <button className={btn} onClick={() => act(b, "open")}>▲</button>
-              <button className={btn} onClick={() => act(b, "stop")}>■</button>
-              <button className={btn} onClick={() => act(b, "close")}>▼</button>
-            </div>
-          </div>))}
-          {data.blinds.length === 0 && <p className="text-sm text-muted-foreground">Nem található redőny a hubon.</p>}
-        </div>)}
-      {err && <p className="mt-3 font-mono text-xs text-destructive">● {err}</p>}
-    </Card>
-  );
-}
+
