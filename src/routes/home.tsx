@@ -1,20 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Shell, Card } from "@/components/Shell";
-import { getSolar } from "@/lib/nas.functions";
+import { getSolar, getThermometers } from "@/lib/nas.functions";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
+const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const q = queryOptions({ queryKey: ["solar"], queryFn: () => getSolar(), refetchInterval: 60000 });
 export const Route = createFileRoute("/home")({
   head: () => ({ meta: [
     { title: "Okosotthon – NAS Vezérlő" }, { name: "description", content: "Napelem termelés és okosotthon eszközök egy helyen." },
     { property: "og:title", content: "Okosotthon – NAS Vezérlő" }, { property: "og:description", content: "Napelem termelés és okosotthon eszközök." },
   ] }),
-  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq)]),
+  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq)]),
   component: Home,
 });
 function Stat({ value, unit, label }: { value: string; unit: string; label: string }) {
   return <div><div className="font-mono text-4xl font-bold text-primary">{value}<span className="ml-1 text-base text-muted-foreground">{unit}</span></div>
     <div className="text-sm text-muted-foreground">{label}</div></div>;
+}
+function Thermometers() {
+  const { data } = useSuspenseQuery(tq);
+  return (
+    <Card title="Hőmérők (Xiaomi)" className="mt-4">
+      {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.sensors.map((t) => (
+          <div key={t.did} className="rounded-lg border border-border bg-secondary/40 p-3">
+            <div className="truncate text-sm font-medium">{t.name}</div>
+            <div className="mt-1 font-mono text-2xl font-bold text-primary">{t.temp != null ? `${t.temp.toLocaleString("hu-HU", { maximumFractionDigits: 1 })}°` : "–"}</div>
+            <div className="font-mono text-xs text-muted-foreground">{t.hum != null ? `${t.hum}% pára` : ""}{t.battery != null ? ` · 🔋${t.battery}%` : ""}{!t.online ? " · offline" : ""}</div>
+          </div>))}</div>
+        {data.sensors.length === 0 && <p className="text-sm text-muted-foreground">Nem találtunk hőmérőt a Mi fiókban.</p>}
+        {data.raw && <details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{data.raw}</pre></details>}
+      </>}
+    </Card>
+  );
 }
 function Home() {
   const { data } = useSuspenseQuery(q);
@@ -43,6 +61,7 @@ function Home() {
             <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded bg-secondary p-2">{data.raw}{"\n\n"}{data.plants.map((p) => p.raw).join("\n\n")}</pre></details>}
         </>}
       </Card>
+      <Thermometers />
       <Blinds />
       <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Bosch, Tapo, Xiaomi) bekötése folyamatban.</p>
     </Shell>

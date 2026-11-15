@@ -4,8 +4,8 @@ import { md5 } from "./md5";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES"] as const;
-const SECRET = ["BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION"] as const;
+const SECRET = ["XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -350,3 +350,14 @@ export const blindAction = createServerFn({ method: "POST" })
     await writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), data.mac, data.deviceType, payload);
     return { ok: true };
   });
+
+export const getThermometers = createServerFn({ method: "GET" }).handler(async () => {
+  if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", sensors: [
+    { did: "d1", name: "Nappali", model: "miaomiaoce.sensor_ht.t2", online: true, temp: 22.4, hum: 48, battery: 87 },
+    { did: "d2", name: "Hálószoba", model: "miaomiaoce.sensor_ht.t2", online: true, temp: 20.1, hum: 52, battery: 64 },
+    { did: "d3", name: "Gyerekszoba", model: "cgllc.sensor_ht.g1", online: true, temp: 21.3, hum: 45, battery: 91 } ] };
+  try {
+    const { listThermometers } = await import("./xiaomi.server");
+    return { demo: false, error: "", ...(await listThermometers(env("XIAOMI_USER"), env("XIAOMI_PASS"), (env("XIAOMI_REGION") || "de").toLowerCase())) };
+  } catch (e) { return { demo: false, error: String((e as Error).message || e), raw: "", sensors: [] }; }
+});
