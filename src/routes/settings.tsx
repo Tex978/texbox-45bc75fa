@@ -14,7 +14,7 @@ export const Route = createFileRoute("/settings")({
   component: Settings,
 });
 const services = [
-  { key: "ha", name: "Home Assistant (okosotthon)", fields: [["HA_URL", "Cím", "http://valami.synology.me:8123"], ["HA_TOKEN", "Hosszú élettartamú token", ""]] },
+  { key: "growatt", name: "Growatt napelem", fields: [["GROWATT_USER", "ShinePhone felhasználónév", ""], ["GROWATT_PASS", "ShinePhone jelszó", ""], ["GROWATT_SERVER", "Szerver (általában üresen hagyható)", "https://server.growatt.com"]] },
   { key: "dsm", name: "Synology (DSM)", fields: [["DSM_URL", "Cím", "https://valami.synology.me:5001"], ["DSM_USER", "Felhasználónév", "admin"], ["DSM_PASS", "Jelszó", ""]] },
   { key: "qbit", name: "qBittorrent", fields: [["QBIT_URL", "Cím", "http://valami.synology.me:8080"], ["QBIT_USER", "Felhasználónév", "admin"], ["QBIT_PASS", "Jelszó", ""]] },
   { key: "radarr", name: "Radarr", fields: [["RADARR_URL", "Cím", "http://valami.synology.me:7878"], ["RADARR_KEY", "API kulcs", ""]] },
