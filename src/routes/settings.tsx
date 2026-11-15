@@ -66,7 +66,7 @@ function Settings() {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />}
               </label>))}</div>
             <div className={`mt-3 font-mono text-xs ${st === "ok" ? "text-primary" : st === "nincs beállítva" ? "text-muted-foreground" : "text-destructive"}`}>
-              {s.key === "media" ? (cfg.TMDB_TOKEN ? "TMDB elmentve" : "TMDB nincs csatlakoztatva") + " · " + (cfg.OMDB_KEY ? "OMDb elmentve" : "OMDb nincs csatlakoztatva") : s.key === "gree" ? greeStatus : ["vw", "renault"].includes(s.key) ? (cfg[s.key === "vw" ? "VW_PASS" : "RENAULT_PASS"] ? "Fiók elmentve · állapot az Autók oldalon" : "Nincs csatlakoztatva") : `● ${st === "ok" ? "Elérhető" : st}`}</div>
+              {s.key === "media" ? (cfg["TMDB_TOKEN"] ? "TMDB elmentve" : "TMDB nincs csatlakoztatva") + " · " + (cfg["OMDB_KEY"] ? "OMDb elmentve" : "OMDb nincs csatlakoztatva") : s.key === "gree" ? greeStatus : ["vw", "renault"].includes(s.key) ? (cfg[s.key === "vw" ? "VW_PASS" : "RENAULT_PASS"] ? "Fiók elmentve · állapot az Autók oldalon" : "Nincs csatlakoztatva") : `● ${st === "ok" ? "Elérhető" : st}`}</div>
           </Card>);
       })}</div>
       <Button onClick={save} disabled={saving} className="mt-6">

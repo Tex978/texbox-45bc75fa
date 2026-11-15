@@ -8,7 +8,7 @@ import { getMediaDetail } from "@/lib/nas.functions";
 import type { MediaItem } from "@/lib/media";
 
 export function MediaDetail({ item, onClose, request, requestState }: {
-  item: MediaItem; onClose: () => void; request: (item: MediaItem) => void; requestState?: string;
+  item: MediaItem; onClose: () => void; request: (item: MediaItem) => void; requestState?: string | undefined;
 }) {
   const [video, setVideo] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);

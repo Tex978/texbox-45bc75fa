@@ -1,7 +1,7 @@
 export type MediaType = "Film" | "Sorozat";
 export type MediaCategory = "recommended" | "new" | "popular" | "trending";
 export type MediaItem = {
-  id: number; tmdbId?: number; type: MediaType; title: string; year: number; poster: string;
+  id: number; tmdbId?: number | undefined; type: MediaType; title: string; year: number; poster: string;
   overview: string; inLibrary: boolean; imdbId: string | null; imdbRating: number | null;
 };
 export type MediaDetail = MediaItem & {
@@ -17,10 +17,10 @@ export function imdbIdentifier(value: unknown): string | null {
 }
 export function mapArrMedia(x: Record<string, any>, type: MediaType): MediaItem {
   return {
-    id: type === "Film" ? x.tmdbId : x.tvdbId, tmdbId: x.tmdbId || undefined, type, title: x.title || "Névtelen",
-    year: x.year || 0, poster: x.remotePoster || x.images?.find((i: any) => i.coverType === "poster")?.remoteUrl || "",
-    overview: x.overview || "", inLibrary: !!x.id || !!x.isExisting,
-    imdbId: imdbIdentifier(x.imdbId), imdbRating: imdbScore(x.ratings?.imdb?.value),
+    id: type === "Film" ? x["tmdbId"] : x["tvdbId"], tmdbId: x["tmdbId"] || undefined, type, title: x["title"] || "Névtelen",
+    year: x["year"] || 0, poster: x["remotePoster"] || x["images"]?.find((i: any) => i.coverType === "poster")?.remoteUrl || "",
+    overview: x["overview"] || "", inLibrary: !!x["id"] || !!x["isExisting"],
+    imdbId: imdbIdentifier(x["imdbId"]), imdbRating: imdbScore(x["ratings"]?.imdb?.value),
   };
 }
 export function filterMedia(items: MediaItem[], type: MediaType, query = ""): MediaItem[] {

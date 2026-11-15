@@ -243,9 +243,9 @@ export const browseMedia = createServerFn({ method: "GET" })
         const today = new Date().toISOString().slice(0, 10);
         const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
         const params: Record<string, string> = { page: String(data.page), include_adult: "false" };
-        if (data.q) params.query = data.q;
+        if (data.q) params["query"] = data.q;
         if (!data.q && data.category === "new") {
-          params.sort_by = "popularity.desc";
+          params["sort_by"] = "popularity.desc";
           params[kind === "movie" ? "primary_release_date.gte" : "first_air_date.gte"] = since;
           params[kind === "movie" ? "primary_release_date.lte" : "first_air_date.lte"] = today;
         }
@@ -276,7 +276,7 @@ export const browseMedia = createServerFn({ method: "GET" })
   });
 
 export const getMediaDetail = createServerFn({ method: "GET" })
-  .inputValidator((d: { id: number; type: MediaType; tmdbId?: number }) => {
+  .inputValidator((d: { id: number; type: MediaType; tmdbId?: number | undefined }) => {
     if (!Number.isSafeInteger(d.id) || d.id <= 0 || !["Film", "Sorozat"].includes(d.type) || (d.tmdbId !== undefined && (!Number.isSafeInteger(d.tmdbId) || d.tmdbId <= 0))) throw new Error("Érvénytelen film.");
     return d;
   })

@@ -43,7 +43,7 @@ function Search() {
     try { await request({ data: { id: item.id, type: item.type, profile } }); setState((s) => ({ ...s, [key]: "done" })); }
     catch { setState((s) => ({ ...s, [key]: "error" })); }
   };
-  return <Shell demo={data?.demo}>
+  return <Shell demo={!!data?.demo}>
     <div className="flex flex-wrap justify-between items-end gap-4"><h1>Filmek és sorozatok</h1><span className="text-xs text-muted-foreground">{data?.items.length || 0} találat</span></div>
     <div className="media-toolbar">
       <div className="media-segment" aria-label="Médiatípus">{(["Film", "Sorozat"] as const).map((value) => <Button key={value} variant={type === value ? "default" : "ghost"} aria-pressed={type === value} onClick={() => { setType(value); setPage(1); }}>{value === "Film" ? <Film size={17} /> : <Tv size={17} />}{value === "Film" ? "Filmek" : "Sorozatok"}</Button>)}</div>
