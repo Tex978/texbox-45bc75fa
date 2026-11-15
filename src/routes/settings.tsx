@@ -2,18 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Shell, Card } from "@/components/Shell";
-import { getStatus, getConfig, saveConfig } from "@/lib/nas.functions";
+import { getStatus, getConfig, saveConfig, getConnectionStorage } from "@/lib/nas.functions";
 import { Button } from "@/components/ui/button";
 import { greeQuery } from "@/components/Gree";
 const sq = queryOptions({ queryKey: ["status"], queryFn: () => getStatus() });
 const cq = queryOptions({ queryKey: ["config"], queryFn: () => getConfig() });
+const storageQuery = queryOptions({ queryKey: ["connection-storage"], queryFn: () => getConnectionStorage() });
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { title: "Kapcsolatok – NAS Vezérlő" }, { name: "description", content: "Plex, Radarr, Sonarr és qBittorrent kapcsolatok beállítása." },
     { property: "og:title", content: "Kapcsolatok – NAS Vezérlő" }, { property: "og:description", content: "Szolgáltatás-kapcsolatok beállítása." },
   ] }),
-  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(sq), context.queryClient.ensureQueryData(cq)]),
+  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(sq), context.queryClient.ensureQueryData(cq), context.queryClient.ensureQueryData(storageQuery)]),
   component: Settings,
 });
 const services = [
@@ -32,24 +33,28 @@ const secret = (f: string) => /PASS|KEY|TOKEN/.test(f);
 function Settings() {
   const { data: status } = useSuspenseQuery(sq);
   const { data: cfg } = useSuspenseQuery(cq);
+  const { data: storage } = useSuspenseQuery(storageQuery);
   const qc = useQueryClient();
   const [form, setForm] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(cfg).map(([k, v]) => [k, v === "__set__" ? "" : v])));
   const [saving, setSaving] = useState(false);
   const [greeStatus, setGreeStatus] = useState("");
+  const [saveError, setSaveError] = useState("");
   const save = async () => {
     setSaving(true);
+    setSaveError("");
     try {
       await saveConfig({ data: form }); await qc.invalidateQueries();
       if (form["GREE_USER"] || form["GREE_UNITS"]) {
         const result = await qc.fetchQuery(greeQuery);
         setGreeStatus(result.error || (result.units.length ? `${result.units.length} klíma · ${result.units.filter((unit) => unit.online).length} elérhető` : "Nem találtunk klímát a fiókban."));
       }
-    } finally { setSaving(false); }
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "Nem sikerült menteni a beállításokat."); }
+    finally { setSaving(false); }
   };
   return (
     <Shell>
       <h1 className="mb-2 font-display text-3xl font-bold">Kapcsolatok</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Add meg a külső címeket és kulcsokat. A titkos mezőket üresen hagyva a korábbi érték megmarad. Az adatok ebben a böngészőben, védett sütiben tárolódnak.</p>
+      <p className="mb-6 text-sm text-muted-foreground">{storage.shared ? storage.saved ? "Beállítások a Synologyra mentve · minden eszközön közösek" : "A Synologyn még nincsenek mentett beállítások" : "Csak ebben a böngészőben mentett beállítások · nem közösek a telefonnal"}</p>
       <div className="grid gap-4 md:grid-cols-2">{services.map((s) => {
         const st = s.key === "gree" || s.key === "media" ? undefined : status[s.key];
         return (
@@ -69,6 +74,7 @@ function Settings() {
       })}</div>
       <Button onClick={save} disabled={saving} className="mt-6">
         {saving ? "Mentés és tesztelés…" : "Mentés és tesztelés"}</Button>
+      {saveError && <p role="alert" className="mt-3 text-sm text-destructive">{saveError}</p>}
     </Shell>
   );
 }
