@@ -14,6 +14,7 @@ import { Tuya, tuyaQuery } from "@/components/Tuya";
 import { Gree, greeQuery } from "@/components/Gree";
 import { SOLAR_REFRESH_MS } from "@/lib/growatt-cache";
 import { ThermometerHistory } from "@/components/ThermometerHistory";
+import childFullBody from "@/assets/child-full-body.png";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
@@ -129,8 +130,9 @@ function Home() {
   const sections = [{ id: "climate", name: "Klíma", icon: Thermometer }, { id: "blinds", name: "Redőnyök", icon: House }, { id: "devices", name: "Eszközök", icon: Power }];
   return (
     <Shell demo={data.demo} className="smart-home">
-      <div className="home-title-row">
+      <div className="home-title-row home-title-with-child">
         <div className="min-w-0"><div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground"><House size={14} /> OTTHONI VEZÉRLŐPULT</div><h1 className="font-display text-3xl font-semibold">Okosotthon</h1></div>
+        <img src={childFullBody} alt="A gyermek teljes alakos, körbevágott fotója" className="family-cutout" width={300} height={1024} />
         <Button variant="outline" size="icon" onClick={refresh} disabled={refreshing} className="shrink-0" title="Frissítés" aria-label="Okosotthon frissítése"><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button>
       </div>
       <nav className="home-section-nav" aria-label="Okosotthon szakaszok"><a href="#energy"><Activity size={16} />Energia</a>{sections.map(({ id, name, icon: Icon }) => <a key={id} href={`#${id}`}><Icon size={16} />{name}</a>)}</nav>

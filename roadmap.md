@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [x] Teljes alakos gyermekfotó körbevágása és elhelyezése az Áttekintő és Okosotthon oldal tetején.
 - [x] Telefonközpontú Okosotthon elrendezés, alsó szakasznavigáció és nagyobb érintési felületek; négy képernyőméreten ellenőrizve.
 - [x] Hőmérők előzményei: Xiaomi-adatokból grafikon, 24 órás és 7 napos nézet, üres és hibás állapot.
 - [ ] Valós Xiaomi mérési előzmények élő ellenőrzése: az előnézetben nincs beállítva a felhasználó Mi fiókja.
