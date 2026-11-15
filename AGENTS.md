@@ -30,6 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 <!-- AGENT-MEMORY:BEGIN -->
+- Thermometer history is requested on demand from Xiaomi with bounded reads, decoded in thermo-history.ts, and never synthesized as real measurements; dashboard mobile CSS remains scoped to smart-home.
 - Xiaomi thermometer reads select service/property IDs per model; Monitor 3 has a distinct layout, so avoid applying legacy BLE IDs universally.
 - Growatt reads share a credential-scoped cache with the same duration as the polling interval, in-flight deduplication, reusable session and one-hour failure cooldown; connection tests must use the same guarded read path to avoid repeated logins. Memory-only protection is per process and resets on restart.
 - Gree local units use dynamically loaded gree-hvac-client UDP; cloud accounts use a private stdin/stdout Python bridge with pinned greeclimate-davo22 in Docker to support both MQTT and legacy gateway devices. Keep credentials out of process arguments/logs and return only sanitized states; hosted preview must report Docker-only availability.

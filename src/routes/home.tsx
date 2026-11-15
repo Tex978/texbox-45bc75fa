@@ -13,6 +13,7 @@ import { Appliances, appliancesQuery } from "@/components/Appliances";
 import { Tuya, tuyaQuery } from "@/components/Tuya";
 import { Gree, greeQuery } from "@/components/Gree";
 import { SOLAR_REFRESH_MS } from "@/lib/growatt-cache";
+import { ThermometerHistory } from "@/components/ThermometerHistory";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
@@ -65,10 +66,11 @@ function Thermometers() {
           </div>))}</div>}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.sensors.map((t) => (
           <div key={t.did} className="smart-device sensor-device">
-            <div className="flex items-center gap-2"><Thermometer size={17} className="text-home-water" /><div className="truncate text-sm font-medium">{names[t.did]?.name || t.name}</div></div>
+            <div className="flex min-w-0 items-center gap-2"><Thermometer size={17} className="shrink-0 text-home-water" /><div className="min-w-0 truncate text-sm font-medium">{names[t.did]?.name || t.name}</div></div>
             {names[t.did]?.room && <div className="truncate text-xs text-muted-foreground">{names[t.did]?.room}</div>}
             <div className="mt-5 text-3xl font-semibold tabular-nums">{t.temp != null ? `${t.temp.toLocaleString("hu-HU", { maximumFractionDigits: 1 })}°` : "–"}</div>
              <SensorDetails humidity={t.hum} battery={t.battery} online={t.online} />
+             <ThermometerHistory did={t.did} name={names[t.did]?.name || t.name} />
           </div>))}</div>
         {data.sensors.length === 0 && <p className="text-sm text-muted-foreground">Nem találtunk hőmérőt a Mi fiókban.</p>}
         {data.raw && <details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{data.raw}</pre></details>}
@@ -128,12 +130,12 @@ function Home() {
   return (
     <Shell demo={data.demo} className="smart-home">
       <div className="home-title-row">
-        <div><div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground"><House size={14} /> OTTHONI VEZÉRLŐPULT</div><h1 className="font-display text-3xl font-semibold">Okosotthon</h1></div>
-        <Button variant="outline" onClick={refresh} disabled={refreshing} className="gap-2"><RefreshCw className={refreshing ? "animate-spin" : ""} />Frissítés</Button>
+        <div className="min-w-0"><div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground"><House size={14} /> OTTHONI VEZÉRLŐPULT</div><h1 className="font-display text-3xl font-semibold">Okosotthon</h1></div>
+        <Button variant="outline" size="icon" onClick={refresh} disabled={refreshing} className="shrink-0" title="Frissítés" aria-label="Okosotthon frissítése"><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button>
       </div>
       <nav className="home-section-nav" aria-label="Okosotthon szakaszok"><a href="#energy"><Activity size={16} />Energia</a>{sections.map(({ id, name, icon: Icon }) => <a key={id} href={`#${id}`}><Icon size={16} />{name}</a>)}</nav>
       <div id="energy"><SmartEnergy data={data} /></div>
-      <div id="climate"><Gree /><Thermometers /></div>
+      <div id="climate"><Thermometers /><Gree /></div>
       <div className="home-comfort-grid"><Purifiers /><Locks /></div>
       <div id="blinds"><Blinds /></div>
       <div id="devices"><Tuya /><Appliances /></div>
