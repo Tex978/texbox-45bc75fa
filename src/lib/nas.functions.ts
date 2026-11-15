@@ -490,7 +490,7 @@ export const hcStop = createServerFn({ method: "POST" }).inputValidator((d: { ha
   return { ok: r.ok };
 });
 const hcSend = async (tok: string, p: string, method: string, body?: unknown) => {
-  const r = await fetch(`${HC}${p}`, { method, headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.bsh.sdk.v1+json", "Content-Type": "application/vnd.bsh.sdk.v1+json", "Accept-Language": "hu-HU" }, body: body ? JSON.stringify(body) : undefined });
+  const r = await fetch(`${HC}${p}`, { method, headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.bsh.sdk.v1+json", "Content-Type": "application/vnd.bsh.sdk.v1+json", "Accept-Language": "hu-HU" }, body: body ? JSON.stringify(body) : null });
   if (r.ok) return { ok: true, error: "" };
   const t = await r.text(); let m = t; try { const j = JSON.parse(t); m = j.error?.description || j.error?.key || t; } catch { /* */ }
   return { ok: false, error: `${r.status}: ${m}`.slice(0, 300) };
