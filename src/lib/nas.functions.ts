@@ -321,7 +321,7 @@ export const saveBlindMeta = createServerFn({ method: "POST" })
   .inputValidator((d: { items: { mac: string; name: string; room: string }[] }) => ({ items: d.items.slice(0, 100).map((i) => ({ mac: String(i.mac).slice(0, 40), name: String(i.name).trim().slice(0, 40), room: String(i.room).trim().slice(0, 30) })) }))
   .handler(async ({ data }) => {
     const meta = readMeta();
-    for (const i of data.items) meta[i.mac] = { name: i.name || undefined, room: i.room || undefined };
+    for (const i of data.items) meta[i.mac] = { ...(i.name ? { name: i.name } : {}), ...(i.room ? { room: i.room } : {}) };
     const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
     setCookie(META, JSON.stringify(meta), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365,
       ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
