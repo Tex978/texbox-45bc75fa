@@ -5,7 +5,7 @@ type Session = { userId: string; ssecurity: string; serviceToken: string; at: nu
 const sessions = new Map<string, Session>();
 const UA = "Android-7.1.1-1.0.0-ONEPLUS A3010-136-AAAAAAAAAAAAAA APP/xiaomi.smarthome APPV/62830";
 const b64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
-const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const unb64 = (s: string): Uint8Array<ArrayBuffer> => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 const parse = (t: string) => JSON.parse(t.replace("&&&START&&&", ""));
 function cookieVal(res: Response, name: string) {
   const all = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [res.headers.get("set-cookie") ?? ""];
@@ -35,7 +35,7 @@ async function login(user: string, pass: string): Promise<Session> {
   return sess;
 }
 
-async function hmac(key: Uint8Array, msg: string) {
+async function hmac(key: Uint8Array<ArrayBuffer>, msg: string) {
   const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(msg)));
 }
