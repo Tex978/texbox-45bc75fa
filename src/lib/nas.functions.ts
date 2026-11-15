@@ -224,7 +224,7 @@ async function ha(path: string, body?: unknown) {
   if (!r.ok) throw new Error(`Home Assistant ${r.status}`);
   return r.json();
 }
-type Entity = { entity_id: string; state: string; attributes: Record<string, any> };
+type Entity = { entity_id: string; state: string; attributes: { friendly_name?: string; unit_of_measurement?: string; device_class?: string } };
 const DOMAINS = ["sensor", "light", "switch", "cover", "vacuum", "media_player", "climate", "fan"];
 export const getHome = createServerFn({ method: "GET" }).handler(async () => {
   if (!has("HA_URL")) return { demo: true, entities: haDemo as Entity[] };
@@ -232,7 +232,7 @@ export const getHome = createServerFn({ method: "GET" }).handler(async () => {
   return { demo: false, entities: all.filter((e) => {
     const d = e.entity_id.split(".")[0];
     if (!DOMAINS.includes(d) || e.state === "unavailable") return false;
-    if (d === "sensor") return ["power", "energy"].includes(e.attributes.device_class) || /growatt|solar|napelem|pv/i.test(e.entity_id);
+    if (d === "sensor") return ["power", "energy"].includes(e.attributes.device_class || "") || /growatt|solar|napelem|pv/i.test(e.entity_id);
     return true;
   }).map((e) => ({ entity_id: e.entity_id, state: e.state, attributes: { friendly_name: e.attributes.friendly_name, unit_of_measurement: e.attributes.unit_of_measurement, device_class: e.attributes.device_class } })) };
 });

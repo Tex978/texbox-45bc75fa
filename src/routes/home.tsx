@@ -11,7 +11,7 @@ export const Route = createFileRoute("/home")({
   loader: ({ context }) => context.queryClient.ensureQueryData(q),
   component: Home,
 });
-const name = (e: { entity_id: string; attributes: Record<string, any> }) => e.attributes.friendly_name || e.entity_id;
+const name = (e: { entity_id: string; attributes: { friendly_name?: string } }) => e.attributes.friendly_name || e.entity_id;
 const label: Record<string, string> = { on: "Be", off: "Ki", open: "Nyitva", closed: "Zárva", opening: "Nyílik", closing: "Záródik", docked: "Dokkolva", cleaning: "Takarít", playing: "Lejátszás", idle: "Tétlen" };
 function Home() {
   const { data } = useSuspenseQuery(q); const qc = useQueryClient();
