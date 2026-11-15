@@ -187,6 +187,7 @@ export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
     growatt: await ping(has("GROWATT_USER", "GROWATT_PASS"), () => growatt()),
     dsm: await ping(has("DSM_URL", "DSM_USER"), () => dsmVolumes()),
     xiaomi: await ping(has("XIAOMI_USER", "XIAOMI_PASS"), async () => (await import("./xiaomi.server")).listThermometers(env("XIAOMI_USER"), env("XIAOMI_PASS"), (env("XIAOMI_REGION") || "de").toLowerCase())),
+    tuya: await ping(has("TUYA_SECRET"), async () => (await import("./tuya.server")).listTuya(env("TUYA_ID") || "tj3qmvwy39jgrw54frwx", env("TUYA_SECRET"), (env("TUYA_REGION") || "eu").toLowerCase())),
   };
 });
 
