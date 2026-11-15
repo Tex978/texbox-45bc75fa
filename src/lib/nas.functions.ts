@@ -4,7 +4,7 @@ import { md5 } from "./md5";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER"] as const;
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN"] as const;
 const SECRET = ["GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
@@ -239,34 +239,46 @@ async function growatt() {
   const num = (v: unknown) => { const t = String(v ?? "0"); const n = parseFloat(t.replace(/[^0-9.]/g, "")) || 0;
     return /MWh/i.test(t) ? n * 1000 : /kW(?!h)/i.test(t) ? n * 1000 : n; };
   const plants = await Promise.all(((p.data || []) as any[]).map(async (x) => {
-    const ir = await fetch(`${base}/newTwoPlantAPI.do?op=getAllDeviceListTwo&plantId=${x.plantId}&pageNum=1&pageSize=20`, { headers: { "User-Agent": ua, Cookie: cookie } });
-    const ij = await ir.json().catch(() => ({}));
-    const info = ij.back ?? ij;
+    let info: any = {}; const tried: string[] = [];
+    for (const op of ["getAllDeviceList", "getAllDeviceListTwo"]) {
+      const ir = await fetch(`${base}/newTwoPlantAPI.do?op=${op}&plantId=${x.plantId}&pageNum=1&pageSize=20`, { headers: { "User-Agent": ua, Cookie: cookie } });
+      const ij = await ir.json().catch(() => ({}));
+      const cand = ij.back ?? ij;
+      tried.push(`${op}: ${JSON.stringify(ij).slice(0, 300)}`);
+      if ((cand.deviceList || []).length) { info = cand; break; }
+    }
     const devs = (info.deviceList || []) as any[];
-    // hybrid / battery inverters report live power flow only via their system status endpoint
+    // the device list can come back empty for hybrid inverters; fall back to the serial entered on the Connections page
+    const manualSn = env("GROWATT_SN");
+    if (!devs.length && manualSn) devs.push({ deviceSn: manualSn, deviceType: "" });
     let flow: { pv: number; soc: number; charge: number; discharge: number; load: number; toGrid: number; fromGrid: number } | null = null;
     let flowRaw = "";
     for (const d of devs) {
       const sn = d.deviceSn || d.sn; const t = String(d.deviceType || "").toLowerCase();
-      const ep = t.includes("mix") || t.includes("sph") ? { u: "newMixApi.do?op=getSystemStatus_KW", b: { plantId: String(x.plantId), mixId: sn } }
-        : t.includes("tlx") || t.includes("min") ? { u: "newTlxApi.do?op=getSystemStatus_KW", b: { plantId: String(x.plantId), id: sn } }
-        : t.includes("storage") ? { u: "newStorageAPI.do?op=getSystemStatusData", b: { plantId: String(x.plantId), storageId: sn } } : null;
-      if (!ep) continue;
+      const all = [
+        { k: "mix", u: "newMixApi.do?op=getSystemStatus_KW", b: { plantId: String(x.plantId), mixId: sn } },
+        { k: "tlx", u: "newTlxApi.do?op=getSystemStatus_KW", b: { plantId: String(x.plantId), id: sn } },
+        { k: "storage", u: "newStorageAPI.do?op=getSystemStatusData", b: { plantId: String(x.plantId), storageId: sn } },
+      ];
+      const match = all.filter((e) => t.includes(e.k) || (e.k === "mix" && t.includes("sph")) || (e.k === "tlx" && t.includes("min")));
+      for (const ep of match.length ? match : all) {
       const sr = await fetch(`${base}/${ep.u}`, { method: "POST", headers: { "User-Agent": ua, Cookie: cookie, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(ep.b) });
       const sj = await sr.json().catch(() => null);
       const o = sj?.obj ?? sj?.back?.obj ?? sj?.back ?? sj;
-      if (!o) continue;
-      flowRaw = JSON.stringify(sj).slice(0, 1500);
+      flowRaw += `${ep.k}: ${JSON.stringify(sj).slice(0, 700)}\n`;
+      if (!o || typeof o !== "object" || !("ppv" in o || "pPv" in o || "SOC" in o || "soc" in o)) continue;
       const kw = (...k: string[]) => { for (const key of k) if (o[key] != null && o[key] !== "") return (parseFloat(String(o[key])) || 0) * 1000; return 0; };
       flow = { pv: kw("ppv", "pPv", "pvPower"), soc: parseFloat(String(o.SOC ?? o.soc ?? o.capacity ?? 0)) || 0,
         charge: kw("chargePower", "pCharge"), discharge: kw("pdisCharge1", "pdisCharge", "pDischarge"),
         load: kw("pLocalLoad", "pLoad", "loadPower"), toGrid: kw("pactogrid", "pToGrid"), fromGrid: kw("pactouser", "pToUser") };
       break;
+      }
+      if (flow) break;
     }
     const devW = flow?.pv || devs.reduce((s2, d) => s2 + num(d.power), 0);
     return { name: String(x.plantName), currentW: devW || num(x.currentPower), todayKwh: num(x.todayEnergy), totalKwh: num(x.totalEnergy),
       online: ((info.deviceList || []) as any[]).map((d) => `${d.deviceSn || d.sn}: ${d.lost ? "offline" : "online"}${d.lastUpdateTime ? ` (${d.lastUpdateTime})` : ""}`).join(", "),
-      flow, raw: JSON.stringify({ plant: x, devices: info.deviceList }).slice(0, 1500) + (flowRaw ? `\n\nstatus: ${flowRaw}` : "") };
+      flow, raw: JSON.stringify({ plant: x, devices: info.deviceList }).slice(0, 1500) + `\n\nlist: ${tried.join(" | ")}` + (flowRaw ? `\n\nstatus: ${flowRaw}` : "") };
   }));
   return {
     currentW: plants.reduce((a, b) => a + b.currentW, 0) || num(p.totalData?.currentPowerSum),
