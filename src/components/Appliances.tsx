@@ -58,7 +58,7 @@ export function Appliances() {
   const shown = data.appliances.filter((a) => !meta[a.haId]?.hidden);
   return (
     <Card title="Bosch háztartási gépek" className="mt-4">
-      {!data.linked ? (
+      {!data.linked || link ? (
         <div className="space-y-3 text-sm">
           {!link ? <Button variant="outline" onClick={start} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Összekötés a Home Connecttel</Button> : <>
             <p>Nyisd meg a Bosch oldalát, lépj be, és hagyd jóvá. Kód: <span className="font-mono font-bold">{link.code}</span></p>
@@ -68,7 +68,11 @@ export function Appliances() {
             <Button variant="outline" onClick={finish} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Jóváhagytam</Button></>}
           {msg && <p className="font-mono text-destructive">● {msg}</p>}
         </div>
-      ) : data.error ? <p className="font-mono text-sm text-destructive">● {data.error}</p> : <>
+      ) : data.error ? <div className="space-y-3">
+        <p role="alert" className="text-sm text-destructive">{data.error}</p>
+        <Button variant="outline" onClick={start}><LogOut />Újraösszekötés</Button>
+        {msg && <p role="alert" className="text-sm text-destructive">{msg}</p>}
+      </div> : <>
         <div className="mb-3 flex justify-end"><Button variant="outline" onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">{edit ? <Check /> : <Settings2 />}{edit ? "Kész" : "Eszközkezelő"}</Button></div>
         {edit ? <div className="space-y-2">
           {data.appliances.map((a) => (

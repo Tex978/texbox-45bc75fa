@@ -1,4 +1,6 @@
 # Okosotthon megújítás
+- [x] Home Connect: HTTP-hibák elkülönítése és újraösszekötés elérhetővé tétele a hibás kapcsolat mellett.
+- [ ] Home Connect élő adatlekérés ellenőrzése: a felhasználó újraengedélyezett fiókja szükséges; az eredeti válaszkód nem áll rendelkezésre.
 - [x] Keresés: külön filmek/sorozatok, ajánlott/új/népszerű/felkapott kategóriák, kattintható adatlap és IMDb-link; hat teszt és bemutató böngészős ellenőrzés sikeres.
 - [ ] Élő filmkínálat, szereplőfotók, jelenetképek, előzetesek és IMDb-pontszámok ellenőrzése: TMDB/OMDb hozzáférés és elérhető Radarr/Sonarr szükséges a Synologyn; a bemutató nem helyettesíti az élő ellenőrzést.
 - [x] Autók rész teljes eltávolítása az appból (VW letiltja a külső belépést, a Renaultot a felhasználó sem kérte tovább): oldal, belépési háttér, beállításmezők, Docker-függőségek és tesztek törölve.
