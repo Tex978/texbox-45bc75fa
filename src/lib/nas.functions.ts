@@ -1,10 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, setCookie, getRequest } from "@tanstack/react-start/server";
-import { volumes, streams, recent, torrents, catalog, library, haDemo } from "./mock";
+import { md5 } from "./md5";
+import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "HA_URL", "HA_TOKEN"] as const;
-const SECRET = ["HA_TOKEN", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER"] as const;
+const SECRET = ["GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -179,7 +180,7 @@ export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
     radarr: await ping(has("RADARR_URL", "RADARR_KEY"), () => arr("RADARR", "/system/status")),
     sonarr: await ping(has("SONARR_URL", "SONARR_KEY"), () => arr("SONARR", "/system/status")),
     plex: await ping(has("PLEX_URL", "PLEX_TOKEN"), () => plex("/identity")),
-    ha: await ping(has("HA_URL", "HA_TOKEN"), () => ha("/api/")),
+    growatt: await ping(has("GROWATT_USER", "GROWATT_PASS"), () => growatt()),
     dsm: await ping(has("DSM_URL", "DSM_USER"), () => dsmVolumes()),
   };
 });
@@ -218,32 +219,28 @@ export const deleteMedia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function ha(path: string, body?: unknown) {
-  const r = await fetch(`${env("HA_URL")}${path}`, { method: body ? "POST" : "GET",
-    headers: { Authorization: `Bearer ${env("HA_TOKEN")}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : null });
-  if (!r.ok) throw new Error(`Home Assistant ${r.status}`);
-  return r.json();
+
+// Growatt cloud (same account as the ShinePhone app). Unofficial API used by the app itself.
+const growattHash = (pw: string) => md5(pw).split("").map((c, i) => (i % 2 === 0 && c === "0" ? "c" : c)).join("");
+async function growatt() {
+  const base = (env("GROWATT_SERVER") || "https://server.growatt.com").replace(/\/+$/, "");
+  const ua = "Dalvik/2.1.0 (Linux; U; Android 12; ShinePhone)";
+  const lr = await fetch(`${base}/newTwoLoginAPI.do`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": ua },
+    body: new URLSearchParams({ userName: env("GROWATT_USER"), password: growattHash(env("GROWATT_PASS")) }) });
+  const l = await lr.json().catch(() => null);
+  if (!l?.back?.success) throw new Error(`Growatt belépés sikertelen${l?.back?.msg ? ` (${l.back.msg})` : ""} – ellenőrizd a ShinePhone felhasználónevet és jelszót`);
+  const cookie = (lr.headers.getSetCookie?.() || [lr.headers.get("set-cookie") || ""]).map((c) => c.split(";")[0]).join("; ");
+  const pr = await fetch(`${base}/PlantListAPI.do?userId=${l.back.user.id}`, { headers: { "User-Agent": ua, Cookie: cookie } });
+  const p = await pr.json();
+  const num = (v: unknown) => parseFloat(String(v ?? "0").replace(/[^0-9.]/g, "")) || 0;
+  return {
+    currentW: num(p.totalData?.currentPowerSum) * (/kW/i.test(String(p.totalData?.currentPowerSum)) ? 1000 : 1),
+    todayKwh: num(p.totalData?.todayEnergySum), totalKwh: num(p.totalData?.totalEnergySum),
+    plants: ((p.data || []) as any[]).map((x) => ({ name: String(x.plantName), current: String(x.currentPower), today: String(x.todayEnergy), total: String(x.totalEnergy) })),
+  };
 }
-type Entity = { entity_id: string; state: string; attributes: { friendly_name?: string; unit_of_measurement?: string; device_class?: string } };
-const DOMAINS = ["sensor", "light", "switch", "cover", "vacuum", "media_player", "climate", "fan"];
-export const getHome = createServerFn({ method: "GET" }).handler(async () => {
-  if (!has("HA_URL")) return { demo: true, entities: haDemo as Entity[] };
-  const all = (await ha("/api/states")) as Entity[];
-  return { demo: false, entities: all.filter((e) => {
-    const d = e.entity_id.split(".")[0] || "";
-    if (!DOMAINS.includes(d) || e.state === "unavailable") return false;
-    if (d === "sensor") return ["power", "energy"].includes(e.attributes.device_class || "") || /growatt|solar|napelem|pv/i.test(e.entity_id);
-    return true;
-  }).map((e) => ({ entity_id: e.entity_id, state: e.state, attributes: { friendly_name: e.attributes.friendly_name, unit_of_measurement: e.attributes.unit_of_measurement, device_class: e.attributes.device_class } })) };
+export const getSolar = createServerFn({ method: "GET" }).handler(async () => {
+  if (!has("GROWATT_USER")) return { demo: true, error: "", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, plants: [{ name: "Otthon", current: "3.42 kW", today: "18.6 kWh", total: "8412 kWh" }] };
+  try { return { demo: false, error: "", ...(await growatt()) }; }
+  catch (e) { return { demo: false, error: String((e as Error).message || e), currentW: 0, todayKwh: 0, totalKwh: 0, plants: [] }; }
 });
-export const homeAction = createServerFn({ method: "POST" })
-  .inputValidator((d: { entity_id: string; service: string }) => {
-    if (!/^[a-z_]+\.[a-z0-9_]+$/.test(d.entity_id) || !/^[a-z_]+$/.test(d.service)) throw new Error("bad input");
-    return d;
-  })
-  .handler(async ({ data }) => {
-    if (!has("HA_URL")) return { ok: true };
-    const domain = data.entity_id.split(".")[0];
-    await ha(`/api/services/${domain}/${data.service}`, { entity_id: data.entity_id });
-    return { ok: true };
-  });
