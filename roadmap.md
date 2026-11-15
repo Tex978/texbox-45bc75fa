@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [ ] Okosotthon újraszervezése: kompakt állapotáttekintő, kategóriaváltás és eszközrács; telefonos működés ellenőrzése.
 - [x] Home Connect: HTTP-hibák elkülönítése és újraösszekötés elérhetővé tétele a hibás kapcsolat mellett.
 - [ ] Home Connect élő adatlekérés ellenőrzése: a felhasználó újraengedélyezett fiókja szükséges; az eredeti válaszkód nem áll rendelkezésre.
 - [x] Keresés: külön filmek/sorozatok, ajánlott/új/népszerű/felkapott kategóriák, kattintható adatlap és IMDb-link; hat teszt és bemutató böngészős ellenőrzés sikeres.

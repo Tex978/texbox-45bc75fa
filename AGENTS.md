@@ -30,6 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 <!-- AGENT-MEMORY:BEGIN -->
+- Smart-home presentation uses cached vendor readings for compact summary tiles and category-switched panels, not one long vendor list; preserve polling and device command semantics during layout changes.
 - Home Connect reads preserve HTTP-specific sanitized errors, treat only missing active programs as normal, and allow relinking from the error state; request provider-supported English responses while keeping the UI Hungarian.
 - Media discovery uses TMDB for movie/TV categories and details and OMDb or explicitly named Arr IMDb fields for IMDb scores; never relabel TMDB scores as IMDb. Preserve TMDB movie and TVDB series request IDs, keep provider credentials in the existing self-hosted configuration, and label sample catalogs and non-personalized fallbacks honestly.
 - App icons share one photographic cutout and resized public PNGs; use manifest-only home-screen metadata without a service worker so previews and live device reads remain uncached.
