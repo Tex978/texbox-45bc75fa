@@ -169,3 +169,31 @@ export async function listThermometers(user: string, pass: string, region: strin
   }
   return { sensors, raw: JSON.stringify({ devices: list.map((d) => ({ name: d.name, model: d.model, online: d.isOnline })), props: rawProps }).slice(0, 6000) };
 }
+
+// Air purifiers (zhimi.airp.*): MIoT spec ids for power, mode, PM2.5, humidity, temperature, filter life.
+const AP = [{ siid: 2, piid: 1, k: "on" }, { siid: 2, piid: 4, k: "mode" }, { siid: 3, piid: 4, k: "pm25" }, { siid: 3, piid: 1, k: "hum" },
+  { siid: 3, piid: 7, k: "temp" }, { siid: 4, piid: 1, k: "filter" }] as const;
+export type Purifier = { did: string; name: string; model: string; online: boolean; on: boolean | null; mode: number | null; pm25: number | null; hum: number | null; temp: number | null; filter: number | null };
+export async function listPurifiers(user: string, pass: string, region: string): Promise<{ purifiers: Purifier[]; raw: string }> {
+  const s = await login(user, pass);
+  const dl = await call(s, region, "/home/device_list", { getVirtualModel: true, getHuamiDevices: 1, get_split_device: false, support_smart_home: true });
+  const list: { did: string; name: string; model: string; isOnline: boolean }[] = (dl?.result?.list ?? []).filter((d: { model: string }) => /airp|airpurifier/i.test(d.model));
+  const out: Purifier[] = list.map((d) => ({ did: d.did, name: d.name, model: d.model, online: !!d.isOnline, on: null, mode: null, pm25: null, hum: null, temp: null, filter: null }));
+  let raw: unknown = null;
+  if (out.length) {
+    const pr = await call(s, region, "/miotspec/prop/get", { params: out.flatMap((d) => AP.map((p) => ({ did: d.did, siid: p.siid, piid: p.piid }))), datasource: 1 });
+    raw = pr;
+    for (const r of (pr?.result ?? []) as { did: string; siid: number; piid: number; code: number; value: unknown }[]) {
+      if (r.code !== 0) continue;
+      const t = out.find((x) => x.did === r.did); const p = AP.find((x) => x.siid === r.siid && x.piid === r.piid);
+      if (t && p) (t as Record<string, unknown>)[p.k] = p.k === "on" ? !!r.value : Number(r.value);
+    }
+  }
+  return { purifiers: out, raw: JSON.stringify(raw).slice(0, 3000) };
+}
+export async function setPurifier(user: string, pass: string, region: string, did: string, key: "on" | "mode", value: boolean | number) {
+  const s = await login(user, pass);
+  const p = AP.find((x) => x.k === key)!;
+  const r = await call(s, region, "/miotspec/prop/set", { params: [{ did, siid: p.siid, piid: p.piid, value }] });
+  const c = r?.result?.[0]?.code; if (c !== 0 && c !== 1) throw new Error(`Légtisztító: a parancs nem sikerült (${c})`);
+}
