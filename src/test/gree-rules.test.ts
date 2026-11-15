@@ -11,4 +11,9 @@ describe("Gree setup and controls", () => {
     expect(() => validateGreeCommand({ ip: "192.168.1.60", property: "mode", value: "invalid" })).toThrow();
     expect(validateGreeCommand({ ip: "192.168.1.60", property: "temperature", value: 24 }).value).toBe(24);
   });
+  it("accepts discovered cloud device identifiers but still validates commands", () => {
+    expect(validateGreeCommand({ ip: "aabbcc112233", property: "power", value: "on" })).toEqual({ ip: "aabbcc112233", property: "power", value: "on" });
+    expect(() => validateGreeCommand({ ip: "aabbcc112233", property: "temperature", value: 31 })).toThrow();
+    expect(() => validateGreeCommand({ ip: "other-device", property: "power", value: "on" })).toThrow();
+  });
 });

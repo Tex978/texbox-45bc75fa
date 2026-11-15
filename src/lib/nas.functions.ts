@@ -6,8 +6,8 @@ import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS"] as const;
-const SECRET = ["XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS", "GREE_USER", "GREE_PASS", "GREE_REGION"] as const;
+const SECRET = ["GREE_PASS", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -569,6 +569,12 @@ export const tuyaCommand = createServerFn({ method: "POST" })
   });
 
 export const getGree = createServerFn({ method: "GET" }).handler(async () => {
+  if (has("GREE_USER", "GREE_PASS")) {
+    try {
+      const { readGreeCloud } = await import("./gree-cloud.server");
+      return await readGreeCloud({ user: env("GREE_USER"), password: env("GREE_PASS"), region: env("GREE_REGION") || "Europe" });
+    } catch (e) { return { configured: true, units: [], error: String((e as Error).message) }; }
+  }
   const raw = env("GREE_UNITS");
   if (!raw) return { configured: false, units: [], error: "" };
   try {
@@ -584,6 +590,11 @@ export const getGree = createServerFn({ method: "GET" }).handler(async () => {
 export const greeControl = createServerFn({ method: "POST" })
   .inputValidator(validateGreeCommand)
   .handler(async ({ data }) => {
+    if (has("GREE_USER", "GREE_PASS")) {
+      const { controlGreeCloud } = await import("./gree-cloud.server");
+      await controlGreeCloud({ user: env("GREE_USER"), password: env("GREE_PASS"), region: env("GREE_REGION") || "Europe" }, data);
+      return { ok: true };
+    }
     if (!parseGreeUnits(env("GREE_UNITS")).some((unit) => unit.ip === data.ip)) throw new Error("Ez a klíma nincs beállítva.");
     const { withGree } = await import("./gree.server");
     await withGree(data.ip, { [data.property]: data.value, ...(data.property === "temperature" ? { temperatureUnit: "celsius" } : {}) });

@@ -3,6 +3,8 @@ import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-
 import { useState } from "react";
 import { Shell, Card } from "@/components/Shell";
 import { getStatus, getConfig, saveConfig } from "@/lib/nas.functions";
+import { Button } from "@/components/ui/button";
+import { greeQuery } from "@/components/Gree";
 const sq = queryOptions({ queryKey: ["status"], queryFn: () => getStatus() });
 const cq = queryOptions({ queryKey: ["config"], queryFn: () => getConfig() });
 export const Route = createFileRoute("/settings")({
@@ -15,7 +17,7 @@ export const Route = createFileRoute("/settings")({
   component: Settings,
 });
 const services = [
-  { key: "gree", name: "Gree+ klímák (helyi kapcsolat)", fields: [["GREE_UNITS", "Klímák IP-címe és neve, vesszővel elválasztva", "192.168.1.60=Nappali, 192.168.1.61=Hálószoba"]] },
+  { key: "gree", name: "Gree+ klímák", fields: [["GREE_USER", "Gree+ fiók e-mail", ""], ["GREE_PASS", "Gree+ fiók jelszó", ""], ["GREE_REGION", "Fiók régiója", "Europe"], ["GREE_UNITS", "Helyi IP-címek (fiókos belépésnél nem szükséges)", "192.168.1.60=Nappali, 192.168.1.61=Hálószoba"]] },
   { key: "blinds", name: "Redőnyök (Connector hub)", fields: [["BLINDS_IP", "Hub IP címe (otthoni hálózat)", "192.168.1.50"], ["BLINDS_KEY", "Kulcs (Connector app → Névjegy, 5 koppintás)", ""], ["BLINDS_NAMES", "Nevek (nem kötelező)", "1=Nappali, 2=Hálószoba"]] },
   { key: "xiaomi", name: "Xiaomi (Mi Home) hőmérők", fields: [["XIAOMI_USER", "Mi fiók e-mail / telefonszám / azonosító", ""], ["XIAOMI_PASS", "Mi fiók jelszó", ""], ["XIAOMI_REGION", "Régió (de = Európa, cn, us, sg, ru, i2)", "de"]] },
   { key: "growatt", name: "Growatt napelem", fields: [["GROWATT_USER", "ShinePhone felhasználónév", ""], ["GROWATT_PASS", "ShinePhone jelszó", ""], ["GROWATT_SN", "Inverter sorozatszám (SN)", "pl. TKJ4CJ704D"], ["GROWATT_SERVER", "Szerver (általában üresen hagyható)", "https://server.growatt.com"]] },
@@ -32,9 +34,16 @@ function Settings() {
   const qc = useQueryClient();
   const [form, setForm] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(cfg).map(([k, v]) => [k, v === "__set__" ? "" : v])));
   const [saving, setSaving] = useState(false);
+  const [greeStatus, setGreeStatus] = useState("");
   const save = async () => {
     setSaving(true);
-    try { await saveConfig({ data: form }); await qc.invalidateQueries(); } finally { setSaving(false); }
+    try {
+      await saveConfig({ data: form }); await qc.invalidateQueries();
+      if (form["GREE_USER"] || form["GREE_UNITS"]) {
+        const result = await qc.fetchQuery(greeQuery);
+        setGreeStatus(result.error || (result.units.length ? `${result.units.length} klíma · ${result.units.filter((unit) => unit.online).length} elérhető` : "Nem találtunk klímát a fiókban."));
+      }
+    } finally { setSaving(false); }
   };
   return (
     <Shell>
@@ -47,16 +56,18 @@ function Settings() {
             <div className="space-y-3">{s.fields.map(([f, label, ph]) => (
               <label key={f} className="block">
                 <span className="mb-1 block text-xs text-muted-foreground">{label}{secret(f) && cfg[f] === "__set__" && " · elmentve"}</span>
-                <input type={secret(f) ? "password" : "text"} value={form[f] || ""} placeholder={secret(f) && cfg[f] === "__set__" ? "••••••• (változatlan)" : ph}
+                {f === "GREE_REGION" ? <select value={form[f] || "Europe"} onChange={(e) => setForm({ ...form, [f]: e.target.value })} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {["Europe", "China Mainland", "East South Asia", "North American", "South American", "India", "Middle East", "Australia", "Russia"].map((region) => <option key={region} value={region}>{region === "Europe" ? "Európa" : region}</option>)}
+                </select> : <input type={secret(f) ? "password" : "text"} value={form[f] || ""} placeholder={secret(f) && cfg[f] === "__set__" ? "••••••• (változatlan)" : ph}
                   onChange={(e) => setForm({ ...form, [f]: e.target.value })} autoComplete="off"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />}
               </label>))}</div>
             <div className={`mt-3 font-mono text-xs ${st === "ok" ? "text-primary" : st === "nincs beállítva" ? "text-muted-foreground" : "text-destructive"}`}>
-              ● {st === "ok" ? "Elérhető" : st}</div>
+              {s.key === "gree" ? greeStatus : `● ${st === "ok" ? "Elérhető" : st}`}</div>
           </Card>);
       })}</div>
-      <button onClick={save} disabled={saving} className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60">
-        {saving ? "Mentés és tesztelés…" : "Mentés és tesztelés"}</button>
+      <Button onClick={save} disabled={saving} className="mt-6">
+        {saving ? "Mentés és tesztelés…" : "Mentés és tesztelés"}</Button>
     </Shell>
   );
 }

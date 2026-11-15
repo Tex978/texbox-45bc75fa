@@ -40,6 +40,6 @@ function GreeDevice({ unit }: { unit: Unit }) {
 export function Gree() {
   const { data } = useSuspenseQuery(greeQuery);
   return <SmartSection title="Gree klímák"><div className="mb-4 flex justify-end"><Button variant="outline" asChild><Link to="/settings"><Settings2 />Kapcsolatok</Link></Button></div>
-    {data.error ? <p className="text-sm text-destructive">{data.error}</p> : !data.configured ? <p className="text-sm text-muted-foreground">Nincs csatlakoztatott klíma.</p> : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{data.units.map((unit) => <GreeDevice key={unit.ip} unit={unit} />)}</div>}
+    {data.error ? <p className="text-sm text-destructive">{data.error}</p> : !data.configured ? <p className="text-sm text-muted-foreground">Nincs csatlakoztatott klíma.</p> : data.units.length === 0 ? <p className="text-sm text-muted-foreground">Nem találtunk klímát a Gree+ fiókban.</p> : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{data.units.map((unit) => <GreeDevice key={unit.ip} unit={unit} />)}</div>}
   </SmartSection>;
 }

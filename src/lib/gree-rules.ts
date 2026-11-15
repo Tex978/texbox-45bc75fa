@@ -10,7 +10,7 @@ export function parseGreeUnits(raw: string): GreeUnit[] {
   return units;
 }
 export function validateGreeCommand(input: { ip: string; property: string; value: string | number }) {
-  parseGreeUnits(input.ip);
+  if (!/^[a-f0-9]{12,24}$/i.test(input.ip)) parseGreeUnits(input.ip);
   const valid = input.property === "power" ? ["on", "off"].includes(String(input.value))
     : input.property === "temperature" ? typeof input.value === "number" && Number.isInteger(input.value) && input.value >= 16 && input.value <= 30
     : input.property === "mode" ? GREE_MODES.some((mode) => mode === input.value)
