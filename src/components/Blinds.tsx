@@ -1,5 +1,5 @@
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/Shell";
 import { getBlinds, blindAction, blindGroupAction, saveBlindMeta } from "@/lib/nas.functions";
 

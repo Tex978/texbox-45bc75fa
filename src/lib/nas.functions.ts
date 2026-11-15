@@ -406,3 +406,12 @@ export const purifierAction = createServerFn({ method: "POST" })
     await x.setPurifier(u, p, xmRegion(), data.did, data.key, data.value);
     return { ok: true };
   });
+export const getLocks = createServerFn({ method: "GET" }).handler(async () => {
+  if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", locks: [
+    { did: "l1", name: "Bejárati ajtó", model: "xiaomi.lock.d100e", online: true, battery: 82, values: {} as Record<string, unknown> } ] };
+  const x = await import("./xiaomi.server");
+  const [u, p] = xmArgs();
+  const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
+  try { return { demo: false, error: "", ...(await x.listLocks(u, p, xmRegion())) }; }
+  catch (e) { return { demo: false, error: String((e as Error).message || e), raw: "", locks: [] }; }
+});
