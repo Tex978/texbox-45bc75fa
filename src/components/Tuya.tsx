@@ -1,0 +1,82 @@
+import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { Card } from "@/components/Shell";
+import { getTuya, tuyaCommand } from "@/lib/nas.functions";
+
+export const tuyaQuery = queryOptions({ queryKey: ["tuya"], queryFn: () => getTuya(), refetchInterval: 60000 });
+const CAT: Record<string, string> = { dj: "Lámpa", dd: "LED szalag", kg: "Kapcsoló", cz: "Konnektor", pc: "Elosztó", qn: "Fűtőtest", wk: "Termosztát", wsdcg: "Hőmérő", mcs: "Ajtóérzékelő", pir: "Mozgásérzékelő", ywbj: "Füstérzékelő", sj: "Vízérzékelő", rqbj: "Gázérzékelő" };
+type St = { code: string; value: string | number | boolean };
+const val = (s: St[], ...c: string[]) => s.find((x) => c.includes(x.code))?.value;
+const temp = (v: unknown) => typeof v === "number" ? (Math.abs(v) > 100 ? v / 10 : v) : null;
+const KEY = "tuya-meta";
+type Meta = Record<string, { name?: string; room?: string; hidden?: boolean }>;
+
+function Dev({ d, name }: { d: { id: string; category: string; online: boolean; status: St[] }; name: string }) {
+  const qc = useQueryClient();
+  const [msg, setMsg] = useState("");
+  const sw = d.status.find((x) => /^switch(_led|_1)?$/.test(x.code) && typeof x.value === "boolean");
+  const send = async (code: string, value: boolean | number | string) => {
+    setMsg("…"); const r = await tuyaCommand({ data: { id: d.id, code, value } }); setMsg(r.ok ? "" : `● ${r.error}`);
+    setTimeout(() => qc.invalidateQueries({ queryKey: ["tuya"] }), 1500);
+  };
+  const t = temp(val(d.status, "va_temperature", "temp_current", "cur_temp"));
+  const set = val(d.status, "temp_set");
+  const hum = val(d.status, "va_humidity", "humidity_value");
+  const bat = val(d.status, "battery_percentage", "va_battery");
+  const door = val(d.status, "doorcontact_state");
+  const pir = val(d.status, "pir");
+  const bright = d.status.find((x) => x.code === "bright_value_v2" || x.code === "bright_value");
+  return (
+    <div className="rounded-lg bg-secondary p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div><div className="font-medium">{name}</div><div className="text-xs text-muted-foreground">{CAT[d.category] || d.category}{!d.online && " · ○ offline"}</div></div>
+        {sw && <button onClick={() => send(sw.code, !sw.value)} disabled={!d.online}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${sw.value ? "bg-primary text-primary-foreground" : "border border-border"}`}>{sw.value ? "BE" : "KI"}</button>}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-sm">
+        {t != null && <span>{t}°</span>}
+        {hum != null && <span>{String(hum)}%💧</span>}
+        {door != null && <span>{door ? "nyitva" : "zárva"}</span>}
+        {pir != null && <span>{pir === "pir" ? "mozgás!" : "nincs mozgás"}</span>}
+        {bat != null && <span className="text-muted-foreground">🔋{String(bat)}%</span>}
+      </div>
+      {typeof set === "number" && <div className="mt-2 flex items-center gap-2 text-sm">
+        <button onClick={() => send("temp_set", set - 1)} className="rounded border border-border px-2">−</button>
+        <span className="font-mono">cél: {set}°</span>
+        <button onClick={() => send("temp_set", set + 1)} className="rounded border border-border px-2">+</button></div>}
+      {bright && typeof bright.value === "number" && <input type="range" min={bright.code.endsWith("v2") ? 10 : 25} max={bright.code.endsWith("v2") ? 1000 : 255} defaultValue={bright.value}
+        onMouseUp={(e) => send(bright.code, Number(e.currentTarget.value))} onTouchEnd={(e) => send(bright.code, Number(e.currentTarget.value))} className="mt-2 w-full" />}
+      {msg && <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{msg}</p>}
+    </div>
+  );
+}
+
+export function Tuya() {
+  const { data } = useSuspenseQuery(tuyaQuery);
+  const [meta, setMeta] = useState<Meta>({});
+  const [edit, setEdit] = useState(false);
+  useEffect(() => { try { setMeta(JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { /* */ } }, []);
+  const upd = (id: string, v: Meta[string]) => setMeta((m) => { const n = { ...m, [id]: { ...m[id], ...v } }; localStorage.setItem(KEY, JSON.stringify(n)); return n; });
+  if (!data.configured) return <Card title="Tuya eszközök" className="mt-4"><p className="text-sm text-muted-foreground">Add meg az Access Secret-et a <Link to="/settings" className="text-primary underline">Kapcsolatok</Link> oldalon.</p></Card>;
+  const shown = data.devices.filter((d) => !meta[d.id]?.hidden);
+  const rooms = [...new Set(shown.map((d) => meta[d.id]?.room || "Egyéb"))].sort((a, b) => a === "Egyéb" ? 1 : b === "Egyéb" ? -1 : a.localeCompare(b, "hu"));
+  return (
+    <Card title="Tuya eszközök" className="mt-4">
+      {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
+        <div className="mb-3 flex justify-end"><button onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">⚙ {edit ? "Kész" : "Eszközkezelő"}</button></div>
+        {edit ? <div className="space-y-2">{data.devices.map((d) => (
+          <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-secondary p-2 text-sm">
+            <input value={meta[d.id]?.name ?? ""} placeholder={d.name} onChange={(e) => upd(d.id, { name: e.target.value })} className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1" />
+            <input value={meta[d.id]?.room ?? ""} placeholder="Szoba" list="tuya-rooms" onChange={(e) => upd(d.id, { room: e.target.value })} className="w-32 rounded border border-border bg-background px-2 py-1" />
+            <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={!!meta[d.id]?.hidden} onChange={(e) => upd(d.id, { hidden: e.target.checked })} /> Elrejtés</label>
+          </div>))}
+          <datalist id="tuya-rooms">{[...new Set(Object.values(meta).map((m) => m.room).filter(Boolean))].map((r) => <option key={r} value={r} />)}</datalist>
+        </div> : data.devices.length === 0 ? <p className="text-sm text-muted-foreground">Nincs eszköz – ellenőrizd, hogy a Smart Life fiók össze van-e kötve a Tuya projekttel.</p> :
+          rooms.map((r) => (<div key={r} className="mb-4"><h3 className="mb-2 text-sm font-medium text-muted-foreground">{r}</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{shown.filter((d) => (meta[d.id]?.room || "Egyéb") === r).map((d) => <Dev key={d.id} d={d} name={meta[d.id]?.name || d.name} />)}</div></div>))}
+        <details className="mt-2 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{JSON.stringify(data.devices, null, 1)}</pre></details>
+      </>}
+    </Card>
+  );
+}
