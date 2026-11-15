@@ -124,7 +124,8 @@ async function call(s: Session, region: string, path: string, params: unknown) {
 }
 
 // MIoT spec ids shared by common Xiaomi/Qingping BLE thermometers (temperature, humidity, battery).
-const PROPS = [{ siid: 3, piid: 1001, k: "temp" }, { siid: 3, piid: 1002, k: "hum" }, { siid: 3, piid: 1008, k: "hum" }, { siid: 2, piid: 1003, k: "battery" }] as const;
+const PROPS = [{ siid: 3, piid: 1001, k: "temp" }, { siid: 3, piid: 1002, k: "hum" }, { siid: 3, piid: 1008, k: "hum" }, { siid: 2, piid: 1003, k: "battery" },
+  { siid: 2, piid: 1, k: "temp" }, { siid: 2, piid: 2, k: "hum" }, { siid: 3, piid: 1, k: "battery" }] as const;
 
 export type Thermo = { did: string; name: string; model: string; online: boolean; temp: number | null; hum: number | null; battery: number | null };
 
@@ -148,6 +149,23 @@ export async function listThermometers(user: string, pass: string, region: strin
         if (t && p) t[p.k] = p.k === "temp" && Math.abs(r.value) > 100 ? r.value / 10 : r.value;
       }
     } catch (e) { rawProps = String(e); }
+    // Older BLE sensors: read last reported events (4100 temp, 4102 humidity, 4106 battery, 4109 temp+hum).
+    const now = Math.floor(Date.now() / 1000);
+    const le16 = (h: string, o: number) => { const v = parseInt(h.slice(o * 2 + 2, o * 2 + 4) + h.slice(o * 2, o * 2 + 2), 16); return v > 32767 ? v - 65536 : v; };
+    await Promise.all(sensors.filter((t) => t.temp == null || t.hum == null).map(async (t) => {
+      for (const key of ["4109", "4100", "4102", "4106"]) {
+        try {
+          const r = await call(s, region, "/user/get_user_device_data", { did: t.did, key, type: "event", time_start: now - 7 * 86400, time_end: now, limit: 1 });
+          const v = r?.result?.[0]?.value; if (!v) continue;
+          const h = String(JSON.parse(v)[0] ?? "");
+          if (!/^[0-9a-f]+$/i.test(h)) continue;
+          if (key === "4109" && h.length >= 8) { t.temp ??= le16(h, 0) / 10; t.hum ??= le16(h, 2) / 10; }
+          if (key === "4100") t.temp ??= le16(h, 0) / 10;
+          if (key === "4102") t.hum ??= le16(h, 0) / 10;
+          if (key === "4106") t.battery ??= parseInt(h.slice(0, 2), 16);
+        } catch { /* ignore */ }
+      }
+    }));
   }
   return { sensors, raw: JSON.stringify({ devices: list.map((d) => ({ name: d.name, model: d.model, online: d.isOnline })), props: rawProps }).slice(0, 6000) };
 }
