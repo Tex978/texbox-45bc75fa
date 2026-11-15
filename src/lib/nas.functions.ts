@@ -304,7 +304,7 @@ type BlindMeta = Record<string, { name?: string; room?: string }>;
 const readMeta = (): BlindMeta => { try { return JSON.parse(getCookie(META) || "{}"); } catch { return {}; } };
 export const getBlinds = createServerFn({ method: "GET" }).handler(async (): Promise<BlindsResult> => {
   const meta = readMeta();
-  const apply = (b: BlindsResult["blinds"][number], fallback: string) => ({ ...b, name: meta[b.mac]?.name || fallback, room: meta[b.mac]?.room || "" });
+  const apply = (b: BlindsResult["blinds"][number], fallback: string) => ({ ...b, name: meta[b.mac]?.name || fallback, room: meta[b.mac]?.room || b.room });
   if (!has("BLINDS_IP")) return { demo: true, error: "", blinds: [
     { mac: "demo1", deviceType: "10000000", name: "Nappali bal", room: "Nappali", position: 0, battery: 0, state: 0 },
     { mac: "demo2", deviceType: "10000000", name: "Nappali jobb", room: "Nappali", position: 0, battery: 0, state: 0 },
