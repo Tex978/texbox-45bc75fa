@@ -387,3 +387,22 @@ export const xiaomiVerify = createServerFn({ method: "POST" })
     writeXm(JSON.stringify(s));
     return { ok: true };
   });
+const xmRegion = () => (env("XIAOMI_REGION") || "de").toLowerCase();
+export const getPurifiers = createServerFn({ method: "GET" }).handler(async () => {
+  if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", purifiers: [
+    { did: "p1", name: "Légtisztító", model: "zhimi.airp.meb1", online: true, on: true, mode: 0, pm25: 8, hum: 46, temp: 22.5, filter: 73 } ] };
+  const x = await import("./xiaomi.server");
+  const [u, p] = xmArgs();
+  const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
+  try { return { demo: false, error: "", ...(await x.listPurifiers(u, p, xmRegion())) }; }
+  catch (e) { return { demo: false, error: String((e as Error).message || e), raw: "", purifiers: [] }; }
+});
+export const purifierAction = createServerFn({ method: "POST" })
+  .inputValidator((d: { did: string; key: "on" | "mode"; value: boolean | number }) => d)
+  .handler(async ({ data }) => {
+    const x = await import("./xiaomi.server");
+    const [u, p] = xmArgs();
+    const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
+    await x.setPurifier(u, p, xmRegion(), data.did, data.key, data.value);
+    return { ok: true };
+  });
