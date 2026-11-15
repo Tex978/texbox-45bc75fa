@@ -1,10 +1,7 @@
 # Okosotthon megújítás
 - [x] Keresés: külön filmek/sorozatok, ajánlott/új/népszerű/felkapott kategóriák, kattintható adatlap és IMDb-link; hat teszt és bemutató böngészős ellenőrzés sikeres.
 - [ ] Élő filmkínálat, szereplőfotók, jelenetképek, előzetesek és IMDb-pontszámok ellenőrzése: TMDB/OMDb hozzáférés és elérhető Radarr/Sonarr szükséges a Synologyn; a bemutató nem helyettesíti az élő ellenőrzést.
-- [x] Autós hibakezelés: márka/lépés/ok szerinti biztonságos jelzések, VW blokkoló belépés és dupla lekérdezés javítása; kilenc teszt sikeres.
-- [ ] Mindkét autó belépési hibájának pontos azonosítása: a frissített Synology alkalmazás új hibaazonosítói szükségesek, az élő fiókok itt nem elérhetők.
-- [x] Autók oldal, Volkswagen/My Renault belépés, adatkiolvasás és Renault ellenőrzőkód kezelése; öt Python-teszt és oldalelellenőrzés sikeres.
-- [ ] Autók élő ellenőrzése: frissített Synology alkalmazásban megadott autós fiókok szükségesek.
+- [x] Autók rész teljes eltávolítása az appból (VW letiltja a külső belépést, a Renaultot a felhasználó sem kérte tovább): oldal, belépési háttér, beállításmezők, Docker-függőségek és tesztek törölve.
 - [x] Egységes modern megjelenés minden oldalon: közös színek, ikonmenü, vezérlők; hat oldal ellenőrizve három képernyőméreten.
 - [x] GitHubon a Gree Python-telepítés hibás lépésének azonosítása; Debian-alapú telepítés és importellenőrzés hozzáadása.
 - [ ] Az új Docker-kép GitHubon történő elkészítésének ellenőrzése: a javítás szinkronizálása utáni futás szükséges.
