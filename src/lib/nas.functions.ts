@@ -258,7 +258,11 @@ export const browseMedia = createServerFn({ method: "GET" })
         }
         if (has(app + "_URL", app + "_KEY")) {
           const owned = await safe(arr(app, kind === "movie" ? "/movie" : "/series"), []);
-          for (const item of items) item.inLibrary = owned.some((x: any) => (kind === "movie" ? x.tmdbId : x.tvdbId) === item.id);
+          for (const item of items) {
+            const match = owned.find((x: any) => (kind === "movie" ? x.tmdbId : x.tvdbId) === item.id);
+            item.inLibrary = !!match;
+            if (match && item.imdbRating === null) item.imdbRating = imdbScore(match.ratings?.imdb?.value);
+          }
         }
         return result(items, !data.q && data.category === "recommended" && !personalized ? "Személyes előzmény még nincs · népszerű válogatás" : "", false, data.page < response.total_pages);
       }
@@ -269,8 +273,7 @@ export const browseMedia = createServerFn({ method: "GET" })
       }
       if (data.type === "Sorozat") return result([], "A sorozatos ajánlásokhoz, új megjelenésekhez és népszerű kínálathoz TMDB-kapcsolat szükséges.");
       if (data.category === "new") return result([], "Az új megjelenésekhez TMDB-kapcsolat szükséges.");
-      const flags = { recommended: "includeRecommendations=true", popular: "includePopular=true", trending: "includeTrending=true" };
-      const found = await arr("RADARR", `/importlist/movie?${flags[data.category]}&includeRecommendations=${data.category === "recommended"}&includePopular=${data.category === "popular"}&includeTrending=${data.category === "trending"}`);
+      const found = await arr("RADARR", `/importlist/movie?includeRecommendations=${data.category === "recommended"}&includePopular=${data.category === "popular"}&includeTrending=${data.category === "trending"}`);
       return result(found.filter((x: any) => !x.isExisting && !x.isExcluded).slice(0, 40).map((x: any) => mapArrMedia(x, data.type)));
     } catch (error) { return result([], error instanceof Error && error.message.startsWith("A TMDB") ? error.message : "A filmkínálat nem érhető el. Ellenőrizd a kapcsolatot."); }
   });
@@ -284,7 +287,7 @@ export const getMediaDetail = createServerFn({ method: "GET" })
     const app = data.type === "Film" ? "RADARR" : "SONARR";
     let source: any = null;
     if (has(app + "_URL", app + "_KEY")) {
-      const lookup = await arr(app, data.type === "Film" ? `/movie/lookup/tmdb?tmdbId=${data.id}` : `/series/lookup?term=tvdb:${data.id}`);
+      const lookup = await safe(arr(app, data.type === "Film" ? `/movie/lookup/tmdb?tmdbId=${data.id}` : `/series/lookup?term=tvdb:${data.id}`), null);
       source = Array.isArray(lookup) ? lookup[0] : lookup;
     }
     const fallback = mediaDemo.find((x) => x.type === data.type && x.id === data.id);

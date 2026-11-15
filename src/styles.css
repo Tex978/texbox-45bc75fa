@@ -292,4 +292,5 @@
   .media-cast { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
   .media-rating { font-size: 10px; }
   .media-toolbar { gap: 12px; }
+  .media-search-inputs { flex-basis: 100%; }
 }

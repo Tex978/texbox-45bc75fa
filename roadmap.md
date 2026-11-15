@@ -1,5 +1,6 @@
 # Okosotthon megújítás
-- [ ] Keresés: külön filmek/sorozatok, ajánlott/új/népszerű kategóriák és részletes adatlap történettel, szereplőkkel, képekkel, előzetesekkel és valódi IMDb-adatokkal.
+- [x] Keresés: külön filmek/sorozatok, ajánlott/új/népszerű/felkapott kategóriák, kattintható adatlap és IMDb-link; hat teszt és bemutató böngészős ellenőrzés sikeres.
+- [ ] Élő filmkínálat, szereplőfotók, jelenetképek, előzetesek és IMDb-pontszámok ellenőrzése: TMDB/OMDb hozzáférés és elérhető Radarr/Sonarr szükséges a Synologyn; a bemutató nem helyettesíti az élő ellenőrzést.
 - [x] Autós hibakezelés: márka/lépés/ok szerinti biztonságos jelzések, VW blokkoló belépés és dupla lekérdezés javítása; kilenc teszt sikeres.
 - [ ] Mindkét autó belépési hibájának pontos azonosítása: a frissített Synology alkalmazás új hibaazonosítói szükségesek, az élő fiókok itt nem elérhetők.
 - [x] Autók oldal, Volkswagen/My Renault belépés, adatkiolvasás és Renault ellenőrzőkód kezelése; öt Python-teszt és oldalelellenőrzés sikeres.

@@ -47,7 +47,7 @@ function Search() {
     <div className="flex flex-wrap justify-between items-end gap-4"><h1>Filmek és sorozatok</h1><span className="text-xs text-muted-foreground">{data?.items.length || 0} találat</span></div>
     <div className="media-toolbar">
       <div className="media-segment" aria-label="Médiatípus">{(["Film", "Sorozat"] as const).map((value) => <Button key={value} variant={type === value ? "default" : "ghost"} aria-pressed={type === value} onClick={() => { setType(value); setPage(1); }}>{value === "Film" ? <Film size={17} /> : <Tv size={17} />}{value === "Film" ? "Filmek" : "Sorozatok"}</Button>)}</div>
-      <div className="flex min-w-0 flex-1 sm:max-w-lg gap-2">
+      <div className="media-search-inputs flex min-w-0 flex-1 sm:max-w-lg gap-2">
         <label className="relative min-w-0 flex-1"><SearchIcon size={17} className="absolute left-3 top-3 text-muted-foreground" /><input aria-label="Film vagy sorozat keresése" value={q} onChange={(e) => setQ(e.target.value)} placeholder={type === "Film" ? "Film keresése…" : "Sorozat keresése…"} className="w-full min-w-0 rounded-md border border-input bg-card pl-10 pr-3 py-2 outline-none focus:ring-2 focus:ring-ring" /></label>
         <select aria-label="Kért minőség" value={profile} onChange={(e) => setProfile(e.target.value)} className="rounded-md border border-input bg-card px-2 py-2"><option>720p</option><option>1080p</option><option>4K</option></select>
       </div>
