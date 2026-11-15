@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [ ] Hőmérők: közösen mentett elrejtés/visszaállítás, nevek átvétele és csak látható eszközök az összesítésben; tesztek és telefonos ellenőrzés.
 - [x] Hiányzó telefonos beállítások: tartós mentési hibák látható jelzése, régi sütik átvételének javítása, tárolási állapot és öt sikeres regressziós teszt.
 - [ ] Beállítások élő ellenőrzése a tb.texbox.synology.me címen: belépés védi, innen nem elérhető; a javítás frissítése és az eredeti böngészőben a korábbi beállítások átvétele szükséges.
 - [x] GitHub feltöltési hiba azonosítva: a digest-linux/amd64 és digest-linux/arm64 tiltott neveket külön, perjel nélküli architektúracímkék váltják.

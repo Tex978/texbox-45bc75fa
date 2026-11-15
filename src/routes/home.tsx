@@ -5,7 +5,8 @@ import { SmartSection as Card, SensorDetails } from "@/components/SmartHomeUI";
 import { SmartEnergy } from "@/components/SmartEnergy";
 import { Button } from "@/components/ui/button";
 import { Blinds as BlindsIcon, Check, ChevronRight, Fan, House, LayoutGrid, LockKeyhole, Power, RefreshCw, Settings2, Sun, Thermometer } from "lucide-react";
-import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify, getPurifiers, purifierAction, getLocks } from "@/lib/nas.functions";
+import { getSolar, getThermometers, saveThermometerMeta, xiaomiSendCode, xiaomiVerify, getPurifiers, purifierAction, getLocks } from "@/lib/nas.functions";
+import { visibleThermometers, type ThermometerMeta } from "@/lib/thermometer-meta";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
@@ -47,35 +48,62 @@ function XiaomiVerify({ url }: { url: string }) {
   </div>;
 }
 const inp = "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring";
-type Names = Record<string, { name?: string; room?: string }>;
 function Thermometers() {
   const { data } = useSuspenseQuery(tq);
-  const [names, setNames] = useState<Names>({});
+  const qc = useQueryClient();
+  const [names, setNames] = useState<ThermometerMeta>(data.meta);
   const [edit, setEdit] = useState(false);
-  useEffect(() => { try { setNames(JSON.parse(localStorage.getItem("thermo-names") || "{}")); } catch { /* ignore */ } }, []);
-  const upd = (did: string, k: "name" | "room", v: string) => setNames((n) => {
-    const next = { ...n, [did]: { ...n[did], [k]: v } }; localStorage.setItem("thermo-names", JSON.stringify(next)); return next; });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { if (!edit) setNames(data.meta); }, [data.meta, edit]);
+  useEffect(() => {
+    let active = true;
+    const migrate = async () => {
+      try {
+        const raw = localStorage.getItem("thermo-names"); if (!raw) return;
+        const meta = await saveThermometerMeta({ data: { items: JSON.parse(raw), onlyMissing: true } });
+        localStorage.removeItem("thermo-names");
+        if (active) qc.setQueryData(tq.queryKey, (current: typeof data | undefined) => current ? { ...current, meta } : current);
+      } catch { if (active) setError("A korábbi hőmérőnevek átvétele nem sikerült; a böngészőben megmaradtak."); }
+    };
+    void migrate(); return () => { active = false; };
+  }, [qc]);
+  const upd = (did: string, values: ThermometerMeta[string]) => setNames(n => ({ ...n, [did]: { ...n[did], ...values } }));
+  const finish = async () => {
+    setBusy(true); setError("");
+    try {
+      const meta = await saveThermometerMeta({ data: { items: names } });
+      qc.setQueryData(tq.queryKey, (current: typeof data | undefined) => current ? { ...current, meta } : current);
+      setEdit(false);
+    } catch (e) { setError(e instanceof Error ? e.message : "Nem sikerült menteni a hőmérőket."); }
+    finally { setBusy(false); }
+  };
+  const shown = visibleThermometers(data.sensors, data.meta);
   return (
     <Card title="Hőmérők (Xiaomi)" className="mt-4">
       {!data.verifyUrl && !data.error && data.sensors.length > 0 && <div className="-mt-2 mb-2 text-right">
-        <Button variant="outline" onClick={() => setEdit(!edit)} className="text-sm text-muted-foreground hover:text-foreground" aria-label="Hőmérők átnevezése">{edit ? <Check /> : <Settings2 />}{edit ? "Kész" : "Eszközkezelő"}</Button></div>}
+        <Button variant="outline" disabled={busy} onClick={() => edit ? void finish() : setEdit(true)} className="text-sm text-muted-foreground hover:text-foreground" aria-label={edit ? "Hőmérők mentése" : "Hőmérők eszközkezelője"}>{edit ? <Check /> : <Settings2 />}{busy ? "Mentés…" : edit ? "Kész" : "Eszközkezelő"}</Button></div>}
       {data.verifyUrl ? <XiaomiVerify url={data.verifyUrl} /> : data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
         {edit && <div className="mb-4 space-y-2 rounded-lg border border-border p-3">{data.sensors.map((t) => (
-          <div key={t.did} className="grid grid-cols-2 gap-2">
-            <input value={names[t.did]?.name ?? ""} placeholder={t.name} onChange={(e) => upd(t.did, "name", e.target.value)} className={inp} />
-            <input value={names[t.did]?.room ?? ""} placeholder="Hely (pl. Nappali)" onChange={(e) => upd(t.did, "room", e.target.value)} className={inp} />
+          <div key={t.did} className="grid grid-cols-2 gap-2 border-b border-border py-2 last:border-0">
+            <span className="col-span-2 text-sm font-medium">{t.name}</span>
+            <input aria-label={`${t.name} neve`} disabled={busy} value={names[t.did]?.name ?? ""} placeholder={t.name} onChange={(e) => upd(t.did, { name: e.target.value })} className={inp} />
+            <input aria-label={`${t.name} helye`} disabled={busy} value={names[t.did]?.room ?? ""} placeholder="Hely (pl. Nappali)" onChange={(e) => upd(t.did, { room: e.target.value })} className={inp} />
+            <label className="col-span-2 flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" disabled={busy} checked={names[t.did]?.hidden === true} onChange={(e) => upd(t.did, { hidden: e.target.checked })} aria-label={`${t.name} elrejtése`} />Elrejtés</label>
           </div>))}</div>}
-        <div className="home-sensor-grid">{data.sensors.map((t) => (
+        {!edit && <div className="home-sensor-grid">{shown.map((t) => (
           <div key={t.did} className="smart-device sensor-device">
             <div className="flex min-w-0 items-center gap-2"><Thermometer size={17} className="shrink-0 text-home-water" /><div className="min-w-0 truncate text-sm font-medium">{names[t.did]?.name || t.name}</div></div>
             {names[t.did]?.room && <div className="truncate text-xs text-muted-foreground">{names[t.did]?.room}</div>}
             <div className="mt-5 text-3xl font-semibold tabular-nums">{t.temp != null ? `${t.temp.toLocaleString("hu-HU", { maximumFractionDigits: 1 })}°` : "–"}</div>
              <SensorDetails humidity={t.hum} battery={t.battery} online={t.online} />
              <ThermometerHistory did={t.did} name={names[t.did]?.name || t.name} />
-          </div>))}</div>
+          </div>))}</div>}
+        {!edit && data.sensors.length > 0 && shown.length === 0 && <p className="text-sm text-muted-foreground">Minden hőmérő elrejtve.</p>}
         {data.sensors.length === 0 && <p className="text-sm text-muted-foreground">Nem találtunk hőmérőt a Mi fiókban.</p>}
         {data.raw && <details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{data.raw}</pre></details>}
       </>}
+      {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
     </Card>
   );
 }
@@ -140,10 +168,11 @@ function Home() {
     { id: "devices", name: "Eszközök", icon: Power },
     { id: "energy", name: "Energia", icon: Sun },
   ];
-  const temperatures = thermometers.sensors.flatMap((sensor) => sensor.temp == null ? [] : [sensor.temp]);
+  const shownThermometers = visibleThermometers(thermometers.sensors, thermometers.meta);
+  const temperatures = shownThermometers.flatMap((sensor) => sensor.temp == null ? [] : [sensor.temp]);
   const climateValue = temperatures.length ? `${Math.min(...temperatures).toLocaleString("hu-HU")}–${Math.max(...temperatures).toLocaleString("hu-HU")}°` : "–";
   const summaries = [
-    { id: "climate", title: "Hőmérséklet", value: climateValue, detail: `${thermometers.sensors.length} hőmérő · ${gree.units.length} klíma${thermometers.demo ? " · Minta" : ""}`, icon: Thermometer, tone: "climate" },
+    { id: "climate", title: "Hőmérséklet", value: climateValue, detail: `${shownThermometers.length} hőmérő · ${gree.units.length} klíma${thermometers.demo ? " · Minta" : ""}`, icon: Thermometer, tone: "climate" },
     { id: "energy", title: "Napelem", value: data.error ? "–" : `${(data.currentW / 1000).toLocaleString("hu-HU", { maximumFractionDigits: 2 })} kW`, detail: data.error ? "Kapcsolati hiba" : `Ma ${data.todayKwh.toLocaleString("hu-HU", { maximumFractionDigits: 1 })} kWh${data.demo ? " · Minta" : ""}`, icon: Sun, tone: "energy" },
     { id: "blinds", title: "Árnyékolás", value: `${blinds.blinds.length}`, detail: `redőny${blinds.demo ? " · Minta" : ""}`, icon: BlindsIcon, tone: "blinds" },
     { id: "devices", title: "Eszközök", value: `${appliances.appliances.length + tuya.devices.filter((d) => !tuya.meta[d.id]?.hidden).length}`, detail: appliances.error || tuya.error ? "Kapcsolati hiba" : "Bosch · Smart Life", icon: Power, tone: "devices" },
