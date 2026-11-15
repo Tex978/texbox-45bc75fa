@@ -8,6 +8,8 @@ services:
     restart: unless-stopped
     # host network: the blinds hub answers over local UDP (multicast), which bridge networking blocks
     network_mode: host
+    volumes:
+      - ./data:/data
     environment:
       PORT: 3050
       APP_PASSWORD: valassz-egy-jelszot

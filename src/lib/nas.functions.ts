@@ -1,5 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getCookie, setCookie, getRequest } from "@tanstack/react-start/server";
+import { getCookie as readBrowserCookie, setCookie as writeBrowserCookie, getRequest } from "@tanstack/react-start/server";
+import { storeGet, storeSet } from "./shared-store.server";
+// Shared server-side store first (same data on every device), browser cookie as fallback/migration source.
+const getCookie = (name: string): string | undefined => { const v = storeGet(name); if (v != null) return v; const c = readBrowserCookie(name); if (c && storeGet(name) === undefined) storeSet(name, c); return c; };
+const setCookie = (name: string, value: string, opts: Parameters<typeof writeBrowserCookie>[2]) => { storeSet(name, value); writeBrowserCookie(name, value, opts); };
 import { md5 } from "./md5";
 import { createSolarCache, SOLAR_SESSION_MS } from "./growatt-cache";
 import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
