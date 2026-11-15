@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Shell, Card } from "@/components/Shell";
-import { catalog } from "@/lib/mock";
+import { searchMedia, requestMedia } from "@/lib/nas.functions";
 export const Route = createFileRoute("/search")({
   head: () => ({ meta: [
     { title: "Keresés – NAS Vezérlő" }, { name: "description", content: "Filmek és sorozatok keresése és kérése Radarr/Sonarr felé." },
@@ -10,10 +11,16 @@ export const Route = createFileRoute("/search")({
   component: Search,
 });
 function Search() {
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(""); const [dq, setDq] = useState("");
   const [profile, setProfile] = useState("1080p");
-  const [requested, setRequested] = useState<string[]>([]);
-  const res = catalog.filter((c) => c.title.toLowerCase().includes(q.toLowerCase()));
+  const [state, setState] = useState<Record<string, string>>({});
+  useEffect(() => { const t = setTimeout(() => setDq(q), 400); return () => clearTimeout(t); }, [q]);
+  const { data = [], isFetching } = useQuery({ queryKey: ["search", dq], queryFn: () => searchMedia({ data: { q: dq } }), enabled: !!dq });
+  const req = async (c: (typeof data)[number]) => {
+    const k = c.type + c.id; setState((s) => ({ ...s, [k]: "…" }));
+    try { await requestMedia({ data: { id: c.id, type: c.type, profile } }); setState((s) => ({ ...s, [k]: `Kérve (${profile})` })); }
+    catch { setState((s) => ({ ...s, [k]: "Hiba" })); }
+  };
   return (
     <Shell>
       <h1 className="mb-6 font-display text-3xl font-bold">Keresés és kérés</h1>
@@ -23,14 +30,15 @@ function Search() {
         <select value={profile} onChange={(e) => setProfile(e.target.value)} className="rounded-md border border-input bg-card px-3 py-2">
           <option>720p</option><option>1080p</option><option>4K</option></select>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">{res.map((c) => {
-        const done = requested.includes(c.title);
+      {isFetching && <p className="mb-3 text-sm text-muted-foreground">Keresés…</p>}
+      <div className="grid gap-3 sm:grid-cols-2">{data.map((c) => {
+        const s = state[c.type + c.id];
         return (
-          <Card key={c.title}><div className="flex items-center justify-between gap-3">
+          <Card key={c.type + c.id}><div className="flex items-center justify-between gap-3">
             <div><div className="font-medium">{c.title}</div><div className="text-xs text-muted-foreground">{c.type} · {c.year} → {c.type === "Film" ? "Radarr" : "Sonarr"}</div></div>
-            <button disabled={done} onClick={() => setRequested([...requested, c.title])}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground">
-              {done ? `Kérve (${profile})` : "Kérés"}</button></div></Card>);
+            <button disabled={!!s || c.inLibrary} onClick={() => req(c)}
+              className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground">
+              {c.inLibrary ? "Már megvan" : s || "Kérés"}</button></div></Card>);
       })}</div>
     </Shell>
   );

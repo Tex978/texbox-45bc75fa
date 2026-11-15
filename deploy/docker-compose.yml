@@ -1,0 +1,19 @@
+# Synology Container Manager > Projekt > Létrehozás: ezt a fájlt add meg.
+# Az IP-t (192.168.1.10) és a portokat írd át a sajátodra.
+services:
+  nas-vezerlo:
+    build: ..
+    container_name: nas-vezerlo
+    restart: unless-stopped
+    ports:
+      - "3050:3000"
+    environment:
+      QBIT_URL: http://192.168.1.10:8080
+      QBIT_USER: admin
+      QBIT_PASS: jelszo
+      RADARR_URL: http://192.168.1.10:7878
+      RADARR_KEY: ide-a-radarr-api-kulcs
+      SONARR_URL: http://192.168.1.10:8989
+      SONARR_KEY: ide-a-sonarr-api-kulcs
+      PLEX_URL: http://192.168.1.10:32400
+      PLEX_TOKEN: ide-a-plex-token
