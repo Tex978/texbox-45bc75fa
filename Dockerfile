@@ -18,6 +18,8 @@ RUN apt-get update \
     && apt-get purge -y --auto-remove python3-dev build-essential \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install --no-save --omit=dev gree-hvac-client@2.2.0
+RUN mkdir -p /data
+VOLUME /data
 ENV PORT=3050 HOST=0.0.0.0 NODE_ENV=production
 EXPOSE 3050
 CMD ["node", ".output/server/index.mjs"]
