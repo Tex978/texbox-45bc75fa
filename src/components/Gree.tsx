@@ -26,7 +26,7 @@ function GreeDevice({ unit }: { unit: Unit }) {
     finally { setBusy(false); }
   };
   return <div className="smart-device space-y-4">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Snowflake size={20} className="text-home-water" /><div><h3 className="font-medium">{unit.name}</h3><p className="text-xs text-muted-foreground">{unit.online ? "Elérhető" : "Offline"}</p></div></div>
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"><div className="flex min-w-0 items-center gap-2"><Snowflake size={20} className="shrink-0 text-home-water" /><div className="min-w-0"><h3 className="truncate font-medium">{unit.name}</h3><p className="text-xs text-muted-foreground">{unit.online ? "Elérhető" : "Offline"}</p></div></div>
       <Button variant={on ? "default" : "outline"} size="icon" title={on ? "Kikapcsolás" : "Bekapcsolás"} aria-label={`${unit.name} ${on ? "kikapcsolás" : "bekapcsolás"}`} disabled={busy || !unit.online} onClick={() => send("power", on ? "off" : "on")}><Power /></Button>
     </div>
     {unit.online ? <>

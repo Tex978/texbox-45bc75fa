@@ -396,6 +396,23 @@ export const getThermometers = createServerFn({ method: "GET" }).handler(async (
 });
 export const xiaomiSendCode = createServerFn({ method: "POST" }).inputValidator((d: { url: string }) => d)
   .handler(async ({ data }) => (await import("./xiaomi.server")).sendCode(env("XIAOMI_USER"), data.url));
+export const getThermometerHistory = createServerFn({ method: "GET" })
+  .inputValidator((input: { did: string; days: number }) => {
+    if (!input.did || ![1, 7].includes(input.days)) throw new Error("Érvénytelen időszak.");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { points: [], demo: true, error: "" };
+    try {
+      const x = await import("./xiaomi.server");
+      const [u, p] = xmArgs();
+      const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
+      const points = await x.thermometerHistory(u, p, (env("XIAOMI_REGION") || "de").toLowerCase(), data.did, data.days);
+      return { points, demo: false, error: "" };
+    } catch { return { points: [], demo: false, error: "Nem sikerült lekérni a Xiaomi mérési előzményeit." }; }
+  });
+/* Xiaomi verification */
+const unusedVerificationMarker = undefined;
 export const xiaomiVerify = createServerFn({ method: "POST" })
   .inputValidator((d: { url: string; ick: string; flag: number; code: string }) => d)
   .handler(async ({ data }) => {

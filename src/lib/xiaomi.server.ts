@@ -1,5 +1,6 @@
 // Xiaomi (Mi Home) cloud: unofficial login + signed API calls, used for thermometers.
 import { md5 } from "./md5";
+import { decodeHistoryValue, type HistoryPoint } from "./thermo-history";
 
 type Session = { userId: string; ssecurity: string; serviceToken: string; at: number };
 const sessions = new Map<string, Session>();
@@ -175,6 +176,33 @@ export async function listThermometers(user: string, pass: string, region: strin
 }
 
 // Air purifiers (zhimi.airp.*): MIoT spec ids for power, mode, PM2.5, humidity, temperature, filter life.
+export async function thermometerHistory(user: string, pass: string, region: string, did: string, days: number) {
+  const session = await login(user, pass);
+  const devices = await call(session, region, "/home/device_list", { getVirtualModel: true, getHuamiDevices: 1 });
+  const device = (devices?.result?.list ?? []).find((item: { did: string; model: string }) => item.did === did && /sensor_ht|lywsd|cgdk|thermo/i.test(item.model));
+  if (!device) throw new Error("Ez a hőmérő nem található a Xiaomi fiókban.");
+  const end = Math.floor(Date.now() / 1000), start = end - days * 86400;
+  const points = new Map<number, HistoryPoint>();
+  const read = async (key: string, type: string) => {
+    const response = await call(session, region, "/user/get_user_device_data", { did, key, type, time_start: start, time_end: end, limit: 100 });
+    if (response.code !== 0) throw new Error("A Xiaomi nem adta át a mérési előzményeket.");
+    for (const record of response.result ?? []) {
+      const timestamp = Number(record.time);
+      if (!Number.isFinite(timestamp) || timestamp < start || timestamp > end) continue;
+      const values = decodeHistoryValue(record.value, key);
+      if (values.temp === undefined && values.hum === undefined) continue;
+      points.set(timestamp, { ...points.get(timestamp), time: timestamp, ...values });
+    }
+  };
+  // BLE history is stored as prop, even when instantaneous fallbacks use event.
+  for (const key of ["4109", "4100", "4102"]) await read(key, "prop");
+  if (points.size === 0) {
+    const keys = thermoProps(device.model).filter((p) => p.k !== "battery");
+    for (const prop of keys) await read(`${prop.siid}.${prop.piid}`, "prop");
+  }
+  return [...points.values()].sort((a, b) => a.time - b.time);
+}
+
 const AP = [{ siid: 2, piid: 1, k: "on" }, { siid: 2, piid: 4, k: "mode" }, { siid: 3, piid: 4, k: "pm25" }, { siid: 3, piid: 1, k: "hum" },
   { siid: 3, piid: 7, k: "temp" }, { siid: 4, piid: 1, k: "filter" }] as const;
 export type Purifier = { did: string; name: string; model: string; online: boolean; on: boolean | null; mode: number | null; pm25: number | null; hum: number | null; temp: number | null; filter: number | null };

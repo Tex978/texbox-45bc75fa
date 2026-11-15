@@ -183,7 +183,7 @@
 .smart-home main { padding-top: 32px; padding-bottom: 64px; }
 .smart-home > header { background: var(--background); }
 .smart-home header .tracking-tight { letter-spacing: 0; }
-.home-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.home-title-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 16px; margin-bottom: 24px; }
 .home-section-nav { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; }
 .home-section-nav a { display: flex; gap: 8px; align-items: center; padding: 0 0 14px; font-size: 13px; color: var(--muted-foreground); white-space: nowrap; transition: color 160ms; }
 .home-section-nav a:hover { color: var(--primary); }
@@ -204,7 +204,8 @@
 .smart-home details { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; color: var(--muted-foreground); font-size: 11px; }
 .smart-home details summary { cursor: pointer; }
 .smart-debug pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 12px; }
-.smart-energy { padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--home-shadow); }
+.smart-energy { padding: 24px 0; border-bottom: 1px solid var(--border); }
+.history-dialog { width: calc(100% - 24px); border-radius: 8px; }
 .energy-heading-icon { color: var(--home-energy); background: color-mix(in oklch, var(--home-energy) 10%, transparent); }
 .energy-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: center; }
 .energy-flow { display: grid; grid-template-columns: minmax(0,1fr) 34px 72px 34px minmax(0,1fr); grid-template-rows: 108px 24px 108px 24px 108px; align-items: center; max-width: 570px; margin: auto; width: 100%; }
@@ -230,14 +231,27 @@
 .energy-totals { display: flex; flex-direction: column; gap: 24px; padding-left: 28px; border-left: 1px solid var(--border); }
 @keyframes energy-pulse { 50% { opacity: .35; } }
 @media (max-width: 767px) {
-  .smart-home main { padding-top: 24px; }
+  .smart-home main { padding-top: 20px; padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .smart-home > header > div { gap: 12px; padding-top: 12px; padding-bottom: 12px; }
+  .smart-home > header nav { width: 100%; flex-wrap: nowrap; overflow-x: auto; margin-left: 0; }
+  .smart-home > header nav a { flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; }
+  .smart-home button, .smart-home select, .smart-home input:not([type="range"]):not([type="checkbox"]) { min-height: 44px; }
+  .smart-home button[data-slot="button"], .smart-home button.size-icon { min-width: 44px; }
+  .smart-home .smart-device button:has(> svg:only-child) { min-width: 44px; }
+  .smart-section { margin-top: 24px; padding-top: 20px; }
+  .smart-section-heading h2 { font-size: 16px; overflow-wrap: anywhere; }
+  .smart-section-heading > div { min-width: 0; }
   .energy-layout { grid-template-columns: minmax(0,1fr); gap: 24px; }
   .energy-totals { border-left: 0; border-top: 1px solid var(--border); padding: 24px 0 0; }
   .energy-flow { grid-template-columns: minmax(0,1fr) 24px 64px 24px minmax(0,1fr); }
   .energy-center { width: 64px; height: 64px; }
   .home-comfort-grid { grid-template-columns: minmax(0,1fr); gap: 0; }
-  .smart-energy { padding: 18px; }
-  .home-section-nav { gap: 22px; }
+  .smart-energy { padding: 0 0 20px; }
+  .home-section-nav { position: fixed; z-index: 40; bottom: 0; left: 0; right: 0; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; margin: 0; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: var(--background); border-top: 1px solid var(--border); }
+  .home-section-nav a { justify-content: center; flex-direction: column; gap: 4px; min-height: 48px; padding: 4px; font-size: 11px; }
+  .smart-home [id] { scroll-margin-top: 16px; }
+  .sensor-device > div:has(.status-dot) { gap: 8px; }
+  .sensor-device > div:has(.status-dot) > span:last-child { width: 100%; margin-left: 0; }
   .sensor-device { padding: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
