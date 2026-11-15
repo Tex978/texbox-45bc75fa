@@ -1,4 +1,6 @@
 # Okosotthon megújítás
+- [ ] Autók oldal, Volkswagen/My Renault belépés, valódi adatok kiolvasása és Renault ellenőrzőkód kezelése.
+- [ ] Autók élő ellenőrzése: frissített Synology alkalmazásban megadott autós fiókok szükségesek.
 - [x] Egységes modern megjelenés minden oldalon: közös színek, ikonmenü, vezérlők; hat oldal ellenőrizve három képernyőméreten.
 - [x] GitHubon a Gree Python-telepítés hibás lépésének azonosítása; Debian-alapú telepítés és importellenőrzés hozzáadása.
 - [ ] Az új Docker-kép GitHubon történő elkészítésének ellenőrzése: a javítás szinkronizálása utáni futás szükséges.
