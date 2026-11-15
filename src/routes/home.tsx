@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Shell, Card } from "@/components/Shell";
-import { getSolar, getThermometers } from "@/lib/nas.functions";
+import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify } from "@/lib/nas.functions";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const q = queryOptions({ queryKey: ["solar"], queryFn: () => getSolar(), refetchInterval: 60000 });
@@ -17,11 +19,29 @@ function Stat({ value, unit, label }: { value: string; unit: string; label: stri
   return <div><div className="font-mono text-4xl font-bold text-primary">{value}<span className="ml-1 text-base text-muted-foreground">{unit}</span></div>
     <div className="text-sm text-muted-foreground">{label}</div></div>;
 }
+function XiaomiVerify({ url }: { url: string }) {
+  const qc = useQueryClient();
+  const [st, setSt] = useState<{ ick: string; flag: number; via: string } | null>(null);
+  const [code, setCode] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const run = async (f: () => Promise<void>) => { setBusy(true); setErr(""); try { await f(); } catch (e) { setErr(String((e as Error).message || e)); } finally { setBusy(false); } };
+  const btn = "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60";
+  return <div className="space-y-3 text-sm">
+    <p>A Xiaomi egyszeri ellenőrző kódot kér ehhez az apphoz. Utána megjegyzi, és nem kér többet.</p>
+    {!st ? <button className={btn} disabled={busy} onClick={() => run(async () => setSt(await xiaomiSendCode({ data: { url } })))}>{busy ? "Küldés…" : "Kód kérése"}</button>
+      : <div className="flex flex-wrap items-center gap-2">
+        <span className="text-muted-foreground">Kódot küldtünk ({st.via}):</span>
+        <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" placeholder="123456"
+          className="w-32 rounded-md border border-input bg-background px-3 py-2 font-mono outline-none focus:ring-2 focus:ring-ring" />
+        <button className={btn} disabled={busy || !code} onClick={() => run(async () => { await xiaomiVerify({ data: { url, ...st, code } }); await qc.invalidateQueries({ queryKey: ["thermo"] }); })}>{busy ? "Ellenőrzés…" : "Megerősítés"}</button>
+      </div>}
+    {err && <p className="break-all font-mono text-destructive">● {err}</p>}
+  </div>;
+}
 function Thermometers() {
   const { data } = useSuspenseQuery(tq);
   return (
     <Card title="Hőmérők (Xiaomi)" className="mt-4">
-      {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
+      {data.verifyUrl ? <XiaomiVerify url={data.verifyUrl} /> : data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{data.sensors.map((t) => (
           <div key={t.did} className="rounded-lg border border-border bg-secondary/40 p-3">
             <div className="truncate text-sm font-medium">{t.name}</div>

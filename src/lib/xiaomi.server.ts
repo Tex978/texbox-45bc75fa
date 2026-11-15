@@ -26,7 +26,7 @@ const jarStr = (jar: Record<string, string>) => Object.entries(jar).map(([k, v])
 const devId = (user: string) => "nasvez" + md5(user).slice(0, 10);
 
 // Restored session (from cookie) so we don't log in on every refresh.
-export function useSession(user: string, pass: string, raw: string) {
+export function restoreSession(user: string, pass: string, raw: string) {
   try { const s = JSON.parse(raw) as Session; if (s.serviceToken) sessions.set(user + ":" + md5(pass), s); } catch { /* ignore */ }
 }
 export function currentSession(user: string, pass: string) { return sessions.get(user + ":" + md5(pass)); }
