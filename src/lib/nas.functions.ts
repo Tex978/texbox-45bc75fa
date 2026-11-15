@@ -4,8 +4,8 @@ import { md5 } from "./md5";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "TUYA_ID", "TUYA_SECRET", "TUYA_REGION"] as const;
-const SECRET = ["TUYA_SECRET", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID"] as const;
+const SECRET = ["XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -187,7 +187,6 @@ export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
     growatt: await ping(has("GROWATT_USER", "GROWATT_PASS"), () => growatt()),
     dsm: await ping(has("DSM_URL", "DSM_USER"), () => dsmVolumes()),
     xiaomi: await ping(has("XIAOMI_USER", "XIAOMI_PASS"), async () => (await import("./xiaomi.server")).listThermometers(env("XIAOMI_USER"), env("XIAOMI_PASS"), (env("XIAOMI_REGION") || "de").toLowerCase())),
-    tuya: await ping(has("TUYA_SECRET"), async () => (await import("./tuya.server")).listTuya(env("TUYA_ID") || "tj3qmvwy39jgrw54frwx", env("TUYA_SECRET"), (env("TUYA_REGION") || "eu").toLowerCase())),
   };
 });
 
@@ -511,18 +510,42 @@ export const hcControl = createServerFn({ method: "POST" })
     return hcSend(tok, `/api/homeappliances/${id}/settings/BSH.Common.Setting.PowerState`, "PUT", { data: { key: "BSH.Common.Setting.PowerState", value: data.on ? "BSH.Common.EnumType.PowerState.On" : off } });
   });
 
-// ---------- Tuya ----------
-const tuyaArgs = () => [env("TUYA_ID") || "tj3qmvwy39jgrw54frwx", env("TUYA_SECRET"), (env("TUYA_REGION") || "eu").toLowerCase()] as const;
+// ---------- Tuya (Smart Life QR login) ----------
+const TS = "tuya-sess", TQ = "tuya-qr";
+const tuyaSess = (): import("./tuya.server").TuyaSess | null => { try { return JSON.parse(getCookie(TS) || ""); } catch { return null; } };
+async function tuyaReady() {
+  const s = tuyaSess(); if (!s) return null;
+  const t = await import("./tuya.server");
+  const n = await t.ensure(s);
+  if (n.a !== s.a) hcCookie(TS, JSON.stringify(n), 60 * 60 * 24 * 365);
+  return { t, s: n };
+}
 export const getTuya = createServerFn({ method: "GET" }).handler(async () => {
-  const [id, s, r] = tuyaArgs();
-  if (!s) return { configured: false, devices: [] as import("./tuya.server").TuyaDevice[], error: null as string | null };
-  try { return { configured: true, devices: await (await import("./tuya.server")).listTuya(id, s, r), error: null }; }
-  catch (e) { return { configured: true, devices: [], error: (e as Error).message }; }
+  try {
+    const r = await tuyaReady();
+    if (!r) return { configured: false, devices: [] as import("./tuya.server").TuyaDevice[], error: null as string | null };
+    return { configured: true, devices: await r.t.listTuya(r.s), error: null };
+  } catch (e) { return { configured: true, devices: [], error: (e as Error).message }; }
 });
+export const tuyaQrStart = createServerFn({ method: "POST" }).inputValidator((d: { userCode: string }) => d).handler(async ({ data }) => {
+  try {
+    const qr = await (await import("./tuya.server")).qrStart(data.userCode.trim());
+    hcCookie(TQ, JSON.stringify({ qr, uc: data.userCode.trim() }), 600);
+    return { ok: true, error: "", qr: `tuyaSmart--qrLogin?token=${qr}` };
+  } catch (e) { return { ok: false, error: (e as Error).message, qr: "" }; }
+});
+export const tuyaQrFinish = createServerFn({ method: "POST" }).handler(async () => {
+  let q: { qr: string; uc: string }; try { q = JSON.parse(getCookie(TQ) || ""); } catch { return { ok: false, error: "Lejárt, kérj új QR-kódot" }; }
+  const s = await (await import("./tuya.server")).qrResult(q.qr, q.uc);
+  if (!s) return { ok: false, error: "Még nincs jóváhagyva – olvasd be a kódot a Smart Life appban és nyomd meg a Megerősítést" };
+  hcCookie(TS, JSON.stringify(s), 60 * 60 * 24 * 365);
+  return { ok: true, error: "" };
+});
+export const tuyaLogout = createServerFn({ method: "POST" }).handler(async () => { hcCookie(TS, "", 0); return { ok: true }; });
 export const tuyaCommand = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; code: string; value: boolean | number | string }) => d)
   .handler(async ({ data }) => {
-    const [id, s, r] = tuyaArgs();
-    try { await (await import("./tuya.server")).sendTuya(id, s, r, data.id, data.code, data.value); return { ok: true, error: "" }; }
+    try { const r = await tuyaReady(); if (!r) return { ok: false, error: "Nincs összekötve" };
+      await r.t.sendTuya(r.s, data.id, data.code, data.value); return { ok: true, error: "" }; }
     catch (e) { return { ok: false, error: (e as Error).message }; }
   });

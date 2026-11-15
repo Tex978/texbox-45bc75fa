@@ -1,8 +1,7 @@
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { Card } from "@/components/Shell";
-import { getTuya, tuyaCommand } from "@/lib/nas.functions";
+import { getTuya, tuyaCommand, tuyaQrStart, tuyaQrFinish, tuyaLogout } from "@/lib/nas.functions";
 
 export const tuyaQuery = queryOptions({ queryKey: ["tuya"], queryFn: () => getTuya(), refetchInterval: 60000 });
 const CAT: Record<string, string> = { dj: "Lámpa", dd: "LED szalag", kg: "Kapcsoló", cz: "Konnektor", pc: "Elosztó", qn: "Fűtőtest", wk: "Termosztát", wsdcg: "Hőmérő", mcs: "Ajtóérzékelő", pir: "Mozgásérzékelő", ywbj: "Füstérzékelő", sj: "Vízérzékelő", rqbj: "Gázérzékelő" };
@@ -52,19 +51,44 @@ function Dev({ d, name }: { d: { id: string; category: string; online: boolean; 
   );
 }
 
+function TuyaLink() {
+  const qc = useQueryClient();
+  const [uc, setUc] = useState("");
+  const [qr, setQr] = useState("");
+  const [msg, setMsg] = useState("");
+  const start = async () => { setMsg(""); const r = await tuyaQrStart({ data: { userCode: uc } }); if (r.ok) setQr(r.qr); else setMsg(r.error); };
+  const finish = async () => { setMsg("…"); const r = await tuyaQrFinish(); if (r.ok) qc.invalidateQueries({ queryKey: ["tuya"] }); else setMsg(r.error); };
+  return (
+    <Card title="Tuya / Smart Life eszközök" className="mt-4">
+      {!qr ? <div className="space-y-2 text-sm">
+        <p className="text-muted-foreground">Smart Life app → Én → ⚙ Beállítások → Fiók és biztonság → <b>User Code</b>. Másold ide:</p>
+        <div className="flex gap-2"><input value={uc} onChange={(e) => setUc(e.target.value)} placeholder="User Code" className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1 font-mono" />
+          <button disabled={!uc.trim()} onClick={start} className="rounded-md bg-primary px-4 py-1 font-medium text-primary-foreground">QR-kód kérése</button></div>
+      </div> : <div className="space-y-3 text-sm">
+        <p>Smart Life app → jobb felső sarok <b>⊕ / beolvasás</b> ikon → olvasd be, majd a telefonon nyomd meg a <b>Megerősítés</b> gombot.</p>
+        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qr)}`} alt="Tuya QR-kód" width={220} height={220} className="rounded bg-foreground" />
+        <div className="flex gap-2"><button onClick={finish} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Beolvastam és jóváhagytam</button>
+          <button onClick={() => setQr("")} className="rounded-md border border-border px-4 py-2">Új kód</button></div>
+      </div>}
+      {msg && <p className="mt-2 break-all font-mono text-xs text-destructive">{msg === "…" ? "" : "● "}{msg}</p>}
+    </Card>
+  );
+}
+
 export function Tuya() {
   const { data } = useSuspenseQuery(tuyaQuery);
+  const qc = useQueryClient();
   const [meta, setMeta] = useState<Meta>({});
   const [edit, setEdit] = useState(false);
   useEffect(() => { try { setMeta(JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { /* */ } }, []);
   const upd = (id: string, v: Meta[string]) => setMeta((m) => { const n = { ...m, [id]: { ...m[id], ...v } }; localStorage.setItem(KEY, JSON.stringify(n)); return n; });
-  if (!data.configured) return <Card title="Tuya eszközök" className="mt-4"><p className="text-sm text-muted-foreground">Add meg az Access Secret-et a <Link to="/settings" className="text-primary underline">Kapcsolatok</Link> oldalon.</p></Card>;
+  if (!data.configured) return <TuyaLink />;
   const shown = data.devices.filter((d) => !meta[d.id]?.hidden);
   const rooms = [...new Set(shown.map((d) => meta[d.id]?.room || "Egyéb"))].sort((a, b) => a === "Egyéb" ? 1 : b === "Egyéb" ? -1 : a.localeCompare(b, "hu"));
   return (
     <Card title="Tuya eszközök" className="mt-4">
       {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
-        <div className="mb-3 flex justify-end"><button onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">⚙ {edit ? "Kész" : "Eszközkezelő"}</button></div>
+        <div className="mb-3 flex justify-end gap-2"><button onClick={async () => { await tuyaLogout(); qc.invalidateQueries({ queryKey: ["tuya"] }); }} className="rounded border border-border px-3 py-1 text-xs">Kijelentkezés</button><button onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">⚙ {edit ? "Kész" : "Eszközkezelő"}</button></div>
         {edit ? <div className="space-y-2">{data.devices.map((d) => (
           <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-secondary p-2 text-sm">
             <input value={meta[d.id]?.name ?? ""} placeholder={d.name} onChange={(e) => upd(d.id, { name: e.target.value })} className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1" />
