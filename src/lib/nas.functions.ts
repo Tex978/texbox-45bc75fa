@@ -211,6 +211,8 @@ export const deleteMedia = createServerFn({ method: "POST" })
     if (!has(app + "_URL")) return { ok: true };
     const r = await fetch(`${env(app + "_URL")}/api/v3/${app === "RADARR" ? "movie" : "series"}/${data.id}?deleteFiles=true&addImportExclusion=false&addImportListExclusion=false`,
       { method: "DELETE", headers: { "X-Api-Key": env(app + "_KEY") } });
-    if (!r.ok) throw new Error(`${app} ${r.status}`);
+    if (!r.ok && r.status !== 404) throw new Error(`${app} ${r.status}`);
+    // let Plex notice the removed files
+    if (has("PLEX_URL")) await safe(plex("/library/sections/all/refresh"), null);
     return { ok: true };
   });
