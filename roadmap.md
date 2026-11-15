@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [ ] Hiányzó telefonos beállítások: tartós mentési hibák látható jelzése, tárolási állapot és regressziós tesztek.
 - [x] GitHub feltöltési hiba azonosítva: a digest-linux/amd64 és digest-linux/arm64 tiltott neveket külön, perjel nélküli architektúracímkék váltják.
 - [x] Gree+ hőfokállítás: hibás szöveges képességellenőrzés helyett könyvtári hőfokkezelés és parancscsoport; öt Python-próba és három vezérlési szabályteszt sikeres.
 - [ ] Gree+ hőfokállítás élő ellenőrzése: a javított Synology-verzió és a felhasználó klímája szükséges.
@@ -10,7 +11,7 @@
 - [x] Autók rész teljes eltávolítása az appból (VW letiltja a külső belépést, a Renaultot a felhasználó sem kérte tovább): oldal, belépési háttér, beállításmezők, Docker-függőségek és tesztek törölve.
 - [x] Egységes modern megjelenés minden oldalon: közös színek, ikonmenü, vezérlők; hat oldal ellenőrizve három képernyőméreten.
 - [x] GitHubon a Gree Python-telepítés hibás lépésének azonosítása; Debian-alapú telepítés és importellenőrzés hozzáadása.
-- [ ] Az új Docker-kép GitHubon történő elkészítésének ellenőrzése: a javítás szinkronizálása utáni futás szükséges.
+- [x] Az új Docker-kép GitHubon elkészült: 43726953260 sikeres; a Synologyn futó verzió ebből nem igazolható.
 - [x] Teljes alakos gyermekfotó körbevágása és elhelyezése az Áttekintő és Okosotthon oldal tetején.
 - [x] Telefonközpontú Okosotthon elrendezés, alsó szakasznavigáció és nagyobb érintési felületek; négy képernyőméreten ellenőrizve.
 - [x] Hőmérők előzményei: Xiaomi-adatokból grafikon, 24 órás és 7 napos nézet, üres és hibás állapot.
