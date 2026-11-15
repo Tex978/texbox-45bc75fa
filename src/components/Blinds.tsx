@@ -1,5 +1,5 @@
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/Shell";
 import { getBlinds, blindAction, blindGroupAction, saveBlindMeta } from "@/lib/nas.functions";
 
@@ -14,6 +14,9 @@ export function Blinds() {
   const [err, setErr] = useState("");
   const [setup, setSetup] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [excl, setExcl] = useState<string[]>([]);
+  useEffect(() => { try { setExcl(JSON.parse(localStorage.getItem("blinds-excluded") || "[]")); } catch { /* ignore */ } }, []);
+  const inc = (l: Blind[]) => l.filter((b) => !excl.includes(b.mac));
   const optimistic = (macs: string[], pos: number) =>
     qc.setQueryData(blindsQuery.queryKey, { ...data, blinds: data.blinds.map((x) => (macs.includes(x.mac) ? { ...x, position: pos } : x)) });
   const refresh = () => setTimeout(() => qc.invalidateQueries({ queryKey: blindsQuery.queryKey }), 3000);
@@ -45,9 +48,9 @@ export function Blinds() {
     <Card title="Redőnyök" className="mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted-foreground">Összes ({data.blinds.length})</span>
-        <button className={btn} onClick={() => group(data.blinds, "open")}>▲ Mind fel</button>
-        <button className={btn} onClick={() => group(data.blinds, "stop")} aria-label="Mind állj">■</button>
-        <button className={btn} onClick={() => group(data.blinds, "close")}>▼ Mind le</button>
+        <button className={btn} onClick={() => group(inc(data.blinds), "open")}>▲ Mind fel</button>
+        <button className={btn} onClick={() => group(inc(data.blinds), "stop")} aria-label="Mind állj">■</button>
+        <button className={btn} onClick={() => group(inc(data.blinds), "close")}>▼ Mind le</button>
         <button className={`${btn} ml-auto`} onClick={() => setSetup(true)} aria-label="Redőnyök beállítása" title="Nevek és szobák">⚙</button>
       </div>
       {data.error ? <p className="font-mono text-sm text-destructive">● {data.error}</p> : (
@@ -62,9 +65,9 @@ export function Blinds() {
                     <div className="truncate font-medium">{isOpen ? "▾" : "▸"} {room}</div>
                     <div className="text-xs text-muted-foreground">{list.length} redőny · {posLabel(avg)}</div>
                   </button>
-                  <button className={btn} onClick={() => group(list, "open")} aria-label={`${room} fel`}>▲</button>
-                  <button className={btn} onClick={() => group(list, "stop")} aria-label={`${room} állj`}>■</button>
-                  <button className={btn} onClick={() => group(list, "close")} aria-label={`${room} le`}>▼</button>
+                  <button className={btn} onClick={() => group(inc(list), "open")} aria-label={`${room} fel`}>▲</button>
+                  <button className={btn} onClick={() => group(inc(list), "stop")} aria-label={`${room} állj`}>■</button>
+                  <button className={btn} onClick={() => group(inc(list), "close")} aria-label={`${room} le`}>▼</button>
                 </div>
                 {isOpen && (
                   <div className="mt-3 space-y-3 border-t border-border pt-3">
@@ -88,12 +91,12 @@ export function Blinds() {
         </div>
       )}
       {err && <p className="mt-3 font-mono text-xs text-destructive">● {err}</p>}
-      {setup && <BlindSetup blinds={data.blinds} demo={data.demo} onClose={() => setSetup(false)} />}
+      {setup && <BlindSetup excluded={excl} setExcluded={(v) => { setExcl(v); localStorage.setItem("blinds-excluded", JSON.stringify(v)); }} blinds={data.blinds} demo={data.demo} onClose={() => setSetup(false)} />}
     </Card>
   );
 }
 
-function BlindSetup({ blinds, demo, onClose }: { blinds: Blind[]; demo: boolean; onClose: () => void }) {
+function BlindSetup({ blinds, demo, onClose, excluded, setExcluded }: { blinds: Blind[]; demo: boolean; onClose: () => void; excluded: string[]; setExcluded: (v: string[]) => void }) {
   const qc = useQueryClient();
   const [rows, setRows] = useState(blinds.map((b) => ({ mac: b.mac, name: b.name, room: b.room })));
   const [busy, setBusy] = useState(false);
@@ -125,6 +128,9 @@ function BlindSetup({ blinds, demo, onClose }: { blinds: Blind[]; demo: boolean;
             <div key={r.mac} className="grid grid-cols-2 gap-2">
               <input className={field} value={r.name} onChange={(e) => upd(i, "name", e.target.value)} aria-label="Név" />
               <input className={field} value={r.room} list="blind-rooms" placeholder="pl. Nappali" onChange={(e) => upd(i, "room", e.target.value)} aria-label="Szoba" />
+              <label className="col-span-2 -mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                <input type="checkbox" checked={excluded.includes(r.mac)} onChange={(e) => setExcluded(e.target.checked ? [...excluded, r.mac] : excluded.filter((m) => m !== r.mac))} />
+                Kihagyás a csoportos vezérlésből (Mind fel/le, szoba gombok)</label>
             </div>
           ))}
         </div>

@@ -197,3 +197,25 @@ export async function setPurifier(user: string, pass: string, region: string, di
   const r = await call(s, region, "/miotspec/prop/set", { params: [{ did, siid: p.siid, piid: p.piid, value }] });
   const c = r?.result?.[0]?.code; if (c !== 0 && c !== 1) throw new Error(`Légtisztító: a parancs nem sikerült (${c})`);
 }
+
+// Smart locks: read-only (Xiaomi does not allow remote unlocking via cloud). Probe common spec ids; show raw for tuning.
+export type Lock = { did: string; name: string; model: string; online: boolean; battery: number | null; values: Record<string, string | number | boolean> };
+export async function listLocks(user: string, pass: string, region: string): Promise<{ locks: Lock[]; raw: string }> {
+  const s = await login(user, pass);
+  const dl = await call(s, region, "/home/device_list", { getVirtualModel: true, getHuamiDevices: 1, get_split_device: false, support_smart_home: true });
+  const list: { did: string; name: string; model: string; isOnline: boolean }[] = (dl?.result?.list ?? []).filter((d: { model: string }) => /\.lock\./i.test(d.model));
+  const locks: Lock[] = list.map((d) => ({ did: d.did, name: d.name, model: d.model, online: !!d.isOnline, battery: null, values: {} }));
+  let raw: unknown = null;
+  if (locks.length) {
+    const params = locks.flatMap((d) => [2, 3, 4, 5, 6].flatMap((siid) => [1, 2, 3, 4].map((piid) => ({ did: d.did, siid, piid }))));
+    try {
+      const pr = await call(s, region, "/miotspec/prop/get", { params, datasource: 1 });
+      raw = pr;
+      for (const r of (pr?.result ?? []) as { did: string; siid: number; piid: number; code: number; value: unknown }[]) {
+        if (r.code !== 0) continue;
+        const l = locks.find((x) => x.did === r.did); if (l) l.values[`${r.siid}.${r.piid}`] = r.value as string | number | boolean;
+      }
+    } catch (e) { raw = String(e); }
+  }
+  return { locks, raw: JSON.stringify(raw).slice(0, 3000) };
+}

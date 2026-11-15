@@ -1,19 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Shell, Card } from "@/components/Shell";
-import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify, getPurifiers, purifierAction } from "@/lib/nas.functions";
+import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify, getPurifiers, purifierAction, getLocks } from "@/lib/nas.functions";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
+const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
 const q = queryOptions({ queryKey: ["solar"], queryFn: () => getSolar(), refetchInterval: 60000 });
 export const Route = createFileRoute("/home")({
   head: () => ({ meta: [
     { title: "Okosotthon – NAS Vezérlő" }, { name: "description", content: "Napelem termelés és okosotthon eszközök egy helyen." },
     { property: "og:title", content: "Okosotthon – NAS Vezérlő" }, { property: "og:description", content: "Napelem termelés és okosotthon eszközök." },
   ] }),
-  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq), context.queryClient.ensureQueryData(pq)]),
+  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq), context.queryClient.ensureQueryData(pq), context.queryClient.ensureQueryData(lq)]),
   component: Home,
 });
 function Stat({ value, unit, label }: { value: string; unit: string; label: string }) {
@@ -98,6 +99,21 @@ function Purifiers() {
     </Card>
   );
 }
+function Locks() {
+  const { data } = useSuspenseQuery(lq);
+  if (!data.error && data.locks.length === 0) return null;
+  return (
+    <Card title="Okoszár" className="mt-4">
+      {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : data.locks.map((l) => (
+        <div key={l.did} className="flex items-center justify-between gap-2">
+          <span className="font-medium">{l.name}</span>
+          <span className="font-mono text-sm text-muted-foreground">{l.online ? "● elérhető" : "○ offline"}{l.battery != null ? ` · 🔋${l.battery}%` : ""}</span>
+        </div>))}
+      <p className="mt-2 text-xs text-muted-foreground">Távoli nyitást a Xiaomi biztonsági okból nem enged, csak az állapot látszik.</p>
+      {data.raw && <details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{data.raw}</pre></details>}
+    </Card>
+  );
+}
 function Home() {
   const { data } = useSuspenseQuery(q);
   const f = (n: number, d = 1) => n.toLocaleString("hu-HU", { maximumFractionDigits: d });
@@ -127,6 +143,7 @@ function Home() {
       </Card>
       <Thermometers />
       <Purifiers />
+      <Locks />
       <Blinds />
       <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Bosch, Tapo, Xiaomi) bekötése folyamatban.</p>
     </Shell>
