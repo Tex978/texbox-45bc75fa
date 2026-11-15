@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DownloadsRouteImport } from './routes/downloads'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiPlexThumbRouteImport } from './routes/api/plex-thumb'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const DownloadsRoute = DownloadsRouteImport.update({
   id: '/downloads',
   path: '/downloads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -44,6 +50,7 @@ const ApiPlexThumbRoute = ApiPlexThumbRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/downloads': typeof DownloadsRoute
+  '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/downloads': typeof DownloadsRoute
+  '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
@@ -59,19 +67,33 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/downloads': typeof DownloadsRoute
+  '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/downloads' | '/search' | '/settings' | '/api/plex-thumb'
+  fullPaths:
+    | '/'
+    | '/downloads'
+    | '/library'
+    | '/search'
+    | '/settings'
+    | '/api/plex-thumb'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/downloads' | '/search' | '/settings' | '/api/plex-thumb'
+  to:
+    | '/'
+    | '/downloads'
+    | '/library'
+    | '/search'
+    | '/settings'
+    | '/api/plex-thumb'
   id:
     | '__root__'
     | '/'
     | '/downloads'
+    | '/library'
     | '/search'
     | '/settings'
     | '/api/plex-thumb'
@@ -80,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DownloadsRoute: typeof DownloadsRoute
+  LibraryRoute: typeof LibraryRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   ApiPlexThumbRoute: typeof ApiPlexThumbRoute
@@ -99,6 +122,13 @@ declare module '@tanstack/react-router' {
       path: '/downloads'
       fullPath: '/downloads'
       preLoaderRoute: typeof DownloadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -128,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DownloadsRoute: DownloadsRoute,
+  LibraryRoute: LibraryRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   ApiPlexThumbRoute: ApiPlexThumbRoute,

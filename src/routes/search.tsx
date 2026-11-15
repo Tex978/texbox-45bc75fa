@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Shell, Card } from "@/components/Shell";
-import { searchMedia, requestMedia } from "@/lib/nas.functions";
+import { Shell, Poster } from "@/components/Shell";
+import { searchMedia, requestMedia, getRecommendations } from "@/lib/nas.functions";
 export const Route = createFileRoute("/search")({
   head: () => ({ meta: [
     { title: "Keresés – NAS Vezérlő" }, { name: "description", content: "Filmek és sorozatok keresése és kérése Radarr/Sonarr felé." },
@@ -16,6 +16,8 @@ function Search() {
   const [state, setState] = useState<Record<string, string>>({});
   useEffect(() => { const t = setTimeout(() => setDq(q), 400); return () => clearTimeout(t); }, [q]);
   const { data = [], isFetching } = useQuery({ queryKey: ["search", dq], queryFn: () => searchMedia({ data: { q: dq } }), enabled: !!dq });
+  const { data: recs = [] } = useQuery({ queryKey: ["recs"], queryFn: () => getRecommendations(), staleTime: 600000 });
+  const shown = dq ? data : recs;
   const req = async (c: (typeof data)[number]) => {
     const k = c.type + c.id; setState((s) => ({ ...s, [k]: "…" }));
     try { await requestMedia({ data: { id: c.id, type: c.type, profile } }); setState((s) => ({ ...s, [k]: `Kérve (${profile})` })); }
@@ -31,14 +33,18 @@ function Search() {
           <option>720p</option><option>1080p</option><option>4K</option></select>
       </div>
       {isFetching && <p className="mb-3 text-sm text-muted-foreground">Keresés…</p>}
-      <div className="grid gap-3 sm:grid-cols-2">{data.map((c) => {
+      {!dq && <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">Ajánlott neked · népszerű és felkapott</h2>}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">{shown.map((c, i) => {
         const s = state[c.type + c.id];
         return (
-          <Card key={c.type + c.id}><div className="flex items-center justify-between gap-3">
-            <div><div className="font-medium">{c.title}</div><div className="text-xs text-muted-foreground">{c.type} · {c.year} → {c.type === "Film" ? "Radarr" : "Sonarr"}</div></div>
+          <div key={c.type + c.id} className="flex flex-col" title={c.overview}>
+            <Poster src={c.poster} title={c.title} hue={(i * 53) % 360} />
+            <div className="mt-2 line-clamp-1 text-sm font-medium">{c.title}</div>
+            <div className="mb-2 text-xs text-muted-foreground">{c.type} · {c.year}</div>
             <button disabled={!!s || c.inLibrary} onClick={() => req(c)}
-              className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground">
-              {c.inLibrary ? "Már megvan" : s || "Kérés"}</button></div></Card>);
+              className="mt-auto rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground">
+              {c.inLibrary ? "Már megvan" : s || "Kérés"}</button>
+          </div>);
       })}</div>
     </Shell>
   );

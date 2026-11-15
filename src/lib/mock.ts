@@ -27,3 +27,10 @@ export const catalog = [
   { title: "Dune", year: 2021, type: "Film" }, { title: "Dark", year: 2017, type: "Sorozat" },
   { title: "Blade Runner 2049", year: 2017, type: "Film" }, { title: "True Detective", year: 2014, type: "Sorozat" },
 ];
+export const library = [
+  { id: 1, title: "Avatar: A víz útja", year: 2022, type: "Film", size: 62.1e9, added: "2023-03-02", poster: "" },
+  { id: 2, title: "Game of Thrones", year: 2011, type: "Sorozat", size: 412.5e9, added: "2021-06-11", poster: "" },
+  { id: 3, title: "Oppenheimer", year: 2023, type: "Film", size: 48.3e9, added: "2024-01-20", poster: "" },
+  { id: 4, title: "Friends", year: 1994, type: "Sorozat", size: 188.0e9, added: "2020-11-30", poster: "" },
+  { id: 5, title: "Shrek", year: 2001, type: "Film", size: 7.9e9, added: "2019-08-14", poster: "" },
+];
