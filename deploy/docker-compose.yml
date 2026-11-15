@@ -5,8 +5,8 @@ services:
     build: ..
     container_name: nas-vezerlo
     restart: unless-stopped
-    ports:
-      - "3050:3000"
+    # host network: the blinds hub answers over local UDP (multicast), which bridge networking blocks
+    network_mode: host
     environment:
       QBIT_URL: http://192.168.1.10:8080
       QBIT_USER: admin

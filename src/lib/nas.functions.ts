@@ -4,8 +4,8 @@ import { md5 } from "./md5";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN"] as const;
-const SECRET = ["GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES"] as const;
+const SECRET = ["BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -180,6 +180,7 @@ export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
     radarr: await ping(has("RADARR_URL", "RADARR_KEY"), () => arr("RADARR", "/system/status")),
     sonarr: await ping(has("SONARR_URL", "SONARR_KEY"), () => arr("SONARR", "/system/status")),
     plex: await ping(has("PLEX_URL", "PLEX_TOKEN"), () => plex("/identity")),
+    blinds: await ping(has("BLINDS_IP", "BLINDS_KEY"), async () => (await import("./blinds.server")).listBlinds(env("BLINDS_IP"), env("BLINDS_KEY"))),
     growatt: await ping(has("GROWATT_USER", "GROWATT_PASS"), () => growatt()),
     dsm: await ping(has("DSM_URL", "DSM_USER"), () => dsmVolumes()),
   };
@@ -292,3 +293,27 @@ export const getSolar = createServerFn({ method: "GET" }).handler(async () => {
   try { return { demo: false, error: "", ...(await growatt()) }; }
   catch (e) { return { demo: false, error: String((e as Error).message || e), currentW: 0, todayKwh: 0, totalKwh: 0, plants: [], flow: null, raw: "" }; }
 });
+
+const blindNames = () => Object.fromEntries(env("BLINDS_NAMES").split(",").map((p) => p.split("=").map((x) => x.trim())).filter((p) => p.length === 2));
+type BlindsResult = { demo: boolean; error: string; blinds: { mac: string; deviceType: string; name: string; position: number; battery: number; state: number }[] };
+export const getBlinds = createServerFn({ method: "GET" }).handler(async (): Promise<BlindsResult> => {
+  if (!has("BLINDS_IP")) return { demo: true, error: "", blinds: [
+    { mac: "demo1", deviceType: "10000000", name: "Nappali", position: 0, battery: 0, state: 0 },
+    { mac: "demo2", deviceType: "10000000", name: "Hálószoba", position: 100, battery: 0, state: 0 } ] };
+  try {
+    const { listBlinds } = await import("./blinds.server");
+    const names = blindNames();
+    const l = await listBlinds(env("BLINDS_IP"), env("BLINDS_KEY"));
+    return { demo: false, error: "", blinds: l.map((b, i) => ({ ...b, name: names[b.mac] || names[String(i + 1)] || `Redőny ${i + 1}` })) };
+  } catch (e) { return { demo: false, error: String((e as Error).message || e), blinds: [] }; }
+});
+export const blindAction = createServerFn({ method: "POST" })
+  .inputValidator((d: { mac: string; deviceType: string; action: "open" | "close" | "stop" | "position"; position?: number }) => d)
+  .handler(async ({ data }) => {
+    if (!has("BLINDS_IP")) return { ok: true };
+    const { writeBlind } = await import("./blinds.server");
+    const payload = data.action === "position" ? { targetPosition: Math.max(0, Math.min(100, Math.round(data.position ?? 0))) }
+      : { operation: data.action === "open" ? 1 : data.action === "close" ? 0 : 2 };
+    await writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), data.mac, data.deviceType, payload);
+    return { ok: true };
+  });
