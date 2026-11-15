@@ -63,7 +63,7 @@ export function Blinds() {
             return (
               <div key={room} className="smart-device p-4">
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" className="min-w-0 flex-1 text-left" onClick={() => setOpen({ ...open, [room]: !isOpen })}>
+                  <Button variant="ghost" className="h-auto min-w-0 flex-1 flex-col items-start gap-1 px-0 text-left" onClick={() => setOpen({ ...open, [room]: !isOpen })}>
                     <div className="flex items-center gap-2 truncate font-medium">{isOpen ? <ChevronDown size={17} /> : <ChevronRight size={17} />} {room}</div>
                     <div className="text-xs text-muted-foreground">{list.length} redőny · {posLabel(avg)}</div>
                   </Button>

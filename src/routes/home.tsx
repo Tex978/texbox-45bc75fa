@@ -87,13 +87,13 @@ function Purifiers() {
     <Card title="Légtisztító" className="mt-4">
       {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : data.purifiers.map((p) => (
         <div key={p.did} className="smart-device space-y-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="inline-flex items-center gap-2 font-medium"><Fan size={19} className="text-home-water" />{p.name}{!p.online && <span className="ml-2 text-xs text-muted-foreground">offline</span>}</span>
             <Button variant="outline" className={b(!!p.on)} onClick={() => act(p.did, "on", !p.on)}><Power size={16} />{p.on ? "Bekapcsolva" : "Kikapcsolva"}</Button>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 border-y border-border py-4 xl:grid-cols-4">
             {[["PM2.5", p.pm25 != null ? `${p.pm25} µg/m³` : "–"], ["Pára", p.hum != null ? `${p.hum}%` : "–"], ["Hőmérséklet", p.temp != null ? `${p.temp}°` : "–"], ["Szűrő", p.filter != null ? `${p.filter}%` : "–"]].map(([l, v]) => (
-              <div key={l} className="rounded-lg bg-secondary p-3"><div className="text-xs text-muted-foreground">{l}</div><div className="font-mono text-sm font-medium">{v}</div></div>))}
+              <div key={l}><div className="text-xs text-muted-foreground">{l}</div><div className="mt-1 text-sm font-medium tabular-nums">{v}</div></div>))}
           </div>
           <div className="flex flex-wrap gap-2">{MODES.map((m, i) => <Button variant="outline" key={m} className={b(p.mode === i)} disabled={!p.on} onClick={() => act(p.did, "mode", i)}>{m}</Button>)}</div>
         </div>))}
@@ -110,7 +110,7 @@ function Locks() {
       {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : data.locks.map((l) => (
         <div key={l.did} className="smart-device flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex items-center gap-3 font-medium"><LockKeyhole size={21} className="text-home-success" />{l.name}</span>
-          <span className="font-mono text-sm text-muted-foreground">{l.online ? "● elérhető" : "○ offline"}{l.battery != null ? ` · 🔋${l.battery}%` : ""}</span>
+          <SensorDetails battery={l.battery} online={l.online} />
         </div>))}
       <p className="mt-2 text-xs text-muted-foreground">Távoli nyitást a Xiaomi biztonsági okból nem enged, csak az állapot látszik.</p>
       {data.raw && <details className="mt-3 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary><pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all font-mono">{data.raw}</pre></details>}
