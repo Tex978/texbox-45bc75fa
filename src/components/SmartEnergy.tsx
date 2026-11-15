@@ -19,7 +19,7 @@ export function SmartEnergy({ data }: { data: Solar }) {
   return <section className="smart-energy">
     <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3"><span className="smart-icon energy-heading-icon"><Sun size={22} /></span><div><h2 className="text-lg font-semibold">Energia</h2><p className="text-xs text-muted-foreground">Growatt · {data.plants.map((p) => p.name).join(", ") || "Napelem"}</p></div></div>
-      {!data.error && <span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><span className="status-dot bg-home-success" />{data.demo ? "Mintaadatok" : "Frissítés 5 percenként"}</span>}
+      {!data.error && <span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><span className="status-dot bg-home-success" />{data.demo ? "Mintaadatok" : "Frissítés 15 percenként"}</span>}
     </header>
     {data.error ? <p className="break-words text-sm text-destructive">{data.error}</p> : <>
       <div className="energy-layout">

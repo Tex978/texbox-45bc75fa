@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { createSolarCache, SOLAR_SESSION_MS } from "@/lib/growatt-cache";
 describe("Growatt request protection", () => {
-  it("reuses readings for five minutes including simultaneous refreshes", async () => {
+  it("reuses readings for fifteen minutes including simultaneous refreshes", async () => {
     let time = 0, calls = 0;
     const cache = createSolarCache<number>(() => time);
     const load = async () => ++calls;
     expect(await Promise.all([cache("account", load), cache("account", load)])).toEqual([1, 1]);
-    time = 299999;
+    time = 899999;
     expect(await cache("account", load)).toBe(1);
-    time = 300000;
+    time = 900000;
     expect(await cache("account", load)).toBe(2);
     expect(calls).toBe(2);
   });
@@ -31,7 +31,7 @@ describe("Growatt request protection", () => {
       if (!session) { logins++; save({ cookie: "test-session", userId: "account", expiresAt: time + SOLAR_SESSION_MS }); }
       return logins;
     };
-    await cache("first", load); time = 300000; await cache("first", load);
+    await cache("first", load); time = 900000; await cache("first", load);
     expect(logins).toBe(1);
     await cache("second", load); expect(logins).toBe(2);
   });
