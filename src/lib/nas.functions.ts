@@ -4,7 +4,7 @@ import { md5 } from "./md5";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION"] as const;
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID"] as const;
 const SECRET = ["XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
@@ -414,4 +414,78 @@ export const getLocks = createServerFn({ method: "GET" }).handler(async () => {
   const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
   try { return { demo: false, error: "", ...(await x.listLocks(u, p, xmRegion())) }; }
   catch (e) { return { demo: false, error: String((e as Error).message || e), raw: "", locks: [] }; }
+});
+
+// ---------- Bosch / Home Connect (device flow) ----------
+const HC = "https://api.home-connect.com";
+const HC_TOK = "hc-tok", HC_DEV = "hc-dev";
+const hcClient = () => env("HC_CLIENT_ID") || "5201711F88D6993A3B0E6BCE71EB5C4ECD594F586B202A030A143B56CE9D9F9C";
+function hcCookie(name: string, v: string, age: number) {
+  const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
+  setCookie(name, v, { httpOnly: true, path: "/", maxAge: age,
+    ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
+}
+type HcTok = { a: string; r: string; e: number };
+const hcForm = (b: Record<string, string>) => fetch(`${HC}/security/oauth/token`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(b).toString() });
+async function hcToken(): Promise<string | null> {
+  let t: HcTok; try { t = JSON.parse(getCookie(HC_TOK) || ""); } catch { return null; }
+  if (Date.now() < t.e - 60000) return t.a;
+  const r = await hcForm({ grant_type: "refresh_token", refresh_token: t.r, client_id: hcClient() });
+  if (!r.ok) return null;
+  const j = await r.json() as { access_token: string; refresh_token?: string; expires_in: number };
+  const n = { a: j.access_token, r: j.refresh_token || t.r, e: Date.now() + j.expires_in * 1000 };
+  hcCookie(HC_TOK, JSON.stringify(n), 60 * 60 * 24 * 60); return n.a;
+}
+const hcGet = async (tok: string, p: string) => {
+  const r = await fetch(`${HC}${p}`, { headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.bsh.sdk.v1+json", "Accept-Language": "hu-HU" } });
+  return r.ok ? (await r.json() as { data: Record<string, unknown> }).data : null;
+};
+export type Appliance = { haId: string; name: string; type: string; connected: boolean; state: string; door: string; program: string; remaining: number | null; progress: number | null; remoteStart: boolean };
+const short = (v: unknown) => String(v ?? "").split(".").pop() || "";
+export const getAppliances = createServerFn({ method: "GET" }).handler(async (): Promise<{ linked: boolean; appliances: Appliance[]; error: string | null }> => {
+  try {
+    const tok = await hcToken();
+    if (!tok) return { linked: false, appliances: [], error: null };
+    const list = await hcGet(tok, "/api/homeappliances") as { homeappliances?: { haId: string; name: string; type: string; connected: boolean }[] } | null;
+    if (!list) return { linked: true, appliances: [], error: "Home Connect hiba – próbáld újra összekötni" };
+    const out = await Promise.all((list.homeappliances || []).map(async (h) => {
+      const a: Appliance = { haId: h.haId, name: h.name, type: h.type, connected: h.connected, state: "", door: "", program: "", remaining: null, progress: null, remoteStart: false };
+      if (!h.connected) return a;
+      const st = await hcGet(tok, `/api/homeappliances/${h.haId}/status`) as { status?: { key: string; value: unknown }[] } | null;
+      for (const s of st?.status || []) {
+        if (s.key.endsWith("OperationState")) a.state = short(s.value);
+        if (s.key.endsWith("DoorState")) a.door = short(s.value);
+        if (s.key.endsWith("RemoteControlStartAllowed")) a.remoteStart = !!s.value;
+      }
+      const pr = await hcGet(tok, `/api/homeappliances/${h.haId}/programs/active`) as { key?: string; name?: string; options?: { key: string; value: unknown }[] } | null;
+      if (pr) { a.program = pr.name || short(pr.key);
+        for (const o of pr.options || []) {
+          if (o.key.endsWith("RemainingProgramTime")) a.remaining = Number(o.value);
+          if (o.key.endsWith("ProgramProgress")) a.progress = Number(o.value);
+        } }
+      return a;
+    }));
+    return { linked: true, appliances: out, error: null };
+  } catch (e) { return { linked: true, appliances: [], error: (e as Error).message }; }
+});
+export const hcStartLink = createServerFn({ method: "POST" }).handler(async () => {
+  const r = await fetch(`${HC}/security/oauth/device_authorization`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: hcClient(), scope: "IdentifyAppliance Monitor Control" }).toString() });
+  const j = await r.json() as { device_code?: string; user_code?: string; verification_uri_complete?: string; verification_uri?: string; error_description?: string };
+  if (!j.device_code) return { ok: false, error: j.error_description || `Hiba (${r.status})`, code: "", url: "" };
+  hcCookie(HC_DEV, j.device_code, 900);
+  return { ok: true, error: "", code: j.user_code || "", url: j.verification_uri_complete || j.verification_uri || "" };
+});
+export const hcFinishLink = createServerFn({ method: "POST" }).handler(async () => {
+  const dc = getCookie(HC_DEV); if (!dc) return { ok: false, error: "Lejárt, kezdd újra" };
+  const r = await hcForm({ grant_type: "device_code", device_code: dc, client_id: hcClient() });
+  const j = await r.json() as { access_token?: string; refresh_token?: string; expires_in?: number; error?: string; error_description?: string };
+  if (!j.access_token) return { ok: false, error: j.error === "authorization_pending" ? "Még nem hagytad jóvá" : j.error_description || j.error || "Hiba" };
+  hcCookie(HC_TOK, JSON.stringify({ a: j.access_token, r: j.refresh_token || "", e: Date.now() + (j.expires_in || 3600) * 1000 }), 60 * 60 * 24 * 60);
+  return { ok: true, error: "" };
+});
+export const hcStop = createServerFn({ method: "POST" }).inputValidator((d: { haId: string }) => d).handler(async ({ data }) => {
+  const tok = await hcToken(); if (!tok) return { ok: false };
+  const r = await fetch(`${HC}/api/homeappliances/${encodeURIComponent(data.haId)}/programs/active`, { method: "DELETE", headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.bsh.sdk.v1+json" } });
+  return { ok: r.ok };
 });

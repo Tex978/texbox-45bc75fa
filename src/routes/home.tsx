@@ -5,6 +5,7 @@ import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify, getPurifiers, 
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
+import { Appliances, appliancesQuery } from "@/components/Appliances";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
@@ -144,8 +145,9 @@ function Home() {
       <Thermometers />
       <Purifiers />
       <Locks />
+      <Appliances />
       <Blinds />
-      <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Bosch, Tapo, Xiaomi) bekötése folyamatban.</p>
+      <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Tapo, Dreame) bekötése folyamatban.</p>
     </Shell>
   );
 }
