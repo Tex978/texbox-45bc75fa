@@ -12,7 +12,8 @@ class CloudControls(unittest.IsolatedAsyncioTestCase):
         account.cache = {"old": True}
         account.discover = AsyncMock()
         account.records = {"aabbcc112233": SimpleNamespace(mac="aabbcc112233", name="Cascade")}
-        device = CloudDevice(None, DeviceInfo("", 7000, "aabbcc112233", "Cascade"), "0123456789abcdef")
+        mqtt = SimpleNamespace(add_message_handler=lambda _: None)
+        device = CloudDevice(mqtt, DeviceInfo("", 7000, "aabbcc112233", "Cascade"), "0123456789abcdef")
         device._properties = dict(properties)
         device.send_command = AsyncMock()
         async def readback():
@@ -37,7 +38,7 @@ class CloudControls(unittest.IsolatedAsyncioTestCase):
 
     async def test_half_degree_capable_device_receives_complete_group(self):
         device = await self.temperature_device({"SetTem": 22, "TemRec": 1, "TemUn": 0, "HalfTemEn": 1, "SetDeciTem": 225}, 23)
-        device.send_command.assert_awaited_once_with(["SetTem", "TemRec", "SetDeciTem", "TemSen"], [23, 0, 230, 0])
+        device.send_command.assert_awaited_once_with(["SetTem", "TemRec", "SetDeciTem", "Add0.5"], [23, 0, 230, 0])
 
     async def test_command_is_verified_by_readback(self):
         account = Account.__new__(Account)
