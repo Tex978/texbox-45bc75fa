@@ -28,3 +28,7 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+<!-- AGENT-MEMORY:BEGIN -->
+- Service integrations (qBittorrent/Radarr/Sonarr/Plex) live in src/lib/nas.functions.ts, configured only by env vars and falling back to demo data when unset — the app is self-hosted in Docker on the user LAN (NITRO_PRESET=node-server).
+<!-- AGENT-MEMORY:END -->
