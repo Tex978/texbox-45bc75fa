@@ -33,7 +33,8 @@ function Dev({ d, name }: { d: { id: string; category: string; online: boolean; 
       <div className="flex items-start justify-between gap-2">
         <div><div className="flex items-center gap-2 font-medium"><Lightbulb size={19} className="shrink-0 text-home-energy" />{name}</div><div className="text-xs text-muted-foreground">{CAT[d.category] || d.category}{!d.online && " · ○ offline"}</div></div>
         {sw && <Button variant="outline" onClick={() => send(sw.code, !sw.value)} disabled={!d.online}
-          className={`rounded-full px-3 py-1 text-xs font-medium ${sw.value ? "bg-primary text-primary-foreground" : "border border-border"}`}><Power />{sw.value ? "BE" : "KI"}</Button>}
+          size="icon" aria-label={`${name} ${sw.value ? "kikapcsolás" : "bekapcsolás"}`} title={sw.value ? "Kikapcsolás" : "Bekapcsolás"}
+          className={sw.value ? "bg-primary text-primary-foreground" : "border border-border"}><Power /></Button>}
       </div>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-sm">
         {t != null && <span>{t}°</span>}

@@ -8,7 +8,7 @@ const sectionIcons: Record<string, LucideIcon> = {
   "Tuya eszközök": Lightbulb, "Tuya / Smart Life eszközök": Lightbulb,
   "Bosch háztartási gépek": WashingMachine, "Redőnyök": Blinds,
 };
-const sectionNames: Record<string, string> = { "Hőmérők (Xiaomi)": "Hőmérséklet és páratartalom", "Bosch háztartási gépek": "Háztartási gépek", "Tuya / Smart Life eszközök": "Tuya · Smart Life", "Tuya eszközök": "Tuya · Smart Life" };
+const sectionNames: Record<string, string> = { "Hőmérők (Xiaomi)": "Hőmérők", "Bosch háztartási gépek": "Háztartási gépek", "Tuya / Smart Life eszközök": "Tuya · Smart Life", "Tuya eszközök": "Tuya · Smart Life" };
 const subtitles: Record<string, string> = { "Hőmérők (Xiaomi)": "Xiaomi", "Légtisztító": "Xiaomi", "Okoszár": "Xiaomi", "Bosch háztartási gépek": "Bosch · Home Connect", "Redőnyök": "Connector" };
 
 export function SmartSection({ title = "", children, className = "" }: { title?: string; children: ReactNode; className?: string }) {

@@ -242,6 +242,48 @@
 .energy-node-icon { background: var(--card); }
 .energy-line svg, .energy-line span { background: var(--background); }
 .home-section-nav a { font-weight: 500; }
+
+/* Category-based home dashboard; controls remain vendor-owned. */
+.home-status-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin: 0 0 24px; }
+.smart-home .home-status-tile { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; height: auto; min-height: 156px; padding: 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); text-align: left; white-space: normal; }
+.home-tone-climate { --home-tile-accent: var(--home-water); }
+.home-tone-energy { --home-tile-accent: var(--home-energy); }
+.home-tone-blinds { --home-tile-accent: var(--home-success); }
+.home-tone-devices { --home-tile-accent: var(--destructive); }
+.home-status-tile:hover { border-color: var(--home-tile-accent); background: var(--accent); }
+.home-status-top { display: flex; align-items: center; justify-content: space-between; color: var(--home-tile-accent); margin-bottom: 6px; }
+.home-status-top svg:last-child { color: var(--muted-foreground); }
+.home-status-label { font-size: 12px; color: var(--muted-foreground); }
+.home-status-tile strong { font-size: 26px; line-height: 1.25; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; }
+.home-status-detail { color: var(--muted-foreground); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.home-view-tabs { display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; padding-bottom: 10px; }
+.home-view-tabs::-webkit-scrollbar { display: none; }
+.smart-home .home-view-tabs button { flex: 0 0 auto; white-space: nowrap; color: var(--muted-foreground); padding: 10px 14px; }
+.smart-home .home-view-tabs .home-tab-active { background: var(--secondary); color: var(--foreground); }
+.home-dashboard-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28px; align-items: start; }
+.home-sensor-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.home-dashboard-grid .home-sensor-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.home-view-panel .smart-section { border-top: 0; padding-top: 0; margin-top: 24px; }
+.home-view-panel .smart-section-heading { margin-bottom: 16px; gap: 10px; }
+.home-view-panel .smart-icon { width: 32px; height: 32px; border: 0; }
+.home-view-panel .smart-section-heading h2 { font-size: 15px; }
+.home-view-panel .smart-device { padding: 16px; }
+.home-view-panel .sensor-device { min-height: 186px; }
+.home-view-panel .sensor-device .text-3xl { font-size: 32px; }
+.home-dashboard-grid .smart-section > .grid { grid-template-columns: minmax(0,1fr); }
+.home-view-panel .smart-energy { border-bottom: 0; padding-top: 24px; }
+@media (max-width: 900px) { .home-dashboard-grid { grid-template-columns: minmax(0,1fr); gap: 0; } }
+@media (max-width: 767px) {
+  .smart-home main { padding-bottom: 40px; }
+  .smart-home .home-title-row { margin-bottom: 18px; }
+  .home-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
+  .smart-home .home-status-tile { min-height: 122px; padding: 12px; gap: 3px; }
+  .home-status-tile strong { font-size: 24px; }
+  .home-view-tabs { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 2px; overflow: visible; }
+  .smart-home .home-view-tabs button { flex-direction: column; padding: 8px 1px; font-size: 10px; gap: 5px; min-height: 56px; }
+  .home-sensor-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .home-view-panel .smart-device { padding: 14px; }
+}
 .app-main .overview-family-heading { margin-bottom: 28px; }
 .app-main .font-mono { font-size: 12px; }
 @media (max-width: 1000px) {
