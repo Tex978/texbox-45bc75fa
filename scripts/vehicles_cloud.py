@@ -44,7 +44,7 @@ def failure(error, brand, stage):
             message = "Lépj be a Volkswagen weboldalán, és fogadd el a kért feltételeket."
         elif "authorization url could not be fetched" in details:
             reason = "authorization_unavailable"
-            message = "A Volkswagen nem adta át a belépési címet. A hiba a jelszó ellenőrzése előtt történt."
+            message = "A Volkswagen 2026 óta letiltja a külső alkalmazások belépését. Nem a jelszó a hiba."
         else:
             reason = "authentication"
             message = "A szolgáltató nem engedte a belépést. Ellenőrizd a fiókot és az esetleges jóváhagyást a saját alkalmazásában."
