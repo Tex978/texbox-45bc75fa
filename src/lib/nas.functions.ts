@@ -295,7 +295,8 @@ export const getSolar = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 const blindNames = () => Object.fromEntries(env("BLINDS_NAMES").split(",").map((p) => p.split("=").map((x) => x.trim())).filter((p) => p.length === 2));
-export const getBlinds = createServerFn({ method: "GET" }).handler(async () => {
+type BlindsResult = { demo: boolean; error: string; blinds: { mac: string; deviceType: string; name: string; position: number; battery: number; state: number }[] };
+export const getBlinds = createServerFn({ method: "GET" }).handler(async (): Promise<BlindsResult> => {
   if (!has("BLINDS_IP")) return { demo: true, error: "", blinds: [
     { mac: "demo1", deviceType: "10000000", name: "Nappali", position: 0, battery: 0, state: 0 },
     { mac: "demo2", deviceType: "10000000", name: "Hálószoba", position: 100, battery: 0, state: 0 } ] };
