@@ -15,7 +15,6 @@ export const Route = createFileRoute("/settings")({
 });
 const services = [
   { key: "blinds", name: "Redőnyök (Connector hub)", fields: [["BLINDS_IP", "Hub IP címe (otthoni hálózat)", "192.168.1.50"], ["BLINDS_KEY", "Kulcs (Connector app → Névjegy, 5 koppintás)", ""], ["BLINDS_NAMES", "Nevek (nem kötelező)", "1=Nappali, 2=Hálószoba"]] },
-  { key: "tuya", name: "Tuya (Smart Life)", fields: [["TUYA_ID", "Access ID", "tj3qmvwy39jgrw54frwx"], ["TUYA_SECRET", "Access Secret", ""], ["TUYA_REGION", "Adatközpont (eu, us, cn, in)", "eu"]] },
   { key: "xiaomi", name: "Xiaomi (Mi Home) hőmérők", fields: [["XIAOMI_USER", "Mi fiók e-mail / telefonszám / azonosító", ""], ["XIAOMI_PASS", "Mi fiók jelszó", ""], ["XIAOMI_REGION", "Régió (de = Európa, cn, us, sg, ru, i2)", "de"]] },
   { key: "growatt", name: "Growatt napelem", fields: [["GROWATT_USER", "ShinePhone felhasználónév", ""], ["GROWATT_PASS", "ShinePhone jelszó", ""], ["GROWATT_SN", "Inverter sorozatszám (SN)", "pl. TKJ4CJ704D"], ["GROWATT_SERVER", "Szerver (általában üresen hagyható)", "https://server.growatt.com"]] },
   { key: "dsm", name: "Synology (DSM)", fields: [["DSM_URL", "Cím", "https://valami.synology.me:5001"], ["DSM_USER", "Felhasználónév", "admin"], ["DSM_PASS", "Jelszó", ""]] },
