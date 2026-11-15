@@ -4,10 +4,12 @@ import { md5 } from "./md5";
 import { createSolarCache, SOLAR_SESSION_MS } from "./growatt-cache";
 import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
+import { filterMedia, mapArrMedia, imdbIdentifier, imdbScore, type MediaType, type MediaCategory, type MediaItem, type MediaDetail } from "./media";
+import { mediaDemo } from "./media-demo";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS", "GREE_USER", "GREE_PASS", "GREE_REGION", "VW_USER", "VW_PASS", "RENAULT_USER", "RENAULT_PASS", "RENAULT_LOCALE"] as const;
-const SECRET = ["VW_PASS", "RENAULT_PASS", "GREE_PASS", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["TMDB_TOKEN", "OMDB_KEY", "QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS", "GREE_USER", "GREE_PASS", "GREE_REGION", "VW_USER", "VW_PASS", "RENAULT_USER", "RENAULT_PASS", "RENAULT_LOCALE"] as const;
+const SECRET = ["TMDB_TOKEN", "OMDB_KEY", "VW_PASS", "RENAULT_PASS", "GREE_PASS", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -193,6 +195,121 @@ export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 const posterOf = (x: any): string => x.remotePoster || (x.images || []).find((i: any) => i.coverType === "poster")?.remoteUrl || "";
+
+async function tmdb(path: string, params: Record<string, string> = {}): Promise<any> {
+  const response = await fetch(`https://api.themoviedb.org/3${path}?${new URLSearchParams({ language: "hu-HU", ...params })}`, {
+    headers: { Authorization: `Bearer ${env("TMDB_TOKEN")}` }, signal: AbortSignal.timeout(12000),
+  });
+  if (!response.ok) throw new Error(response.status === 401 ? "A TMDB hozzáférést nem fogadta el a szolgáltató." : "A TMDB filmadatok most nem érhetők el.");
+  return response.json();
+}
+const tmdbImage = (path: string | undefined, size = "w500") => path ? `https://image.tmdb.org/t/p/${size}${path}` : "";
+async function omdbRating(id: string | null): Promise<number | null> {
+  if (!id || !has("OMDB_KEY")) return null;
+  try {
+    const response = await fetch(`https://www.omdbapi.com/?${new URLSearchParams({ apikey: env("OMDB_KEY"), i: id })}`, { signal: AbortSignal.timeout(7000) });
+    if (!response.ok) return null;
+    return imdbScore((await response.json()).imdbRating);
+  } catch { return null; }
+}
+async function tmdbItem(x: any, type: MediaType): Promise<MediaItem | null> {
+  const kind = type === "Film" ? "movie" : "tv";
+  const ids = await tmdb(`/${kind}/${x.id}/external_ids`);
+  const id = type === "Film" ? x.id : ids.tvdb_id;
+  if (!id) return null; // Sonarr requests require TVDB IDs, never TMDB IDs.
+  const imdbId = imdbIdentifier(ids.imdb_id);
+  return { id, tmdbId: x.id, type, title: x.title || x.name, year: Number((x.release_date || x.first_air_date || "").slice(0, 4)),
+    poster: tmdbImage(x.poster_path), overview: x.overview || "", inLibrary: false, imdbId, imdbRating: await omdbRating(imdbId) };
+}
+
+export const browseMedia = createServerFn({ method: "GET" })
+  .inputValidator((d: { type: MediaType; category: MediaCategory; q: string; page: number }) => {
+    if (!["Film", "Sorozat"].includes(d.type) || !["recommended", "new", "popular", "trending"].includes(d.category)) throw new Error("Ismeretlen kategória.");
+    return { ...d, q: d.q.trim().slice(0, 150), page: Math.max(1, Math.min(50, Math.floor(d.page) || 1)) };
+  })
+  .handler(async ({ data }) => {
+    const app = data.type === "Film" ? "RADARR" : "SONARR";
+    const kind = data.type === "Film" ? "movie" : "tv";
+    const result = (items: MediaItem[], notice = "", demo = false, hasMore = false) => ({ items, notice, demo, hasMore });
+    try {
+      if (has("TMDB_TOKEN")) {
+        let path = data.q ? `/search/${kind}` : data.category === "trending" ? `/trending/${kind}/week` : data.category === "new" ? `/discover/${kind}` : `/${kind}/popular`;
+        let personalized = false;
+        if (!data.q && data.category === "recommended" && has(app + "_URL", app + "_KEY")) {
+          const owned = await arr(app, kind === "movie" ? "/movie" : "/series");
+          const seed = [...owned].filter((x: any) => x.tmdbId).sort((a: any, b: any) => String(b.added).localeCompare(String(a.added)))[0];
+          if (seed) { path = `/${kind}/${seed.tmdbId}/recommendations`; personalized = true; }
+        }
+        const today = new Date().toISOString().slice(0, 10);
+        const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+        const params: Record<string, string> = { page: String(data.page), include_adult: "false" };
+        if (data.q) params.query = data.q;
+        if (!data.q && data.category === "new") {
+          params.sort_by = "popularity.desc";
+          params[kind === "movie" ? "primary_release_date.gte" : "first_air_date.gte"] = since;
+          params[kind === "movie" ? "primary_release_date.lte" : "first_air_date.lte"] = today;
+        }
+        const response = await tmdb(path, params);
+        const items: MediaItem[] = [];
+        // Batches bound simultaneous metadata requests and preserve provider order.
+        for (let i = 0; i < response.results.length; i += 4) {
+          const batch = await Promise.all(response.results.slice(i, i + 4).map((x: any) => tmdbItem(x, data.type)));
+          for (const item of batch) if (item) items.push(item);
+        }
+        if (has(app + "_URL", app + "_KEY")) {
+          const owned = await safe(arr(app, kind === "movie" ? "/movie" : "/series"), []);
+          for (const item of items) item.inLibrary = owned.some((x: any) => (kind === "movie" ? x.tmdbId : x.tvdbId) === item.id);
+        }
+        return result(items, !data.q && data.category === "recommended" && !personalized ? "Személyes előzmény még nincs · népszerű válogatás" : "", false, data.page < response.total_pages);
+      }
+      if (!has(app + "_URL", app + "_KEY")) return result(filterMedia(mediaDemo, data.type, data.q), "Bemutató kínálat · nem aktuális vagy személyre szabott ajánlás", true);
+      if (data.q) {
+        const found = await arr(app, `${kind === "movie" ? "/movie" : "/series"}/lookup?term=${encodeURIComponent(data.q)}`);
+        return result(found.map((x: any) => mapArrMedia(x, data.type)));
+      }
+      if (data.type === "Sorozat") return result([], "A sorozatos ajánlásokhoz, új megjelenésekhez és népszerű kínálathoz TMDB-kapcsolat szükséges.");
+      if (data.category === "new") return result([], "Az új megjelenésekhez TMDB-kapcsolat szükséges.");
+      const flags = { recommended: "includeRecommendations=true", popular: "includePopular=true", trending: "includeTrending=true" };
+      const found = await arr("RADARR", `/importlist/movie?${flags[data.category]}&includeRecommendations=${data.category === "recommended"}&includePopular=${data.category === "popular"}&includeTrending=${data.category === "trending"}`);
+      return result(found.filter((x: any) => !x.isExisting && !x.isExcluded).slice(0, 40).map((x: any) => mapArrMedia(x, data.type)));
+    } catch (error) { return result([], error instanceof Error && error.message.startsWith("A TMDB") ? error.message : "A filmkínálat nem érhető el. Ellenőrizd a kapcsolatot."); }
+  });
+
+export const getMediaDetail = createServerFn({ method: "GET" })
+  .inputValidator((d: { id: number; type: MediaType; tmdbId?: number }) => {
+    if (!Number.isSafeInteger(d.id) || d.id <= 0 || !["Film", "Sorozat"].includes(d.type) || (d.tmdbId !== undefined && (!Number.isSafeInteger(d.tmdbId) || d.tmdbId <= 0))) throw new Error("Érvénytelen film.");
+    return d;
+  })
+  .handler(async ({ data }): Promise<MediaDetail> => {
+    const app = data.type === "Film" ? "RADARR" : "SONARR";
+    let source: any = null;
+    if (has(app + "_URL", app + "_KEY")) {
+      const lookup = await arr(app, data.type === "Film" ? `/movie/lookup/tmdb?tmdbId=${data.id}` : `/series/lookup?term=tvdb:${data.id}`);
+      source = Array.isArray(lookup) ? lookup[0] : lookup;
+    }
+    const fallback = mediaDemo.find((x) => x.type === data.type && x.id === data.id);
+    if (!has("TMDB_TOKEN") && !source && fallback) return fallback;
+    const base: MediaItem = source ? mapArrMedia(source, data.type) : { id: data.id, tmdbId: data.tmdbId, type: data.type, title: "Adatlap", year: 0, poster: "", overview: "", inLibrary: false, imdbId: null, imdbRating: null };
+    const detail: MediaDetail = { ...base, genres: source?.genres || [], runtime: source?.runtime || null, cast: [], images: [], trailers: [], demo: false, notice: "" };
+    if (!has("TMDB_TOKEN")) {
+      detail.images = (source?.images || []).filter((x: any) => x.coverType === "fanart" && x.remoteUrl).map((x: any) => x.remoteUrl);
+      if (source?.youTubeTrailerId && /^[\w-]{11}$/.test(source.youTubeTrailerId)) detail.trailers = [{ name: "Előzetes", key: source.youTubeTrailerId }];
+      detail.notice = "A teljes szereplőlistához, fotókhoz és további előzetesekhez TMDB-kapcsolat szükséges.";
+      return detail;
+    }
+    const tmdbId = data.type === "Film" ? data.id : source?.tmdbId || data.tmdbId;
+    if (!tmdbId) { detail.notice = "A sorozat TMDB-azonosítója nem érhető el."; return detail; }
+    const kind = data.type === "Film" ? "movie" : "tv";
+    const full = await tmdb(`/${kind}/${tmdbId}`, { append_to_response: "credits,images,videos,external_ids", include_image_language: "hu,en,null", include_video_language: "hu,en" });
+    detail.title = full.title || full.name; detail.poster = tmdbImage(full.poster_path); detail.overview = full.overview || source?.overview || "";
+    detail.year = Number((full.release_date || full.first_air_date || "").slice(0, 4));
+    detail.genres = full.genres?.map((x: any) => x.name) || []; detail.runtime = full.runtime || full.episode_run_time?.[0] || null;
+    detail.imdbId = imdbIdentifier(full.imdb_id || full.external_ids?.imdb_id); detail.imdbRating = await omdbRating(detail.imdbId) || base.imdbRating;
+    detail.cast = (full.credits?.cast || []).slice(0, 18).map((x: any) => ({ name: x.name, character: x.character || "", photo: tmdbImage(x.profile_path, "w185") }));
+    detail.images = (full.images?.backdrops || []).slice(0, 8).map((x: any) => tmdbImage(x.file_path, "w780"));
+    detail.trailers = (full.videos?.results || []).filter((x: any) => x.site === "YouTube" && ["Trailer", "Teaser"].includes(x.type) && /^[\w-]{11}$/.test(x.key)).slice(0, 2).map((x: any) => ({ name: x.name, key: x.key }));
+    return detail;
+  });
 
 export const getRecommendations = createServerFn({ method: "GET" }).handler(async () => {
   if (!has("RADARR_URL")) return catalog.map((c, i) => ({ ...c, id: i, inLibrary: false, poster: "", overview: "" }));
