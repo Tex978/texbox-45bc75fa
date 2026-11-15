@@ -14,6 +14,7 @@ export const Route = createFileRoute("/settings")({
   component: Settings,
 });
 const services = [
+  { key: "blinds", name: "Redőnyök (Connector hub)", fields: [["BLINDS_IP", "Hub IP címe (otthoni hálózat)", "192.168.1.50"], ["BLINDS_KEY", "Kulcs (Connector app → Névjegy, 5 koppintás)", ""], ["BLINDS_NAMES", "Nevek (nem kötelező)", "1=Nappali, 2=Hálószoba"]] },
   { key: "growatt", name: "Growatt napelem", fields: [["GROWATT_USER", "ShinePhone felhasználónév", ""], ["GROWATT_PASS", "ShinePhone jelszó", ""], ["GROWATT_SN", "Inverter sorozatszám (SN)", "pl. TKJ4CJ704D"], ["GROWATT_SERVER", "Szerver (általában üresen hagyható)", "https://server.growatt.com"]] },
   { key: "dsm", name: "Synology (DSM)", fields: [["DSM_URL", "Cím", "https://valami.synology.me:5001"], ["DSM_USER", "Felhasználónév", "admin"], ["DSM_PASS", "Jelszó", ""]] },
   { key: "qbit", name: "qBittorrent", fields: [["QBIT_URL", "Cím", "http://valami.synology.me:8080"], ["QBIT_USER", "Felhasználónév", "admin"], ["QBIT_PASS", "Jelszó", ""]] },
