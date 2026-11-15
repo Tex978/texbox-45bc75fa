@@ -277,10 +277,10 @@
   .smart-home main { padding-bottom: 40px; }
   .smart-home .home-title-row { margin-bottom: 18px; }
   .home-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
-  .smart-home .home-status-tile { min-height: 148px; padding: 14px; }
+  .smart-home .home-status-tile { min-height: 122px; padding: 12px; gap: 3px; }
   .home-status-tile strong { font-size: 24px; }
-  .home-view-tabs { gap: 3px; }
-  .smart-home .home-view-tabs button { padding: 10px 12px; font-size: 12px; gap: 6px; }
+  .home-view-tabs { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 2px; overflow: visible; }
+  .smart-home .home-view-tabs button { flex-direction: column; padding: 8px 1px; font-size: 10px; gap: 5px; min-height: 56px; }
   .home-sensor-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
   .home-view-panel .smart-device { padding: 14px; }
 }
