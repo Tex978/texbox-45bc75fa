@@ -11,17 +11,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
 import { Appliances, appliancesQuery } from "@/components/Appliances";
 import { Tuya, tuyaQuery } from "@/components/Tuya";
+import { Gree, greeQuery } from "@/components/Gree";
+import { SOLAR_REFRESH_MS } from "@/lib/growatt-cache";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
-const q = queryOptions({ queryKey: ["solar"], queryFn: () => getSolar(), refetchInterval: 60000 });
+const q = queryOptions({ queryKey: ["solar"], queryFn: () => getSolar(), staleTime: SOLAR_REFRESH_MS, refetchInterval: SOLAR_REFRESH_MS, refetchOnWindowFocus: false, retry: false });
 export const Route = createFileRoute("/home")({
   head: () => ({ meta: [
     { title: "Okosotthon – NAS Vezérlő" }, { name: "description", content: "Napelem termelés és okosotthon eszközök egy helyen." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { property: "og:title", content: "Okosotthon – NAS Vezérlő" }, { property: "og:description", content: "Napelem termelés és okosotthon eszközök." },
   ] }),
-  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq), context.queryClient.ensureQueryData(pq), context.queryClient.ensureQueryData(lq), context.queryClient.ensureQueryData(appliancesQuery), context.queryClient.ensureQueryData(tuyaQuery)]),
+  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq), context.queryClient.ensureQueryData(pq), context.queryClient.ensureQueryData(lq), context.queryClient.ensureQueryData(appliancesQuery), context.queryClient.ensureQueryData(tuyaQuery), context.queryClient.ensureQueryData(greeQuery)]),
   component: Home,
 });
 function XiaomiVerify({ url }: { url: string }) {
@@ -121,7 +123,7 @@ function Home() {
   const { data } = useSuspenseQuery(q);
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const refresh = async () => { setRefreshing(true); try { await qc.invalidateQueries({ predicate: (query) => ["solar", "thermo", "purifier", "locks", "blinds", "hc", "tuya"].includes(String(query.queryKey[0])) }); } finally { setRefreshing(false); } };
+  const refresh = async () => { setRefreshing(true); try { await qc.invalidateQueries({ predicate: (query) => ["solar", "thermo", "purifier", "locks", "blinds", "hc", "tuya", "gree"].includes(String(query.queryKey[0])) }); } finally { setRefreshing(false); } };
   const sections = [{ id: "climate", name: "Klíma", icon: Thermometer }, { id: "blinds", name: "Redőnyök", icon: House }, { id: "devices", name: "Eszközök", icon: Power }];
   return (
     <Shell demo={data.demo} className="smart-home">
@@ -131,7 +133,7 @@ function Home() {
       </div>
       <nav className="home-section-nav" aria-label="Okosotthon szakaszok"><a href="#energy"><Activity size={16} />Energia</a>{sections.map(({ id, name, icon: Icon }) => <a key={id} href={`#${id}`}><Icon size={16} />{name}</a>)}</nav>
       <div id="energy"><SmartEnergy data={data} /></div>
-      <div id="climate"><Thermometers /></div>
+      <div id="climate"><Gree /><Thermometers /></div>
       <div className="home-comfort-grid"><Purifiers /><Locks /></div>
       <div id="blinds"><Blinds /></div>
       <div id="devices"><Tuya /><Appliances /></div>

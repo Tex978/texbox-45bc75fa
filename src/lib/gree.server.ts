@@ -19,6 +19,7 @@ export async function withGree(ip: string, command?: Properties): Promise<Proper
     client.on("error", () => finish(new Error("Nem sikerült kapcsolódni a Gree klímához.")));
     client.on("no_response", () => finish(new Error("A klíma nem válaszolt.")));
     client.on("update", (_updated, properties: Properties) => { if (!command) finish(undefined, properties); });
-    client.on("connect", () => { if (command) void client.setProperties(command).then(() => finish(undefined, command)).catch(() => finish(new Error("A klíma nem fogadta el a parancsot."))); });
+    client.on("success", () => { if (command) finish(undefined, command); });
+    client.on("connect", () => { if (command) void client.setProperties(command).catch(() => finish(new Error("A klíma nem fogadta el a parancsot."))); });
   });
 }
