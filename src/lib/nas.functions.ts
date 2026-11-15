@@ -411,8 +411,6 @@ export const getThermometerHistory = createServerFn({ method: "GET" })
       return { points, demo: false, error: "" };
     } catch { return { points: [], demo: false, error: "Nem sikerült lekérni a Xiaomi mérési előzményeit." }; }
   });
-/* Xiaomi verification */
-const unusedVerificationMarker = undefined;
 export const xiaomiVerify = createServerFn({ method: "POST" })
   .inputValidator((d: { url: string; ick: string; flag: number; code: string }) => d)
   .handler(async ({ data }) => {
