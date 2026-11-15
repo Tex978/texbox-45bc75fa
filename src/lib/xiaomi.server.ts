@@ -63,14 +63,14 @@ export async function sendCode(user: string, url: string) {
   addJar(jar, r);
   let flag = 8;
   try { const j = parse(await r.text()); flag = j.flag ?? (j.options?.includes?.(8) ? 8 : j.options?.[0] ?? 8); } catch { /* html */ }
-  if (!jar.identity_session) throw new Error("Xiaomi: nem sikerült elindítani az ellenőrzést");
+  if (!jar["identity_session"]!) throw new Error("Xiaomi: nem sikerült elindítani az ellenőrzést");
   const ep = flag === 4 ? "sendPhoneTicket" : "sendEmailTicket";
   const r2 = await fetch(`https://account.xiaomi.com/identity/auth/${ep}?_dc=${Date.now()}`, { method: "POST",
     headers: { "User-Agent": UA, Cookie: jarStr(jar), "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ retry: "0", icode: "", _json: "true", ick: jar.identity_session }) });
+    body: new URLSearchParams({ retry: "0", icode: "", _json: "true", ick: jar["identity_session"]! }) });
   const j2 = parse(await r2.text());
   if (j2.code !== 0) throw new Error(`Xiaomi: a kód küldése nem sikerült (${j2.desc || j2.code})`);
-  return { ick: jar.identity_session, flag, via: flag === 4 ? "SMS" : "e-mail" };
+  return { ick: jar["identity_session"]!, flag, via: flag === 4 ? "SMS" : "e-mail" };
 }
 
 // Step 2: verify the code, trust this device, then log in.
