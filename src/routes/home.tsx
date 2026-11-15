@@ -28,6 +28,12 @@ function Home() {
             <Stat value={f(data.todayKwh)} unit="kWh" label="Mai termelés" />
             <Stat value={f(data.totalKwh, 0)} unit="kWh" label="Összes termelés" />
           </div>
+          {data.flow && (() => { const fl = data.flow; const kw = (w: number) => `${f(w / 1000, 2)} kW`; return (
+            <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
+              {[["Napelem", kw(fl.pv)], ["Akkumulátor", `${fl.soc}% · ${fl.charge > 0 ? `+${kw(fl.charge)} töltés` : fl.discharge > 0 ? `−${kw(fl.discharge)} merítés` : "áll"}`],
+                ["Fogyasztás", kw(fl.load)], ["Hálózat", fl.toGrid > 0 ? `→ ${kw(fl.toGrid)} betáplálás` : fl.fromGrid > 0 ? `← ${kw(fl.fromGrid)} vételezés` : "0 kW"]].map(([l, v]) => (
+                <div key={l} className="rounded-lg bg-secondary p-3"><div className="text-xs text-muted-foreground">{l}</div><div className="font-mono text-sm font-medium">{v}</div></div>))}
+            </div>); })()}
           <div className="mt-6 space-y-2 border-t border-border pt-4 text-sm">{data.plants.map((p) => (
             <div key={p.name}><div className="flex justify-between gap-2"><span>{p.name}</span>
               <span className="font-mono text-muted-foreground">{f(p.currentW / 1000, 2)} kW · ma {f(p.todayKwh)} kWh</span></div>

@@ -242,20 +242,41 @@ async function growatt() {
     const ir = await fetch(`${base}/newTwoPlantAPI.do?op=getAllDeviceListTwo&plantId=${x.plantId}&pageNum=1&pageSize=20`, { headers: { "User-Agent": ua, Cookie: cookie } });
     const ij = await ir.json().catch(() => ({}));
     const info = ij.back ?? ij;
-    const devW = ((info.deviceList || []) as any[]).reduce((s2, d) => s2 + num(d.power), 0);
+    const devs = (info.deviceList || []) as any[];
+    // hybrid / battery inverters report live power flow only via their system status endpoint
+    let flow: { pv: number; soc: number; charge: number; discharge: number; load: number; toGrid: number; fromGrid: number } | null = null;
+    let flowRaw = "";
+    for (const d of devs) {
+      const sn = d.deviceSn || d.sn; const t = String(d.deviceType || "").toLowerCase();
+      const ep = t.includes("mix") || t.includes("sph") ? { u: "newMixApi.do?op=getSystemStatus_KW", b: { plantId: String(x.plantId), mixId: sn } }
+        : t.includes("tlx") || t.includes("min") ? { u: "newTlxApi.do?op=getSystemStatus_KW", b: { plantId: String(x.plantId), id: sn } }
+        : t.includes("storage") ? { u: "newStorageAPI.do?op=getSystemStatusData", b: { plantId: String(x.plantId), storageId: sn } } : null;
+      if (!ep) continue;
+      const sr = await fetch(`${base}/${ep.u}`, { method: "POST", headers: { "User-Agent": ua, Cookie: cookie, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(ep.b) });
+      const sj = await sr.json().catch(() => null);
+      const o = sj?.obj ?? sj?.back?.obj ?? sj?.back ?? sj;
+      if (!o) continue;
+      flowRaw = JSON.stringify(sj).slice(0, 1500);
+      const kw = (...k: string[]) => { for (const key of k) if (o[key] != null && o[key] !== "") return (parseFloat(String(o[key])) || 0) * 1000; return 0; };
+      flow = { pv: kw("ppv", "pPv", "pvPower"), soc: parseFloat(String(o.SOC ?? o.soc ?? o.capacity ?? 0)) || 0,
+        charge: kw("chargePower", "pCharge"), discharge: kw("pdisCharge1", "pdisCharge", "pDischarge"),
+        load: kw("pLocalLoad", "pLoad", "loadPower"), toGrid: kw("pactogrid", "pToGrid"), fromGrid: kw("pactouser", "pToUser") };
+      break;
+    }
+    const devW = flow?.pv || devs.reduce((s2, d) => s2 + num(d.power), 0);
     return { name: String(x.plantName), currentW: devW || num(x.currentPower), todayKwh: num(x.todayEnergy), totalKwh: num(x.totalEnergy),
       online: ((info.deviceList || []) as any[]).map((d) => `${d.deviceSn || d.sn}: ${d.lost ? "offline" : "online"}${d.lastUpdateTime ? ` (${d.lastUpdateTime})` : ""}`).join(", "),
-      raw: JSON.stringify({ plant: x, devices: info.deviceList }).slice(0, 1500) };
+      flow, raw: JSON.stringify({ plant: x, devices: info.deviceList }).slice(0, 1500) + (flowRaw ? `\n\nstatus: ${flowRaw}` : "") };
   }));
   return {
     currentW: plants.reduce((a, b) => a + b.currentW, 0) || num(p.totalData?.currentPowerSum),
     todayKwh: plants.reduce((a, b) => a + b.todayKwh, 0) || num(p.totalData?.todayEnergySum),
     totalKwh: plants.reduce((a, b) => a + b.totalKwh, 0) || num(p.totalData?.totalEnergySum),
-    plants, raw: JSON.stringify(pj).slice(0, 1500),
+    plants, flow: plants.find((x) => x.flow)?.flow ?? null, raw: JSON.stringify(pj).slice(0, 1500),
   };
 }
 export const getSolar = createServerFn({ method: "GET" }).handler(async () => {
-  if (!has("GROWATT_USER")) return { demo: true, error: "", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, plants: [{ name: "Otthon", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, online: "", raw: "" }], raw: "" };
+  if (!has("GROWATT_USER")) return { demo: true, error: "", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, plants: [{ name: "Otthon", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, online: "", flow: null, raw: "" }], flow: { pv: 3420, soc: 64, charge: 1200, discharge: 0, load: 1850, toGrid: 370, fromGrid: 0 }, raw: "" };
   try { return { demo: false, error: "", ...(await growatt()) }; }
-  catch (e) { return { demo: false, error: String((e as Error).message || e), currentW: 0, todayKwh: 0, totalKwh: 0, plants: [], raw: "" }; }
+  catch (e) { return { demo: false, error: String((e as Error).message || e), currentW: 0, todayKwh: 0, totalKwh: 0, plants: [], flow: null, raw: "" }; }
 });
