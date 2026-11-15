@@ -51,7 +51,7 @@ export function Blinds() {
         <button className={`${btn} ml-auto`} onClick={() => setSetup(true)} aria-label="Redőnyök beállítása" title="Nevek és szobák">⚙</button>
       </div>
       {data.error ? <p className="font-mono text-sm text-destructive">● {data.error}</p> : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid items-start gap-3 sm:grid-cols-2">
           {sorted.map(([room, list]) => {
             const avg = Math.round(list.reduce((s, b) => s + Math.max(0, b.position), 0) / list.length);
             const isOpen = open[room] ?? false;
