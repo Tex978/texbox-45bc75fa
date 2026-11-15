@@ -14,7 +14,7 @@ export function createSolarCache<T>(now = Date.now) {
     if (current.pending) return current.pending;
     current.pending = Promise.resolve().then(() => load(current.session && current.session.expiresAt > now() ? current.session : undefined, (session) => { current.session = session; }))
       .then((value) => { current.value = value; current.expiresAt = now() + SOLAR_REFRESH_MS; return value; })
-      .catch((error: unknown) => { current.blockedUntil = now() + SOLAR_COOLDOWN_MS; current.session = undefined; throw error; })
+      .catch((error: unknown) => { current.blockedUntil = now() + SOLAR_COOLDOWN_MS; delete current.session; throw error; })
       .finally(() => { delete current.pending; });
     return current.pending;
   };
