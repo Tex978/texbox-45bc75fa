@@ -199,7 +199,7 @@ export async function setPurifier(user: string, pass: string, region: string, di
 }
 
 // Smart locks: read-only (Xiaomi does not allow remote unlocking via cloud). Probe common spec ids; show raw for tuning.
-export type Lock = { did: string; name: string; model: string; online: boolean; battery: number | null; values: Record<string, unknown> };
+export type Lock = { did: string; name: string; model: string; online: boolean; battery: number | null; values: Record<string, string | number | boolean> };
 export async function listLocks(user: string, pass: string, region: string): Promise<{ locks: Lock[]; raw: string }> {
   const s = await login(user, pass);
   const dl = await call(s, region, "/home/device_list", { getVirtualModel: true, getHuamiDevices: 1, get_split_device: false, support_smart_home: true });
@@ -213,7 +213,7 @@ export async function listLocks(user: string, pass: string, region: string): Pro
       raw = pr;
       for (const r of (pr?.result ?? []) as { did: string; siid: number; piid: number; code: number; value: unknown }[]) {
         if (r.code !== 0) continue;
-        const l = locks.find((x) => x.did === r.did); if (l) l.values[`${r.siid}.${r.piid}`] = r.value;
+        const l = locks.find((x) => x.did === r.did); if (l) l.values[`${r.siid}.${r.piid}`] = r.value as string | number | boolean;
       }
     } catch (e) { raw = String(e); }
   }

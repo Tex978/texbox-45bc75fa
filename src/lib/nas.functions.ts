@@ -408,7 +408,7 @@ export const purifierAction = createServerFn({ method: "POST" })
   });
 export const getLocks = createServerFn({ method: "GET" }).handler(async () => {
   if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", locks: [
-    { did: "l1", name: "Bejárati ajtó", model: "xiaomi.lock.d100e", online: true, battery: 82, values: {} as Record<string, unknown> } ] };
+    { did: "l1", name: "Bejárati ajtó", model: "xiaomi.lock.d100e", online: true, battery: 82, values: {} as Record<string, string | number | boolean> } ] };
   const x = await import("./xiaomi.server");
   const [u, p] = xmArgs();
   const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
