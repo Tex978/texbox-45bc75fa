@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { Battery, Blinds, Droplets, Fan, Lightbulb, LockKeyhole, Thermometer, WashingMachine, type LucideIcon } from "lucide-react";
+import { Battery, Blinds, Droplets, Fan, Lightbulb, LockKeyhole, Snowflake, Thermometer, WashingMachine, type LucideIcon } from "lucide-react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 
 const sectionIcons: Record<string, LucideIcon> = {
+  "Gree klímák": Snowflake,
   "Hőmérők (Xiaomi)": Thermometer, "Légtisztító": Fan, "Okoszár": LockKeyhole,
   "Tuya eszközök": Lightbulb, "Tuya / Smart Life eszközök": Lightbulb,
   "Bosch háztartási gépek": WashingMachine, "Redőnyök": Blinds,

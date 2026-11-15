@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, setCookie, getRequest } from "@tanstack/react-start/server";
 import { md5 } from "./md5";
+import { createSolarCache, SOLAR_SESSION_MS } from "./growatt-cache";
+import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID"] as const;
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS"] as const;
 const SECRET = ["XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
@@ -227,26 +229,43 @@ export const deleteMedia = createServerFn({ method: "POST" })
 
 // Growatt cloud (same account as the ShinePhone app). Unofficial API used by the app itself.
 const growattHash = (pw: string) => md5(pw).split("").map((c, i) => (i % 2 === 0 && c === "0" ? "c" : c)).join("");
+type SolarData = Awaited<ReturnType<typeof fetchGrowatt>>;
+const cachedSolar = createSolarCache<SolarData>();
 async function growatt() {
   const base = (env("GROWATT_SERVER") || "https://server.growatt.com").replace(/\/+$/, "");
-  // Growatt blocks Dalvik user agents with 403; okhttp passes
+  const user = env("GROWATT_USER"), password = env("GROWATT_PASS"), sn = env("GROWATT_SN");
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([base, user, password, sn])));
+  const key = Array.from(new Uint8Array(bytes)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return cachedSolar(key, async (session, saveSession) => {
+    if (!session) {
+      const lr = await fetch(`${base}/newTwoLoginAPI.do`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "okhttp/3.12.0" },
+        body: new URLSearchParams({ userName: user, password: growattHash(password) }), signal: AbortSignal.timeout(15000) });
+      const login = await lr.json().catch(() => null);
+      if (!lr.ok || !login?.back?.success || !login.back.user?.id) throw new Error("Growatt: a belépést nem fogadta el a szolgáltató. Egy órára szüneteltetjük a próbálkozásokat; a meglévő tiltást ez nem oldja fel.");
+      session = { cookie: (lr.headers.getSetCookie?.() || [lr.headers.get("set-cookie") || ""]).map((c) => c.split(";")[0]).join("; "), userId: String(login.back.user.id), expiresAt: Date.now() + SOLAR_SESSION_MS };
+      saveSession(session);
+    }
+    return fetchGrowatt(base, session.cookie, session.userId, sn);
+  });
+}
+async function fetchGrowatt(base: string, cookie: string, userId: string, manualSn: string) {
   const ua = "okhttp/3.12.0";
-  const lr = await fetch(`${base}/newTwoLoginAPI.do`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": ua },
-    body: new URLSearchParams({ userName: env("GROWATT_USER"), password: growattHash(env("GROWATT_PASS")) }) });
-  const l = await lr.json().catch(() => null);
-  if (!l) throw new Error(`Growatt szerver hiba (${lr.status})`);
-  if (!l.back?.success) throw new Error(`Growatt belépés sikertelen${l.back?.error ? ` (${l.back.error})` : ""} – ellenőrizd a ShinePhone felhasználónevet és jelszót`);
-  const cookie = (lr.headers.getSetCookie?.() || [lr.headers.get("set-cookie") || ""]).map((c) => c.split(";")[0]).join("; ");
-  const pr = await fetch(`${base}/PlantListAPI.do?userId=${l.back.user.id}`, { headers: { "User-Agent": ua, Cookie: cookie } });
+  const request = async (url: string, init?: RequestInit) => {
+    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error("Growatt: nem sikerült lekérni az adatokat. Egy órára szüneteltetjük a próbálkozásokat.");
+    return response;
+  };
+  const pr = await request(`${base}/PlantListAPI.do?userId=${userId}`, { headers: { "User-Agent": ua, Cookie: cookie } });
   const pj = await pr.json().catch(() => ({}));
   // newer Growatt servers wrap the payload in "back"
   const p = pj.back ?? pj;
   const num = (v: unknown) => { const t = String(v ?? "0"); const n = parseFloat(t.replace(/[^0-9.]/g, "")) || 0;
     return /MWh/i.test(t) ? n * 1000 : /kW(?!h)/i.test(t) ? n * 1000 : n; };
+  if (!p.success || !Array.isArray(p.data)) throw new Error("Growatt: a munkamenet lejárt vagy a szolgáltató nem adott adatot. Egy órára szüneteltetjük a próbálkozásokat.");
   const plants = await Promise.all(((p.data || []) as any[]).map(async (x) => {
     let info: any = {}; const tried: string[] = [];
     for (const op of ["getAllDeviceList", "getAllDeviceListTwo"]) {
-      const ir = await fetch(`${base}/newTwoPlantAPI.do?op=${op}&plantId=${x.plantId}&pageNum=1&pageSize=20`, { headers: { "User-Agent": ua, Cookie: cookie } });
+      const ir = await request(`${base}/newTwoPlantAPI.do?op=${op}&plantId=${x.plantId}&pageNum=1&pageSize=20`, { headers: { "User-Agent": ua, Cookie: cookie } });
       const ij = await ir.json().catch(() => ({}));
       const cand = ij.back ?? ij;
       tried.push(`${op}: ${JSON.stringify(ij).slice(0, 300)}`);
@@ -254,7 +273,6 @@ async function growatt() {
     }
     const devs = (info.deviceList || []) as any[];
     // the device list can come back empty for hybrid inverters; fall back to the serial entered on the Connections page
-    const manualSn = env("GROWATT_SN");
     if (!devs.length && manualSn) devs.push({ deviceSn: manualSn, deviceType: "" });
     let flow: { pv: number; soc: number; charge: number; discharge: number; load: number; toGrid: number; fromGrid: number } | null = null;
     let flowRaw = "";
@@ -267,7 +285,7 @@ async function growatt() {
       ];
       const match = all.filter((e) => t.includes(e.k) || (e.k === "mix" && t.includes("sph")) || (e.k === "tlx" && t.includes("min")));
       for (const ep of match.length ? match : all) {
-      const sr = await fetch(`${base}/${ep.u}`, { method: "POST", headers: { "User-Agent": ua, Cookie: cookie, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(ep.b) });
+      const sr = await request(`${base}/${ep.u}`, { method: "POST", headers: { "User-Agent": ua, Cookie: cookie, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(ep.b) });
       const sj = await sr.json().catch(() => null);
       const o = sj?.obj ?? sj?.back?.obj ?? sj?.back ?? sj;
       flowRaw += `${ep.k}: ${JSON.stringify(sj).slice(0, 700)}\n`;
@@ -548,4 +566,26 @@ export const tuyaCommand = createServerFn({ method: "POST" })
     try { const r = await tuyaReady(); if (!r) return { ok: false, error: "Nincs összekötve" };
       await r.t.sendTuya(r.s, data.id, data.code, data.value); return { ok: true, error: "" }; }
     catch (e) { return { ok: false, error: (e as Error).message }; }
+  });
+
+export const getGree = createServerFn({ method: "GET" }).handler(async () => {
+  const raw = env("GREE_UNITS");
+  if (!raw) return { configured: false, units: [], error: "" };
+  try {
+    const { withGree } = await import("./gree.server");
+    const units = [];
+    for (const unit of parseGreeUnits(raw)) {
+      try { const properties = await withGree(unit.ip); units.push({ ...unit, online: true, properties, error: "" }); }
+      catch (e) { units.push({ ...unit, online: false, properties: {} as Record<string, string | number>, error: String((e as Error).message) }); }
+    }
+    return { configured: true, units, error: "" };
+  } catch (e) { return { configured: true, units: [], error: String((e as Error).message) }; }
+});
+export const greeControl = createServerFn({ method: "POST" })
+  .inputValidator(validateGreeCommand)
+  .handler(async ({ data }) => {
+    if (!parseGreeUnits(env("GREE_UNITS")).some((unit) => unit.ip === data.ip)) throw new Error("Ez a klíma nincs beállítva.");
+    const { withGree } = await import("./gree.server");
+    await withGree(data.ip, { [data.property]: data.value, ...(data.property === "temperature" ? { temperatureUnit: "celsius" } : {}) });
+    return { ok: true };
   });

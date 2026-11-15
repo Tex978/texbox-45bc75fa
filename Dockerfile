@@ -8,6 +8,7 @@ RUN NITRO_PRESET=node-server bun run build
 FROM node:22-alpine
 WORKDIR /app
 COPY --from=build /app/.output ./.output
+RUN npm install --no-save --omit=dev gree-hvac-client@2.2.0
 ENV PORT=3050 HOST=0.0.0.0 NODE_ENV=production
 EXPOSE 3050
 CMD ["node", ".output/server/index.mjs"]
