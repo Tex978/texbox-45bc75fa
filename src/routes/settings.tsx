@@ -7,6 +7,7 @@ const sq = queryOptions({ queryKey: ["status"], queryFn: () => getStatus() });
 const cq = queryOptions({ queryKey: ["config"], queryFn: () => getConfig() });
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { title: "Kapcsolatok – NAS Vezérlő" }, { name: "description", content: "Plex, Radarr, Sonarr és qBittorrent kapcsolatok beállítása." },
     { property: "og:title", content: "Kapcsolatok – NAS Vezérlő" }, { property: "og:description", content: "Szolgáltatás-kapcsolatok beállítása." },
   ] }),

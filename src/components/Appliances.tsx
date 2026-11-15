@@ -1,6 +1,8 @@
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Card } from "@/components/Shell";
+import { SmartSection as Card } from "@/components/SmartHomeUI";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, ArrowDown, Square, Settings2, Check, X, ChevronDown, ChevronRight, Power, Play, Lightbulb, WashingMachine, Droplets, Battery, Minus, Plus, LogOut, QrCode } from "lucide-react";
 import { getAppliances, hcStartLink, hcFinishLink, hcStop, hcPrograms, hcControl, type Appliance } from "@/lib/nas.functions";
 
 export const appliancesQuery = queryOptions({ queryKey: ["hc"], queryFn: () => getAppliances(), refetchInterval: 60000 });
@@ -19,22 +21,22 @@ function Device({ a, label }: { a: Appliance; label: string }) {
   const loadProgs = async () => { const r = await hcPrograms({ data: { haId: a.haId } }); setProgs(r.programs); setSel(r.programs[0]?.key || ""); if (r.error) setMsg(`● ${r.error}`); };
   const on = a.connected && a.state !== "Inactive";
   return (
-    <div className="rounded-lg bg-secondary p-3">
-      <div className="flex justify-between gap-2"><span className="font-medium">{label}</span>
+    <div className="smart-device">
+      <div className="flex justify-between gap-2"><span className="inline-flex min-w-0 items-center gap-2 font-medium"><WashingMachine size={19} className="shrink-0 text-home-water" />{label}</span>
         <span className="font-mono text-xs text-muted-foreground">{a.connected ? STATE[a.state] || a.state || "elérhető" : "○ offline"}</span></div>
       {a.program && <div className="mt-1 text-sm">{a.program}{a.remaining != null && ` · még ${Math.round(a.remaining / 60)} perc`}</div>}
       {a.progress != null && <div className="mt-2 h-1.5 rounded bg-background"><div className="h-full rounded bg-primary" style={{ width: `${a.progress}%` }} /></div>}
       {a.door && <div className="mt-1 text-xs text-muted-foreground">Ajtó: {a.door === "Open" ? "nyitva" : a.door === "Closed" ? "zárva" : a.door === "Locked" ? "reteszelve" : a.door}</div>}
       {a.connected && <div className="mt-3 flex flex-wrap gap-2">
-        <button onClick={() => run(hcControl({ data: { haId: a.haId, action: "power", on: !on, type: a.type } }))} className="rounded border border-border px-3 py-1 text-xs">{on ? "Kikapcsolás" : "Bekapcsolás"}</button>
+        <Button variant="outline" onClick={() => run(hcControl({ data: { haId: a.haId, action: "power", on: !on, type: a.type } }))} className="rounded border border-border px-3 py-1 text-xs"><Power />{on ? "Kikapcsolás" : "Bekapcsolás"}</Button>
         {a.state === "Run" || a.state === "DelayedStart" || a.state === "Pause"
-          ? <button onClick={() => run(hcStop({ data: { haId: a.haId } }).then((r) => ({ ...r, error: "nem sikerült" })))} className="rounded border border-border px-3 py-1 text-xs">Program leállítása</button>
-          : progs === null ? <button onClick={loadProgs} className="rounded border border-border px-3 py-1 text-xs">Program indítása…</button> : null}
+          ? <Button variant="outline" onClick={() => run(hcStop({ data: { haId: a.haId } }).then((r) => ({ ...r, error: "nem sikerült" })))} className="rounded border border-border px-3 py-1 text-xs"><Square />Program leállítása</Button>
+          : progs === null ? <Button variant="outline" onClick={loadProgs} className="rounded border border-border px-3 py-1 text-xs"><Play />Program indítása…</Button> : null}
       </div>}
       {progs && a.state !== "Run" && <div className="mt-2 flex gap-2">
         <select value={sel} onChange={(e) => setSel(e.target.value)} className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1 text-xs">
           {progs.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}</select>
-        <button disabled={!sel} onClick={() => run(hcControl({ data: { haId: a.haId, action: "start", program: sel } }))} className="rounded bg-primary px-3 py-1 text-xs text-primary-foreground">Indítás</button></div>}
+        <Button variant="outline" disabled={!sel} onClick={() => run(hcControl({ data: { haId: a.haId, action: "start", program: sel } }))} className="rounded bg-primary px-3 py-1 text-xs text-primary-foreground"><Play />Indítás</Button></div>}
       {progs && !a.remoteStart && <p className="mt-1 text-xs text-muted-foreground">Indításhoz a gépen be kell kapcsolni a „Távoli indítás” funkciót.</p>}
       {msg && <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{msg}</p>}
     </div>
@@ -58,16 +60,16 @@ export function Appliances() {
     <Card title="Bosch háztartási gépek" className="mt-4">
       {!data.linked ? (
         <div className="space-y-3 text-sm">
-          {!link ? <button onClick={start} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Összekötés a Home Connecttel</button> : <>
+          {!link ? <Button variant="outline" onClick={start} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Összekötés a Home Connecttel</Button> : <>
             <p>Nyisd meg a Bosch oldalát, lépj be, és hagyd jóvá. Kód: <span className="font-mono font-bold">{link.code}</span></p>
             <a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-block rounded-md border border-border px-4 py-2">Bosch belépés megnyitása új lapon ↗</a>
             <p className="text-xs text-muted-foreground">Ha nem nyílik meg, másold be a böngészőbe:</p>
             <input readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} className="w-full rounded border border-border bg-background px-2 py-1 font-mono text-xs" />
-            <button onClick={finish} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Jóváhagytam</button></>}
+            <Button variant="outline" onClick={finish} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Jóváhagytam</Button></>}
           {msg && <p className="font-mono text-destructive">● {msg}</p>}
         </div>
       ) : data.error ? <p className="font-mono text-sm text-destructive">● {data.error}</p> : <>
-        <div className="mb-3 flex justify-end"><button onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">⚙ {edit ? "Kész" : "Eszközkezelő"}</button></div>
+        <div className="mb-3 flex justify-end"><Button variant="outline" onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">{edit ? <Check /> : <Settings2 />}{edit ? "Kész" : "Eszközkezelő"}</Button></div>
         {edit ? <div className="space-y-2">
           {data.appliances.map((a) => (
             <div key={a.haId} className="flex flex-wrap items-center gap-2 rounded-lg bg-secondary p-2 text-sm">

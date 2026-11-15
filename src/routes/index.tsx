@@ -5,6 +5,7 @@ import { getOverview } from "@/lib/nas.functions";
 const q = queryOptions({ queryKey: ["overview"], queryFn: () => getOverview(), refetchInterval: 10000 });
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { title: "Áttekintő – NAS Vezérlő" }, { name: "description", content: "Tárhely, Plex aktivitás és friss médiák egy helyen." },
     { property: "og:title", content: "Áttekintő – NAS Vezérlő" }, { property: "og:description", content: "Tárhely, Plex aktivitás és friss médiák egy helyen." },
   ] }),

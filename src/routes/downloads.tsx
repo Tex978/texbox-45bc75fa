@@ -5,6 +5,7 @@ import { getTorrents, torrentAction } from "@/lib/nas.functions";
 const q = queryOptions({ queryKey: ["torrents"], queryFn: () => getTorrents(), refetchInterval: 3000 });
 export const Route = createFileRoute("/downloads")({
   head: () => ({ meta: [
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { title: "Letöltések – NAS Vezérlő" }, { name: "description", content: "qBittorrent letöltések kezelése egy helyen." },
     { property: "og:title", content: "Letöltések – NAS Vezérlő" }, { property: "og:description", content: "qBittorrent letöltések kezelése." },
   ] }),

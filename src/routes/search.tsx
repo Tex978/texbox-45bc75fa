@@ -5,6 +5,7 @@ import { Shell, Poster } from "@/components/Shell";
 import { searchMedia, requestMedia, getRecommendations } from "@/lib/nas.functions";
 export const Route = createFileRoute("/search")({
   head: () => ({ meta: [
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { title: "Keresés – NAS Vezérlő" }, { name: "description", content: "Filmek és sorozatok keresése és kérése Radarr/Sonarr felé." },
     { property: "og:title", content: "Keresés – NAS Vezérlő" }, { property: "og:description", content: "Filmek és sorozatok keresése és kérése." },
   ] }),

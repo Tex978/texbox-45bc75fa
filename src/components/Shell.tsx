@@ -4,9 +4,9 @@ const nav = [
   { to: "/", label: "Áttekintő" }, { to: "/search", label: "Keresés" },
   { to: "/downloads", label: "Letöltések" }, { to: "/library", label: "Tárhely" }, { to: "/home", label: "Okosotthon" }, { to: "/settings", label: "Kapcsolatok" },
 ] as const;
-export function Shell({ children, demo }: { children: ReactNode; demo?: boolean }) {
+export function Shell({ children, demo, className = "" }: { children: ReactNode; demo?: boolean; className?: string }) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className={`min-h-screen bg-background text-foreground ${className}`}>
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-4">
           <div className="font-display text-xl font-bold tracking-tight"><span className="text-primary">●</span> NAS Vezérlő</div>

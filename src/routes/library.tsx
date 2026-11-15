@@ -6,6 +6,7 @@ import { getLibrary, deleteMedia } from "@/lib/nas.functions";
 const q = queryOptions({ queryKey: ["library"], queryFn: () => getLibrary() });
 export const Route = createFileRoute("/library")({
   head: () => ({ meta: [
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { title: "Tárhely – NAS Vezérlő" }, { name: "description", content: "Melyik film és sorozat mennyi helyet foglal, és a régiek törlése." },
     { property: "og:title", content: "Tárhely – NAS Vezérlő" }, { property: "og:description", content: "Tárhelykezelés filmekhez és sorozatokhoz." },
   ] }),
