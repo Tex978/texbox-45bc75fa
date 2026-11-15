@@ -489,3 +489,23 @@ export const hcStop = createServerFn({ method: "POST" }).inputValidator((d: { ha
   const r = await fetch(`${HC}/api/homeappliances/${encodeURIComponent(data.haId)}/programs/active`, { method: "DELETE", headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.bsh.sdk.v1+json" } });
   return { ok: r.ok };
 });
+const hcSend = async (tok: string, p: string, method: string, body?: unknown) => {
+  const r = await fetch(`${HC}${p}`, { method, headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.bsh.sdk.v1+json", "Content-Type": "application/vnd.bsh.sdk.v1+json", "Accept-Language": "hu-HU" }, body: body ? JSON.stringify(body) : null });
+  if (r.ok) return { ok: true, error: "" };
+  const t = await r.text(); let m = t; try { const j = JSON.parse(t); m = j.error?.description || j.error?.key || t; } catch { /* */ }
+  return { ok: false, error: `${r.status}: ${m}`.slice(0, 300) };
+};
+export const hcPrograms = createServerFn({ method: "POST" }).inputValidator((d: { haId: string }) => d).handler(async ({ data }) => {
+  const tok = await hcToken(); if (!tok) return { programs: [] as { key: string; name: string }[], error: "Nincs összekötve" };
+  const d = await hcGet(tok, `/api/homeappliances/${encodeURIComponent(data.haId)}/programs/available`) as { programs?: { key: string; name?: string }[] } | null;
+  return { programs: (d?.programs || []).map((p) => ({ key: p.key, name: p.name || short(p.key) })), error: d ? "" : "Nem érhetők el a programok" };
+});
+export const hcControl = createServerFn({ method: "POST" })
+  .inputValidator((d: { haId: string; action: "start" | "power"; program?: string; on?: boolean; type?: string }) => d)
+  .handler(async ({ data }) => {
+    const tok = await hcToken(); if (!tok) return { ok: false, error: "Nincs összekötve" };
+    const id = encodeURIComponent(data.haId);
+    if (data.action === "start") return hcSend(tok, `/api/homeappliances/${id}/programs/active`, "PUT", { data: { key: data.program, options: [] } });
+    const off = /Oven|Hob|Hood|CoffeeMaker/.test(data.type || "") ? "BSH.Common.EnumType.PowerState.Standby" : "BSH.Common.EnumType.PowerState.Off";
+    return hcSend(tok, `/api/homeappliances/${id}/settings/BSH.Common.Setting.PowerState`, "PUT", { data: { key: "BSH.Common.Setting.PowerState", value: data.on ? "BSH.Common.EnumType.PowerState.On" : off } });
+  });
