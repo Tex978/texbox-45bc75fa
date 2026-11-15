@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Shell, Poster } from "@/components/Shell";
+import { Button } from "@/components/ui/button";
+import { Plus, Check } from "lucide-react";
 import { searchMedia, requestMedia, getRecommendations } from "@/lib/nas.functions";
 export const Route = createFileRoute("/search")({
   head: () => ({ meta: [
@@ -34,7 +36,7 @@ function Search() {
           <option>720p</option><option>1080p</option><option>4K</option></select>
       </div>
       {isFetching && <p className="mb-3 text-sm text-muted-foreground">Keresés…</p>}
-      {!dq && <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">Ajánlott neked · népszerű és felkapott</h2>}
+      {!dq && <h2 className="mb-3 text-sm font-medium text-muted-foreground">Ajánlott neked · népszerű és felkapott</h2>}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">{shown.map((c, i) => {
         const s = state[c.type + c.id];
         return (
@@ -42,9 +44,10 @@ function Search() {
             <Poster src={c.poster} title={c.title} hue={(i * 53) % 360} />
             <div className="mt-2 line-clamp-1 text-sm font-medium">{c.title}</div>
             <div className="mb-2 text-xs text-muted-foreground">{c.type} · {c.year}</div>
-            <button disabled={!!s || c.inLibrary} onClick={() => req(c)}
-              className="mt-auto rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground">
-              {c.inLibrary ? "Már megvan" : s || "Kérés"}</button>
+            <Button disabled={!!s || c.inLibrary} onClick={() => req(c)}
+              className="mt-auto">
+              {c.inLibrary ? <Check /> : <Plus />}
+              {c.inLibrary ? "Már megvan" : s || "Kérés"}</Button>
           </div>);
       })}</div>
     </Shell>

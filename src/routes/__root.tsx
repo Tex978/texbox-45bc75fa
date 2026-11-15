@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#080b0a" },
+      { name: "theme-color", content: "#17181a" },
       { title: "NAS Vezérlő" },
       { name: "description", content: "Otthoni médiarendszer vezérlőpult" },
       { name: "author", content: "Lovable" },

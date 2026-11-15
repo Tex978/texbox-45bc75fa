@@ -45,7 +45,7 @@ function Index() {
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">{data.recent.map((r, i) => (
             <div key={i}>
               {r.thumb ? <img src={`/api/plex-thumb?path=${encodeURIComponent(r.thumb)}`} alt={r.title} className="aspect-[2/3] w-full rounded-lg object-cover" loading="lazy" />
-                : <div className="flex aspect-[2/3] items-end rounded-lg p-2 text-sm font-bold" style={{ background: `linear-gradient(160deg, oklch(0.45 0.12 ${r.hue}), oklch(0.2 0.04 ${r.hue}))` }}>{r.title}</div>}
+                : <Poster title={r.title} />}
               <div className="mt-1 truncate text-xs text-muted-foreground">{r.title} · {r.year}</div></div>))}</div>
         </Card>
       </div>
