@@ -17,6 +17,8 @@ export const Route = createFileRoute("/settings")({
   component: Settings,
 });
 const services = [
+  { key: "vw", name: "Volkswagen ID.7", fields: [["VW_USER", "Volkswagen fiók e-mail", ""], ["VW_PASS", "Volkswagen fiók jelszó", ""]] },
+  { key: "renault", name: "My Renault · Master", fields: [["RENAULT_USER", "My Renault fiók e-mail", ""], ["RENAULT_PASS", "My Renault fiók jelszó", ""], ["RENAULT_LOCALE", "Fiók nyelve és országa", "hu_HU"]] },
   { key: "gree", name: "Gree+ klímák", fields: [["GREE_USER", "Gree+ fiók e-mail", ""], ["GREE_PASS", "Gree+ fiók jelszó", ""], ["GREE_REGION", "Fiók régiója", "Europe"], ["GREE_UNITS", "Helyi IP-címek (fiókos belépésnél nem szükséges)", "192.168.1.60=Nappali, 192.168.1.61=Hálószoba"]] },
   { key: "blinds", name: "Redőnyök (Connector hub)", fields: [["BLINDS_IP", "Hub IP címe (otthoni hálózat)", "192.168.1.50"], ["BLINDS_KEY", "Kulcs (Connector app → Névjegy, 5 koppintás)", ""], ["BLINDS_NAMES", "Nevek (nem kötelező)", "1=Nappali, 2=Hálószoba"]] },
   { key: "xiaomi", name: "Xiaomi (Mi Home) hőmérők", fields: [["XIAOMI_USER", "Mi fiók e-mail / telefonszám / azonosító", ""], ["XIAOMI_PASS", "Mi fiók jelszó", ""], ["XIAOMI_REGION", "Régió (de = Európa, cn, us, sg, ru, i2)", "de"]] },
@@ -50,7 +52,7 @@ function Settings() {
       <h1 className="mb-2 font-display text-3xl font-bold">Kapcsolatok</h1>
       <p className="mb-6 text-sm text-muted-foreground">Add meg a külső címeket és kulcsokat. A titkos mezőket üresen hagyva a korábbi érték megmarad. Az adatok ebben a böngészőben, védett sütiben tárolódnak.</p>
       <div className="grid gap-4 md:grid-cols-2">{services.map((s) => {
-        const st = s.key === "gree" ? undefined : status[s.key];
+        const st = s.key === "gree" || s.key === "vw" || s.key === "renault" ? undefined : status[s.key];
         return (
           <Card key={s.key} title={s.name}>
             <div className="space-y-3">{s.fields.map(([f, label, ph]) => (
@@ -63,7 +65,7 @@ function Settings() {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />}
               </label>))}</div>
             <div className={`mt-3 font-mono text-xs ${st === "ok" ? "text-primary" : st === "nincs beállítva" ? "text-muted-foreground" : "text-destructive"}`}>
-              {s.key === "gree" ? greeStatus : `● ${st === "ok" ? "Elérhető" : st}`}</div>
+              {s.key === "gree" ? greeStatus : ["vw", "renault"].includes(s.key) ? (cfg[s.key === "vw" ? "VW_PASS" : "RENAULT_PASS"] ? "Fiók elmentve · állapot az Autók oldalon" : "Nincs csatlakoztatva") : `● ${st === "ok" ? "Elérhető" : st}`}</div>
           </Card>);
       })}</div>
       <Button onClick={save} disabled={saving} className="mt-6">

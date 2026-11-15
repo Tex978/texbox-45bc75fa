@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { LayoutDashboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Search, Download, HardDrive, House, Cable, Car, Server, Film, Play, History, Plus, type LucideIcon } from "lucide-react";
 const nav = [
   { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search },
   { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/library", label: "Tárhely", icon: HardDrive },
-  { to: "/home", label: "Okosotthon", icon: House }, { to: "/settings", label: "Kapcsolatok", icon: Cable },
+  { to: "/home", label: "Okosotthon", icon: House }, { to: "/cars", label: "Autók", icon: Car }, { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
 export function Shell({ children, demo, className = "" }: { children: ReactNode; demo?: boolean; className?: string }) {
   return <div className={`app-shell min-h-screen bg-background text-foreground ${className}`}>
