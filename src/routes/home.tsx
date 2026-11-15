@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Shell, Card } from "@/components/Shell";
 import { getSolar } from "@/lib/nas.functions";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
