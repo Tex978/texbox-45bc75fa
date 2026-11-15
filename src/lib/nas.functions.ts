@@ -22,7 +22,7 @@ async function qbit(path: string, body?: Record<string, string>) {
     body: new URLSearchParams({ username: env("QBIT_USER"), password: env("QBIT_PASS") }) });
   const sid = (login.headers.get("set-cookie") || "").match(/SID=[^;]+/)?.[0] || "";
   const r = await fetch(`${base}/api/v2${path}`, { method: body ? "POST" : "GET", headers: { Cookie: sid, Referer: base, "Content-Type": "application/x-www-form-urlencoded" },
-    body: body ? new URLSearchParams(body) : undefined });
+    body: body ? new URLSearchParams(body) : null });
   if (!r.ok) throw new Error(`qBittorrent ${r.status}`);
   const t = await r.text();
   try { return JSON.parse(t); } catch { return t; }
