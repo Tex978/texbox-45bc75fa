@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [ ] Egységes modern megjelenés minden oldalon: közös színek, ikonmenü, vezérlők és telefonos ellenőrzés.
 - [x] GitHubon a Gree Python-telepítés hibás lépésének azonosítása; Debian-alapú telepítés és importellenőrzés hozzáadása.
 - [ ] Az új Docker-kép GitHubon történő elkészítésének ellenőrzése: a javítás szinkronizálása utáni futás szükséges.
 - [x] Teljes alakos gyermekfotó körbevágása és elhelyezése az Áttekintő és Okosotthon oldal tetején.
