@@ -1,9 +1,9 @@
 # Synology Container Manager > Projekt > Létrehozás: ezt a fájlt add meg.
-# Írd át: GITHUB-FELHASZNALO/REPO-NEV és az APP_PASSWORD értékét.
+# Írd át az APP_PASSWORD értékét.
 # A szolgáltatások címeit/kulcsait az app Kapcsolatok oldalán adhatod meg.
 services:
   nas-vezerlo:
-    image: ghcr.io/GITHUB-FELHASZNALO/REPO-NEV:latest
+    image: ghcr.io/tex978/texbox-45bc75fa:latest
     container_name: nas-vezerlo
     restart: unless-stopped
     # host network: the blinds hub answers over local UDP (multicast), which bridge networking blocks
