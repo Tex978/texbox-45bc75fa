@@ -85,6 +85,8 @@ class Account:
         if self.cfg["brand"] == "vw":
             # No background polling thread: fetch only through this bounded read path.
             await asyncio.to_thread(self.client.fetch_all)
+            for connector in self.client.connectors.connectors.values():
+                await asyncio.to_thread(connector.update_vehicles)
             vehicles = [vw_reading(v) for v in self.client.garage.list_vehicles()]
         else:
             person = await self.client.get_person()
