@@ -8,8 +8,8 @@ import { filterMedia, mapArrMedia, imdbIdentifier, imdbScore, type MediaType, ty
 import { mediaDemo } from "./media-demo";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["TMDB_TOKEN", "OMDB_KEY", "QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS", "GREE_USER", "GREE_PASS", "GREE_REGION", "VW_USER", "VW_PASS", "RENAULT_USER", "RENAULT_PASS", "RENAULT_LOCALE"] as const;
-const SECRET = ["TMDB_TOKEN", "OMDB_KEY", "VW_PASS", "RENAULT_PASS", "GREE_PASS", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["TMDB_TOKEN", "OMDB_KEY", "QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS", "GREE_USER", "GREE_PASS", "GREE_REGION"] as const;
+const SECRET = ["TMDB_TOKEN", "OMDB_KEY", "GREE_PASS", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -736,20 +736,3 @@ export const greeControl = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const getVehicles = createServerFn({ method: "POST" })
-  .inputValidator((data: { brand: "vw" | "renault"; code?: string }) => {
-    if (!["vw", "renault"].includes(data.brand)) throw new Error("Ismeretlen autómárka.");
-    if (data.code && !/^\d{4,10}$/.test(data.code)) throw new Error("Érvénytelen ellenőrzőkód.");
-    return data;
-  })
-  .handler(async ({ data }) => {
-    const prefix = data.brand === "vw" ? "VW" : "RENAULT";
-    const empty = { vehicles: [] as import("./vehicles.server").VehicleReading["vehicles"], error: "", verification: false, updatedAt: null as string | null };
-    if (!has(prefix + "_USER", prefix + "_PASS")) return { ...empty, configured: false };
-    try {
-      const { readVehicles } = await import("./vehicles.server");
-      return { ...await readVehicles({ brand: data.brand, user: env(prefix + "_USER"), password: env(prefix + "_PASS"), locale: env("RENAULT_LOCALE") || "hu_HU" }, data.code), configured: true };
-    } catch {
-      return { ...empty, configured: true, error: "Az autós fiókok a frissített Synology alkalmazásban csatlakoztathatók." };
-    }
-  });

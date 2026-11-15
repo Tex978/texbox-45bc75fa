@@ -31,7 +31,6 @@ use the editor.
 
 <!-- AGENT-MEMORY:BEGIN -->
 - Media discovery uses TMDB for movie/TV categories and details and OMDb or explicitly named Arr IMDb fields for IMDb scores; never relabel TMDB scores as IMDb. Preserve TMDB movie and TVDB series request IDs, keep provider credentials in the existing self-hosted configuration, and label sample catalogs and non-personalized fallbacks honestly.
-- Vehicle accounts use a separate pinned Python environment and private JSON-lines bridge in Docker, with credential-scoped 15-minute read/failure caches and in-memory Renault verification sessions; the cars page never substitutes demo measurements for unavailable data. Return allowlisted brand/stage/reason diagnostics rather than vendor exception text to protect credentials; VW construction runs off the event loop and fetch_all is not followed by a duplicate status fetch.
 - App icons share one photographic cutout and resized public PNGs; use manifest-only home-screen metadata without a service worker so previews and live device reads remain uncached.
 - Overview and smart-home headings reuse the bundled full-body photographic cutout in normal layout flow so the photo never covers device controls.
 - Thermometer history is requested on demand from Xiaomi with bounded reads, decoded in thermo-history.ts, and never synthesized as real measurements; dashboard mobile CSS remains scoped to smart-home.
