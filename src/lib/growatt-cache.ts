@@ -1,4 +1,4 @@
-export const SOLAR_REFRESH_MS = 5 * 60_000;
+export const SOLAR_REFRESH_MS = 15 * 60_000;
 export const SOLAR_COOLDOWN_MS = 60 * 60_000;
 export const SOLAR_SESSION_MS = 30 * 60_000;
 export type SolarSession = { cookie: string; userId: string; expiresAt: number };
