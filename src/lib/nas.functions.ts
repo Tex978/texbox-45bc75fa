@@ -224,11 +224,13 @@ export const deleteMedia = createServerFn({ method: "POST" })
 const growattHash = (pw: string) => md5(pw).split("").map((c, i) => (i % 2 === 0 && c === "0" ? "c" : c)).join("");
 async function growatt() {
   const base = (env("GROWATT_SERVER") || "https://server.growatt.com").replace(/\/+$/, "");
-  const ua = "Dalvik/2.1.0 (Linux; U; Android 12; ShinePhone)";
+  // Growatt blocks Dalvik user agents with 403; okhttp passes
+  const ua = "okhttp/3.12.0";
   const lr = await fetch(`${base}/newTwoLoginAPI.do`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": ua },
     body: new URLSearchParams({ userName: env("GROWATT_USER"), password: growattHash(env("GROWATT_PASS")) }) });
   const l = await lr.json().catch(() => null);
-  if (!l?.back?.success) throw new Error(`Growatt belépés sikertelen${l?.back?.msg ? ` (${l.back.msg})` : ""} – ellenőrizd a ShinePhone felhasználónevet és jelszót`);
+  if (!l) throw new Error(`Growatt szerver hiba (${lr.status})`);
+  if (!l.back?.success) throw new Error(`Growatt belépés sikertelen${l.back?.error ? ` (${l.back.error})` : ""} – ellenőrizd a ShinePhone felhasználónevet és jelszót`);
   const cookie = (lr.headers.getSetCookie?.() || [lr.headers.get("set-cookie") || ""]).map((c) => c.split(";")[0]).join("; ");
   const pr = await fetch(`${base}/PlantListAPI.do?userId=${l.back.user.id}`, { headers: { "User-Agent": ua, Cookie: cookie } });
   const p = await pr.json();
