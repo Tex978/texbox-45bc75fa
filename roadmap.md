@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [ ] Gree+ hőfokállítás: könyvtári képességkezelés és parancscsoport használata, valódi könyvtárra épülő próbák.
 - [x] Okosotthon újraszervezése: kompakt állapotáttekintő, kategóriaváltás és eszközrács; három képernyőméreten ellenőrizve, a redőnyvezérlés bemutatóban működik; élő szolgáltatások nem ellenőrizhetők fiókok nélkül.
 - [x] Home Connect: HTTP-hibák elkülönítése és újraösszekötés elérhetővé tétele a hibás kapcsolat mellett.
 - [ ] Home Connect élő adatlekérés ellenőrzése: a felhasználó újraengedélyezett fiókja szükséges; az eredeti válaszkód nem áll rendelkezésre.
