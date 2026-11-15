@@ -1,7 +1,31 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getCookie, setCookie, getRequest } from "@tanstack/react-start/server";
 import { volumes, streams, recent, torrents, catalog } from "./mock";
 
-const env = (k: string) => (process.env[k] || "").replace(/\/$/, "");
+const COOKIE = "nas-cfg";
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN"] as const;
+const SECRET = ["QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
+const env = (k: string) => (readCfg()[k] || process.env[k] || "").trim().replace(/\/$/, "");
+
+export const getConfig = createServerFn({ method: "GET" }).handler(async () => {
+  const out: Record<string, string> = {};
+  for (const f of FIELDS) out[f] = SECRET.includes(f) ? (env(f) ? "__set__" : "") : env(f);
+  return out;
+});
+
+export const saveConfig = createServerFn({ method: "POST" })
+  .inputValidator((d: Record<string, string>) => d)
+  .handler(async ({ data }) => {
+    const cur = readCfg(); const next: Record<string, string> = {};
+    for (const f of FIELDS) {
+      const v = (data[f] ?? "").trim();
+      next[f] = SECRET.includes(f) && (v === "" || v === "__set__") ? cur[f] || "" : v;
+    }
+    setCookie(COOKIE, JSON.stringify(next), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365,
+      secure: getRequest().url.startsWith("https") });
+    return { ok: true };
+  });
 const has = (...k: string[]) => k.every((x) => env(x));
 const isDemo = () => !has("QBIT_URL") && !has("RADARR_URL") && !has("SONARR_URL") && !has("PLEX_URL");
 
