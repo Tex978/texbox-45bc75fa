@@ -12,15 +12,17 @@ export function Appliances() {
   const qc = useQueryClient();
   const [link, setLink] = useState<{ code: string; url: string } | null>(null);
   const [msg, setMsg] = useState("");
-  const start = async () => { setMsg(""); const r = await hcStartLink(); if (r.ok) { setLink({ code: r.code, url: r.url }); window.open(r.url, "_blank"); } else setMsg(r.error); };
+  const start = async () => { setMsg(""); const r = await hcStartLink(); if (r.ok) { setLink({ code: r.code, url: r.url }); } else setMsg(r.error); };
   const finish = async () => { const r = await hcFinishLink(); if (r.ok) { setLink(null); qc.invalidateQueries({ queryKey: ["hc"] }); } else setMsg(r.error); };
   return (
     <Card title="Bosch háztartási gépek" className="mt-4">
       {!data.linked ? (
         <div className="space-y-3 text-sm">
           {!link ? <button onClick={start} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Összekötés a Home Connecttel</button> : <>
-            <p>Jelentkezz be a megnyílt Home Connect oldalon, és hagyd jóvá. Kód: <span className="font-mono font-bold">{link.code}</span></p>
-            <a href={link.url} target="_blank" rel="noreferrer" className="block text-primary underline">Oldal megnyitása újra</a>
+            <p>Nyisd meg a Bosch oldalát, lépj be, és hagyd jóvá. Kód: <span className="font-mono font-bold">{link.code}</span></p>
+            <a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-block rounded-md border border-border px-4 py-2">Bosch belépés megnyitása új lapon ↗</a>
+            <p className="text-xs text-muted-foreground">Ha nem nyílik meg, másold be a böngészőbe:</p>
+            <input readOnly value={link.url} onFocus={(e) => e.currentTarget.select()} className="w-full rounded border border-border bg-background px-2 py-1 font-mono text-xs" />
             <button onClick={finish} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Jóváhagytam</button></>}
           {msg && <p className="font-mono text-destructive">● {msg}</p>}
         </div>
