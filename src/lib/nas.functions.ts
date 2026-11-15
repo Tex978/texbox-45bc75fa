@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie as readBrowserCookie, setCookie as writeBrowserCookie, getRequest } from "@tanstack/react-start/server";
-import { storeGet, storeSet } from "./shared-store.server";
+import { storeGet, storeSet, storeAvailable, readStoredCookie } from "./shared-store.server";
 // Shared server-side store first (same data on every device), browser cookie as fallback/migration source.
-const getCookie = (name: string): string | undefined => { const v = storeGet(name); if (v != null) return v; const c = readBrowserCookie(name); if (c && storeGet(name) === undefined) storeSet(name, c); return c; };
-const setCookie = (name: string, value: string, opts: Parameters<typeof writeBrowserCookie>[2]) => { storeSet(name, value); writeBrowserCookie(name, value, opts); };
+const getCookie = (name: string): string | undefined => readStoredCookie(name, readBrowserCookie);
+const setCookie = (name: string, value: string, opts: Parameters<typeof writeBrowserCookie>[2]) => {
+  if (!storeSet(name, value) && storeAvailable()) throw new Error("Nem sikerült a Synologyra menteni. Ellenőrizd a data mappa csatolását és írási jogosultságát; a beállítások nem lettek elmentve.");
+  writeBrowserCookie(name, value, opts);
+};
 import { md5 } from "./md5";
 import { createSolarCache, SOLAR_SESSION_MS } from "./growatt-cache";
 import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
@@ -15,7 +18,7 @@ import { homeConnectFailure } from "./home-connect";
 const COOKIE = "nas-cfg";
 export const FIELDS = ["TMDB_TOKEN", "OMDB_KEY", "QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS", "GREE_USER", "GREE_PASS", "GREE_REGION"] as const;
 const SECRET = ["TMDB_TOKEN", "OMDB_KEY", "GREE_PASS", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
-const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
+const readCfg = (): Record<string, string> => { const value = getCookie(COOKIE); try { return JSON.parse(value || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
   if (SECRET.includes(k)) return v;
@@ -27,6 +30,10 @@ export const getConfig = createServerFn({ method: "GET" }).handler(async () => {
   const out: Record<string, string> = {};
   for (const f of FIELDS) out[f] = SECRET.includes(f) ? (env(f) ? "__set__" : "") : env(f);
   return out;
+});
+export const getConnectionStorage = createServerFn({ method: "GET" }).handler(async () => {
+  getCookie(COOKIE);
+  return { shared: storeAvailable(), saved: Boolean(storeGet(COOKIE)) };
 });
 
 export const saveConfig = createServerFn({ method: "POST" })
