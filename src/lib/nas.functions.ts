@@ -28,11 +28,14 @@ export const saveConfig = createServerFn({ method: "POST" })
       const v = SECRET.includes(f) ? data[f] ?? "" : (data[f] ?? "").trim();
       next[f] = SECRET.includes(f) && (v === "" || v === "__set__") ? cur[f] || "" : v;
     }
-    const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
-    setCookie(COOKIE, JSON.stringify(next), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365,
-      ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
+    writeCfg(next);
     return { ok: true };
   });
+function writeCfg(next: Record<string, string>) {
+  const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
+  setCookie(COOKIE, JSON.stringify(next), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365,
+    ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
+}
 const has = (...k: string[]) => k.every((x) => env(x));
 const isDemo = () => !has("DSM_URL") && !has("QBIT_URL") && !has("RADARR_URL") && !has("SONARR_URL") && !has("PLEX_URL");
 
@@ -307,6 +310,16 @@ export const getBlinds = createServerFn({ method: "GET" }).handler(async (): Pro
     return { demo: false, error: "", blinds: l.map((b, i) => ({ ...b, name: names[b.mac] || names[String(i + 1)] || `Redőny ${i + 1}` })) };
   } catch (e) { return { demo: false, error: String((e as Error).message || e), blinds: [] }; }
 });
+export const renameBlind = createServerFn({ method: "POST" })
+  .inputValidator((d: { mac: string; name: string }) => ({ mac: String(d.mac).replace(/[,=]/g, ""), name: String(d.name).replace(/[,=]/g, " ").trim().slice(0, 40) }))
+  .handler(async ({ data }) => {
+    const cfg = readCfg();
+    const names: Record<string, string> = blindNames();
+    if (data.name) names[data.mac] = data.name; else delete names[data.mac];
+    cfg["BLINDS_NAMES"] = Object.entries(names).map(([k, v]) => `${k}=${v}`).join(", ");
+    writeCfg(cfg);
+    return { ok: true };
+  });
 export const blindAction = createServerFn({ method: "POST" })
   .inputValidator((d: { mac: string; deviceType: string; action: "open" | "close" | "stop" | "position"; position?: number }) => d)
   .handler(async ({ data }) => {
