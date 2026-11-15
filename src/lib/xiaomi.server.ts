@@ -13,7 +13,7 @@ function cookieVal(res: Response, name: string) {
   return "";
 }
 
-export class Xiaomi2FA extends Error { constructor(public url: string) { super("XIAOMI_2FA"); } }
+export class Xiaomi2FA extends Error { constructor(public url: string) { super("Megerősítés kell – az Okosotthon oldalon kérj kódot"); } }
 function setCookies(res: Response): string[] {
   return (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [res.headers.get("set-cookie") ?? ""];
 }
