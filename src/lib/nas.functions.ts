@@ -4,8 +4,8 @@ import { md5 } from "./md5";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 
 const COOKIE = "nas-cfg";
-export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID"] as const;
-const SECRET = ["XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
+export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "TUYA_ID", "TUYA_SECRET", "TUYA_REGION"] as const;
+const SECRET = ["TUYA_SECRET", "XIAOMI_PASS", "BLINDS_KEY", "GROWATT_PASS", "DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
 const env = (k: string) => {
   const v = readCfg()[k] || process.env[k] || "";
@@ -508,4 +508,20 @@ export const hcControl = createServerFn({ method: "POST" })
     if (data.action === "start") return hcSend(tok, `/api/homeappliances/${id}/programs/active`, "PUT", { data: { key: data.program, options: [] } });
     const off = /Oven|Hob|Hood|CoffeeMaker/.test(data.type || "") ? "BSH.Common.EnumType.PowerState.Standby" : "BSH.Common.EnumType.PowerState.Off";
     return hcSend(tok, `/api/homeappliances/${id}/settings/BSH.Common.Setting.PowerState`, "PUT", { data: { key: "BSH.Common.Setting.PowerState", value: data.on ? "BSH.Common.EnumType.PowerState.On" : off } });
+  });
+
+// ---------- Tuya ----------
+const tuyaArgs = () => [env("TUYA_ID") || "tj3qmvwy39jgrw54frwx", env("TUYA_SECRET"), (env("TUYA_REGION") || "eu").toLowerCase()] as const;
+export const getTuya = createServerFn({ method: "GET" }).handler(async () => {
+  const [id, s, r] = tuyaArgs();
+  if (!s) return { configured: false, devices: [] as import("./tuya.server").TuyaDevice[], error: null as string | null };
+  try { return { configured: true, devices: await (await import("./tuya.server")).listTuya(id, s, r), error: null }; }
+  catch (e) { return { configured: true, devices: [], error: (e as Error).message }; }
+});
+export const tuyaCommand = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; code: string; value: boolean | number | string }) => d)
+  .handler(async ({ data }) => {
+    const [id, s, r] = tuyaArgs();
+    try { await (await import("./tuya.server")).sendTuya(id, s, r, data.id, data.code, data.value); return { ok: true, error: "" }; }
+    catch (e) { return { ok: false, error: (e as Error).message }; }
   });
