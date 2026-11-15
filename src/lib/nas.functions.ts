@@ -22,8 +22,9 @@ export const saveConfig = createServerFn({ method: "POST" })
       const v = (data[f] ?? "").trim();
       next[f] = SECRET.includes(f) && (v === "" || v === "__set__") ? cur[f] || "" : v;
     }
-    setCookie(COOKIE, JSON.stringify(next), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365,
-      secure: getRequest().url.startsWith("https") });
+    const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
+    setCookie(COOKIE, JSON.stringify(next), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365,
+      ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
     return { ok: true };
   });
 const has = (...k: string[]) => k.every((x) => env(x));
