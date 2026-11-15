@@ -146,7 +146,7 @@ function Home() {
     { id: "climate", title: "Hőmérséklet", value: climateValue, detail: `${thermometers.sensors.length} hőmérő · ${gree.units.length} klíma${thermometers.demo ? " · Minta" : ""}`, icon: Thermometer, tone: "climate" },
     { id: "energy", title: "Napelem", value: data.error ? "–" : `${(data.currentW / 1000).toLocaleString("hu-HU", { maximumFractionDigits: 2 })} kW`, detail: data.error ? "Kapcsolati hiba" : `Ma ${data.todayKwh.toLocaleString("hu-HU", { maximumFractionDigits: 1 })} kWh${data.demo ? " · Minta" : ""}`, icon: Sun, tone: "energy" },
     { id: "blinds", title: "Árnyékolás", value: `${blinds.blinds.length}`, detail: `redőny${blinds.demo ? " · Minta" : ""}`, icon: BlindsIcon, tone: "blinds" },
-    { id: "devices", title: "Eszközök", value: `${appliances.appliances.length + tuya.devices.length}`, detail: appliances.error || tuya.error ? "Kapcsolati hiba" : "Bosch · Smart Life", icon: Power, tone: "devices" },
+    { id: "devices", title: "Eszközök", value: `${appliances.appliances.length + tuya.devices.filter((d) => !tuya.meta[d.id]?.hidden).length}`, detail: appliances.error || tuya.error ? "Kapcsolati hiba" : "Bosch · Smart Life", icon: Power, tone: "devices" },
   ];
   return (
     <Shell demo={data.demo} className="smart-home">

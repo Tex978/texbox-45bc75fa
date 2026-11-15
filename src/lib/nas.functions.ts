@@ -683,13 +683,32 @@ async function tuyaReady() {
   if (n.a !== s.a) hcCookie(TS, JSON.stringify(n), 60 * 60 * 24 * 365);
   return { t, s: n };
 }
+const TUYA_META = "tuya-meta";
+export type TuyaMeta = Record<string, { name?: string; room?: string; hidden?: boolean }>;
+const readTuyaMeta = (): TuyaMeta => { try { return JSON.parse(getCookie(TUYA_META) || "{}"); } catch { return {}; } };
 export const getTuya = createServerFn({ method: "GET" }).handler(async () => {
+  const meta = readTuyaMeta();
   try {
     const r = await tuyaReady();
-    if (!r) return { configured: false, devices: [] as import("./tuya.server").TuyaDevice[], error: null as string | null };
-    return { configured: true, devices: await r.t.listTuya(r.s), error: null };
-  } catch (e) { return { configured: true, devices: [], error: (e as Error).message }; }
+    if (!r) return { configured: false, devices: [] as import("./tuya.server").TuyaDevice[], error: null as string | null, meta };
+    return { configured: true, devices: await r.t.listTuya(r.s), error: null, meta };
+  } catch (e) { return { configured: true, devices: [], error: (e as Error).message, meta }; }
 });
+export const saveTuyaMeta = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; name?: string; room?: string; hidden?: boolean }) => ({
+    id: String(d.id).slice(0, 60),
+    name: d.name != null ? String(d.name).trim().slice(0, 40) : undefined,
+    room: d.room != null ? String(d.room).trim().slice(0, 30) : undefined,
+    hidden: d.hidden === true ? true : d.hidden === false ? false : undefined }))
+  .handler(async ({ data }) => {
+    const meta = readTuyaMeta();
+    meta[data.id] = { ...meta[data.id],
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.room !== undefined ? { room: data.room } : {}),
+      ...(data.hidden !== undefined ? { hidden: data.hidden } : {}) };
+    setCookie(TUYA_META, JSON.stringify(meta), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" as const });
+    return { ok: true };
+  });
 export const tuyaQrStart = createServerFn({ method: "POST" }).inputValidator((d: { userCode: string }) => d).handler(async ({ data }) => {
   try {
     const qr = await (await import("./tuya.server")).qrStart(data.userCode.trim());
