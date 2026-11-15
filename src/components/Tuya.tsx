@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { SmartSection as Card } from "@/components/SmartHomeUI";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Square, Settings2, Check, X, ChevronDown, ChevronRight, Power, Play, Lightbulb, WashingMachine, Droplets, Battery, Minus, Plus, LogOut, QrCode } from "lucide-react";
-import { getTuya, tuyaCommand, tuyaQrStart, tuyaQrFinish, tuyaLogout } from "@/lib/nas.functions";
+import { getTuya, tuyaCommand, tuyaQrStart, tuyaQrFinish, tuyaLogout, saveTuyaMeta } from "@/lib/nas.functions";
 
 export const tuyaQuery = queryOptions({ queryKey: ["tuya"], queryFn: () => getTuya(), refetchInterval: 60000 });
 const CAT: Record<string, string> = { dj: "Lámpa", dd: "LED szalag", kg: "Kapcsoló", cz: "Konnektor", pc: "Elosztó", qn: "Fűtőtest", wk: "Termosztát", wsdcg: "Hőmérő", mcs: "Ajtóérzékelő", pir: "Mozgásérzékelő", ywbj: "Füstérzékelő", sj: "Vízérzékelő", rqbj: "Gázérzékelő" };
@@ -81,10 +81,22 @@ function TuyaLink() {
 export function Tuya() {
   const { data } = useSuspenseQuery(tuyaQuery);
   const qc = useQueryClient();
-  const [meta, setMeta] = useState<Meta>({});
+  const [meta, setMeta] = useState<Meta>(data.meta);
   const [edit, setEdit] = useState(false);
-  useEffect(() => { try { setMeta(JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { /* */ } }, []);
-  const upd = (id: string, v: Meta[string]) => setMeta((m) => { const n = { ...m, [id]: { ...m[id], ...v } }; localStorage.setItem(KEY, JSON.stringify(n)); return n; });
+  useEffect(() => setMeta(data.meta), [data.meta]);
+  useEffect(() => { // one-time move of browser-saved settings to the server
+    try { const raw = localStorage.getItem(KEY); if (!raw) return;
+      const m = JSON.parse(raw) as Meta;
+      for (const [id, v] of Object.entries(m)) void saveTuyaMeta({ data: { id, ...v } });
+      localStorage.removeItem(KEY);
+      qc.invalidateQueries({ queryKey: ["tuya"] });
+    } catch { /* */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const upd = (id: string, v: Meta[string]) => {
+    setMeta((m) => ({ ...m, [id]: { ...m[id], ...v } }));
+    void saveTuyaMeta({ data: { id, ...v } }).then(() => qc.invalidateQueries({ queryKey: ["tuya"] }));
+  };
   if (!data.configured) return <TuyaLink />;
   const shown = data.devices.filter((d) => !meta[d.id]?.hidden);
   const rooms = [...new Set(shown.map((d) => meta[d.id]?.room || "Egyéb"))].sort((a, b) => a === "Egyéb" ? 1 : b === "Egyéb" ? -1 : a.localeCompare(b, "hu"));
