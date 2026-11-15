@@ -1,6 +1,7 @@
 # Okosotthon megújítás
 - [x] Gree+ fiókos csatlakozás lehetőségének ellenőrzése: közvetlen belépés lehetséges, a vezérlési mód eszköztípustól függ.
-- [ ] Gree+ fiókos belépés és vezérlés kialakítása Smart One, valószínű Smart R és Cascade gépekhez; a fiókból kapott eszközadatok és élő csatlakozási próba szükséges a kompatibilitás ellenőrzéséhez.
+- [x] Gree+ fiókos belépés és vezérlés kialakítása, eszközfelderítéssel és parancs utáni állapotellenőrzéssel.
+- [ ] Gree+ élő belépés és Smart One/Smart R/Cascade kompatibilitás ellenőrzése: frissített Synology alkalmazásban megadott fiókadatok szükségesek.
 - [x] Monitor 3 hőmérő hiányzó méréseinek javítása a feltöltött adatok és gyártói mérési leírás alapján.
 - [ ] Gergő hőmérő javításának élő ellenőrzése: a frissített Synology alkalmazásban szükséges.
 - [x] Growatt belépés újrahasználata, ritkább frissítés és hibánál várakozás.

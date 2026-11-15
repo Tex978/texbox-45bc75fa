@@ -14,7 +14,7 @@ from greeclimate_davo22.cloud_api import GreeCloudApi
 from greeclimate_davo22.cloud_device import CloudDevice
 from greeclimate_davo22.cloud_gateway import GreeCloudGateway, uses_mqtt
 from greeclimate_davo22.deviceinfo import DeviceInfo
-from greeclimate_davo22.mqtt_client import GreeMqttClient, GREE_MQTT_SERVERS
+from greeclimate_davo22.mqtt_client import GreeMqttClient
 
 logging.disable(logging.CRITICAL)
 MODES = {"auto": 0, "cool": 1, "dry": 2, "fan_only": 3, "heat": 4}
@@ -45,7 +45,7 @@ class Account:
         if record.mac in self.devices:
             return self.devices[record.mac]
         if uses_mqtt(record.version) and self.mqtt is None:
-            self.mqtt = GreeMqttClient(self.api.user_id, self.api.token, server=GREE_MQTT_SERVERS[self.region])
+            self.mqtt = GreeMqttClient(self.api.user_id, self.api.token, server=GreeMqttClient.server_for_region(self.region))
             await asyncio.wait_for(self.mqtt.connect(), 12)
         info = DeviceInfo("", 7000, record.mac, record.name, model=record.model, version=record.version)
         device = CloudDevice(self.mqtt, info, record.key, gateway=self.gateway,
@@ -156,4 +156,5 @@ async def main():
             await account.close()
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
