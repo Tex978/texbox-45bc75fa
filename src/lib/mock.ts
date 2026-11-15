@@ -34,3 +34,15 @@ export const library = [
   { id: 4, title: "Friends", year: 1994, type: "Sorozat", size: 188.0e9, added: "2020-11-30", poster: "" },
   { id: 5, title: "Shrek", year: 2001, type: "Film", size: 7.9e9, added: "2019-08-14", poster: "" },
 ];
+export const haDemo = [
+  { entity_id: "sensor.growatt_aktualis_teljesitmeny", state: "3420", attributes: { friendly_name: "Napelem – jelenlegi termelés", unit_of_measurement: "W", device_class: "power" } },
+  { entity_id: "sensor.growatt_mai_termeles", state: "18.6", attributes: { friendly_name: "Napelem – mai termelés", unit_of_measurement: "kWh", device_class: "energy" } },
+  { entity_id: "sensor.growatt_ossz_termeles", state: "8412", attributes: { friendly_name: "Napelem – összes termelés", unit_of_measurement: "kWh", device_class: "energy" } },
+  { entity_id: "light.nappali", state: "on", attributes: { friendly_name: "Nappali lámpa (Tuya)" } },
+  { entity_id: "switch.tapo_kavefozo", state: "off", attributes: { friendly_name: "Kávéfőző (Tapo)" } },
+  { entity_id: "cover.nappali_redony", state: "open", attributes: { friendly_name: "Nappali redőny" } },
+  { entity_id: "cover.haloszoba_redony", state: "closed", attributes: { friendly_name: "Hálószoba redőny" } },
+  { entity_id: "vacuum.xiaomi_porszivo", state: "docked", attributes: { friendly_name: "Xiaomi porszívó" } },
+  { entity_id: "media_player.samsung_tv", state: "on", attributes: { friendly_name: "Samsung TV" } },
+  { entity_id: "sensor.bosch_mosogatogep", state: "Run", attributes: { friendly_name: "Bosch mosogatógép" } },
+];

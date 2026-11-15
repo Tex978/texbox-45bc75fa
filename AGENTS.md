@@ -30,5 +30,5 @@ use the editor.
 <!-- LOVABLE:END -->
 
 <!-- AGENT-MEMORY:BEGIN -->
-- Service integrations (qBittorrent/Radarr/Sonarr/Plex) live in src/lib/nas.functions.ts, configured via an httpOnly cookie set from the Connections page (env vars as fallback), falling back to demo data when unset — the app is self-hosted in Docker on the user LAN (NITRO_PRESET=node-server).
+- Service integrations (qBittorrent/Radarr/Sonarr/Plex/Synology DSM; smart home only via Home Assistant REST API, not per-vendor clouds) live in src/lib/nas.functions.ts, configured via an httpOnly cookie set from the Connections page (env vars as fallback), falling back to demo data when unset — the app is self-hosted in Docker on the user LAN (NITRO_PRESET=node-server).
 <!-- AGENT-MEMORY:END -->

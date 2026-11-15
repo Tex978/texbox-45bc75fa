@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 const nav = [
   { to: "/", label: "Áttekintő" }, { to: "/search", label: "Keresés" },
-  { to: "/downloads", label: "Letöltések" }, { to: "/library", label: "Tárhely" }, { to: "/settings", label: "Kapcsolatok" },
+  { to: "/downloads", label: "Letöltések" }, { to: "/library", label: "Tárhely" }, { to: "/home", label: "Okosotthon" }, { to: "/settings", label: "Kapcsolatok" },
 ] as const;
 export function Shell({ children, demo }: { children: ReactNode; demo?: boolean }) {
   return (
