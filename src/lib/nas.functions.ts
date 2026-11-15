@@ -6,7 +6,12 @@ const COOKIE = "nas-cfg";
 export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS"] as const;
 const SECRET = ["DSM_PASS", "QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
-const env = (k: string) => { const v = readCfg()[k] || process.env[k] || ""; return SECRET.includes(k) ? v : v.trim().replace(/\/$/, ""); };
+const env = (k: string) => {
+  const v = readCfg()[k] || process.env[k] || "";
+  if (SECRET.includes(k)) return v;
+  const t = v.trim().replace(/\/+$/, "");
+  return k.endsWith("_URL") && t && !/^https?:\/\//i.test(t) ? `http://${t}` : t;
+};
 
 export const getConfig = createServerFn({ method: "GET" }).handler(async () => {
   const out: Record<string, string> = {};
@@ -163,7 +168,12 @@ export const requestMedia = createServerFn({ method: "POST" })
   });
 
 export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const ping = async (ok: boolean, p: () => Promise<unknown>) => (!ok ? "nincs beállítva" : (await p().then(() => "ok", (e) => String(e.message || e))));
+  const ping = async (ok: boolean, p: () => Promise<unknown>) => (!ok ? "nincs beállítva" : (await p().then(() => "ok", (e) => {
+    const c = e?.cause; const code = c?.code || c?.cause?.code || "";
+    const hint = /ECONNREFUSED/.test(code) ? "a port zárva / rossz port" : /ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT|EHOSTUNREACH/.test(code) ? "időtúllépés: a cím kívülről nem érhető el"
+      : /ENOTFOUND|EAI_AGAIN/.test(code) ? "a címnév nem található" : /CERT|SSL|TLS/i.test(code + (c?.message || "")) ? "tanúsítvány hiba, próbáld http://-vel" : "";
+    return `${e?.message || e}${code ? ` (${code})` : ""}${hint ? ` – ${hint}` : ""}`;
+  })));
   return {
     qbit: await ping(has("QBIT_URL"), () => qbit("/app/version")),
     radarr: await ping(has("RADARR_URL", "RADARR_KEY"), () => arr("RADARR", "/system/status")),
