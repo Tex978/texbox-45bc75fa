@@ -73,6 +73,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-home-energy: var(--home-energy);
+  --color-home-water: var(--home-water);
+  --color-home-success: var(--home-success);
 }
 
 :root {
@@ -155,4 +158,88 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+}
+
+.smart-home {
+  --background: oklch(0.155 0.004 180);
+  --card: oklch(0.205 0.005 180);
+  --foreground: oklch(0.95 0.005 180);
+  --secondary: oklch(0.26 0.006 180);
+  --muted: oklch(0.26 0.006 180);
+  --muted-foreground: oklch(0.68 0.01 180);
+  --primary: oklch(0.78 0.14 164);
+  --primary-foreground: oklch(0.18 0.025 164);
+  --accent: oklch(0.28 0.01 180);
+  --accent-foreground: oklch(0.95 0.005 180);
+  --border: oklch(0.95 0.005 180 / 10%);
+  --input: oklch(0.95 0.005 180 / 16%);
+  --ring: oklch(0.78 0.14 164);
+  --home-energy: oklch(0.84 0.15 85);
+  --home-water: oklch(0.76 0.11 230);
+  --home-success: oklch(0.78 0.14 164);
+  --home-shadow: 0 8px 28px oklch(0.08 0 0 / 12%);
+  letter-spacing: 0;
+}
+.smart-home main { padding-top: 32px; padding-bottom: 64px; }
+.smart-home > header { background: var(--background); }
+.smart-home header .tracking-tight { letter-spacing: 0; }
+.home-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.home-section-nav { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; }
+.home-section-nav a { display: flex; gap: 8px; align-items: center; padding: 0 0 14px; font-size: 13px; color: var(--muted-foreground); white-space: nowrap; transition: color 160ms; }
+.home-section-nav a:hover { color: var(--primary); }
+.smart-home [id] { scroll-margin-top: 20px; }
+.smart-section { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); min-width: 0; }
+.smart-section-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.smart-section-heading h2 { font-size: 18px; font-weight: 600; }
+.smart-section-heading p { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; }
+.smart-icon { display: inline-flex; width: 42px; height: 42px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 8px; color: var(--home-water); background: color-mix(in oklch, var(--home-water) 10%, transparent); }
+.smart-device { border-radius: 8px; border: 1px solid var(--border); background: var(--card); padding: 18px; min-width: 0; box-shadow: var(--home-shadow); transition: border-color 160ms; }
+.smart-device:hover { border-color: color-mix(in oklch, var(--foreground) 22%, transparent); }
+.status-dot { height: 6px; width: 6px; flex-shrink: 0; display: inline-block; border-radius: 50%; }
+.home-comfort-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; }
+.smart-home button { min-height: 36px; white-space: normal; line-height: 1.3; box-shadow: none; }
+.smart-home input:not([type="range"]):not([type="checkbox"]), .smart-home select { min-height: 38px; }
+.smart-home input[type="range"] { accent-color: var(--primary); height: 24px; cursor: pointer; }
+.smart-home input[type="checkbox"] { accent-color: var(--primary); width: 15px; height: 15px; }
+.smart-home details { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; color: var(--muted-foreground); font-size: 11px; }
+.smart-home details summary { cursor: pointer; }
+.smart-debug pre { max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 12px; }
+.smart-energy { padding: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--home-shadow); }
+.energy-heading-icon { color: var(--home-energy); background: color-mix(in oklch, var(--home-energy) 10%, transparent); }
+.energy-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+.energy-flow { display: grid; grid-template-columns: minmax(0,1fr) 34px 72px 34px minmax(0,1fr); grid-template-rows: 108px 24px 108px 24px 108px; align-items: center; max-width: 570px; margin: auto; width: 100%; }
+.energy-node { display: flex; flex-direction: column; gap: 3px; align-items: center; text-align: center; min-width: 0; }
+.energy-node-icon { display: inline-flex; align-items: center; justify-content: center; width: 43px; height: 43px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--muted-foreground); margin-bottom: 4px; }
+.energy-active .energy-node-icon { color: var(--node-color); background: color-mix(in oklch, var(--node-color) 8%, var(--background)); border-color: color-mix(in oklch, var(--node-color) 30%, transparent); }
+.energy-solar { grid-area: 1 / 2 / 2 / 5; --node-color: var(--home-energy); }
+.energy-battery { grid-area: 3 / 1; --node-color: var(--home-success); }
+.energy-grid { grid-area: 3 / 5; --node-color: var(--home-water); }
+.energy-load { grid-area: 5 / 2 / 6 / 5; --node-color: var(--foreground); }
+.energy-center { grid-area: 3 / 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--secondary); border: 1px solid var(--border); border-radius: 50%; width: 72px; height: 72px; font-size: 10px; }
+.energy-line { color: var(--muted-foreground); display: flex; justify-content: center; align-items: center; position: relative; }
+.energy-line:before { content: ""; position: absolute; background: var(--border); width: 100%; height: 1px; }
+.energy-line svg, .energy-line span { position: relative; background: var(--card); }
+.energy-line-top { grid-area: 2 / 3; height: 24px; }
+.energy-line-bottom { grid-area: 4 / 3; height: 24px; }
+.energy-line-top:before, .energy-line-bottom:before { height: 100%; width: 1px; }
+.energy-line-left { grid-area: 3 / 2; }
+.energy-line-right { grid-area: 3 / 4; }
+.energy-line.flowing { color: var(--home-success); }
+.energy-line.flowing:before { background: color-mix(in oklch, var(--home-success) 45%, transparent); }
+.energy-line.flowing svg, .energy-line.flowing span { animation: energy-pulse 2.5s ease-in-out infinite; }
+.energy-totals { display: flex; flex-direction: column; gap: 24px; padding-left: 28px; border-left: 1px solid var(--border); }
+@keyframes energy-pulse { 50% { opacity: .35; } }
+@media (max-width: 767px) {
+  .smart-home main { padding-top: 24px; }
+  .energy-layout { grid-template-columns: minmax(0,1fr); gap: 24px; }
+  .energy-totals { border-left: 0; border-top: 1px solid var(--border); padding: 24px 0 0; }
+  .energy-flow { grid-template-columns: minmax(0,1fr) 24px 64px 24px minmax(0,1fr); }
+  .energy-center { width: 64px; height: 64px; }
+  .home-comfort-grid { grid-template-columns: minmax(0,1fr); gap: 0; }
+  .smart-energy { padding: 18px; }
+  .home-section-nav { gap: 22px; }
+  .sensor-device { padding: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .smart-home *, .smart-home *:before { animation: none !important; transition: none !important; }
 }
