@@ -2,15 +2,15 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 const nav = [
   { to: "/", label: "Áttekintő" }, { to: "/search", label: "Keresés" },
-  { to: "/downloads", label: "Letöltések" }, { to: "/settings", label: "Beállítások" },
+  { to: "/downloads", label: "Letöltések" }, { to: "/settings", label: "Kapcsolatok" },
 ] as const;
-export function Shell({ children }: { children: ReactNode }) {
+export function Shell({ children, demo }: { children: ReactNode; demo?: boolean }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-4">
           <div className="font-display text-xl font-bold tracking-tight"><span className="text-primary">●</span> NAS Vezérlő</div>
-          <span className="rounded bg-accent px-2 py-0.5 font-mono text-xs text-accent-foreground">DEMÓ</span>
+          {demo && <span className="rounded bg-accent px-2 py-0.5 font-mono text-xs text-accent-foreground">DEMÓ</span>}
           <nav className="ml-auto flex flex-wrap gap-1">
             {nav.map((n) => (
               <Link key={n.to} to={n.to} activeOptions={{ exact: true }}
