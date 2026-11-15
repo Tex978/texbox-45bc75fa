@@ -1,7 +1,9 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
-from vehicles_cloud import Account, renault_reading, vw_reading
+from unittest.mock import AsyncMock, patch
+from vehicles_cloud import Account, renault_reading, vw_reading, failure, handle, sessions
+from carconnectivity.errors import AuthenticationError
+from renault_api.gigya.exceptions import InvalidCredentialsException
 
 
 class VehicleReadings(unittest.TestCase):
@@ -22,6 +24,28 @@ class VehicleReadings(unittest.TestCase):
 
 
 class VehicleCache(unittest.IsolatedAsyncioTestCase):
+    async def test_failed_login_is_cached_for_fifteen_minutes(self):
+        sessions.clear()
+        cfg = {"brand": "vw"}
+        with patch.object(Account, "login", new_callable=AsyncMock) as login:
+            login.side_effect = AuthenticationError("Authorization URL could not be fetched due to WeConnect failure")
+            first = await handle({"config": cfg})
+            second = await handle({"config": cfg})
+            self.assertEqual(first, second)
+            login.assert_awaited_once()
+            self.assertIn("vw/login/authorization_unavailable", first["error"])
+        sessions.clear()
+
+    async def test_vw_fetch_does_not_update_twice(self):
+        account = Account({"brand": "vw"})
+        from unittest.mock import Mock
+        connector = SimpleNamespace(update_vehicles=Mock())
+        account.client = SimpleNamespace(fetch_all=Mock(), garage=SimpleNamespace(list_vehicles=lambda: []),
+                                         connectors=SimpleNamespace(connectors={"vw": connector}))
+        await account.read()
+        account.client.fetch_all.assert_called_once()
+        connector.update_vehicles.assert_not_called()
+
     async def test_repeated_reads_use_cache(self):
         import time
         account = Account({"brand": "vw"})
@@ -45,6 +69,18 @@ class VehicleCache(unittest.IsolatedAsyncioTestCase):
         result = await account.read("123456")
         self.assertFalse(result["verification"])
         account.client.session.complete_two_factor_auth.assert_awaited_once_with("123456", remember_device=True)
+
+
+class SafeDiagnostics(unittest.TestCase):
+    def test_renault_credentials_are_identified_without_leaking_details(self):
+        error = InvalidCredentialsException(403042, "private-password test@example.invalid")
+        message = failure(error, "renault", "login")
+        self.assertIn("renault/login/credentials", message)
+        self.assertNotIn("private-password", message)
+        self.assertNotIn("test@example.invalid", message)
+
+    def test_unexpected_error_never_leaks_vendor_text(self):
+        self.assertNotIn("secret", failure(ValueError("secret"), "renault", "vehicles"))
 
 
 if __name__ == "__main__":
