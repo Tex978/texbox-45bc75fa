@@ -28,8 +28,12 @@ function Home() {
             <Stat value={f(data.todayKwh)} unit="kWh" label="Mai termelés" />
             <Stat value={f(data.totalKwh, 0)} unit="kWh" label="Összes termelés" />
           </div>
-          {data.plants.length > 1 && <div className="mt-6 space-y-1 border-t border-border pt-4 text-sm">{data.plants.map((p) => (
-            <div key={p.name} className="flex justify-between gap-2"><span>{p.name}</span><span className="font-mono text-muted-foreground">{p.current} · ma {p.today}</span></div>))}</div>}
+          <div className="mt-6 space-y-2 border-t border-border pt-4 text-sm">{data.plants.map((p) => (
+            <div key={p.name}><div className="flex justify-between gap-2"><span>{p.name}</span>
+              <span className="font-mono text-muted-foreground">{f(p.currentW / 1000, 2)} kW · ma {f(p.todayKwh)} kWh</span></div>
+              {p.online && <div className="font-mono text-xs text-muted-foreground">{p.online}</div>}</div>))}</div>
+          {!data.demo && <details className="mt-4 text-xs text-muted-foreground"><summary className="cursor-pointer">Nyers adatok (hibakereséshez)</summary>
+            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded bg-secondary p-2">{data.raw}{"\n\n"}{data.plants.map((p) => p.raw).join("\n\n")}</pre></details>}
         </>}
       </Card>
       <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Bosch, Tapo, Xiaomi, redőnyök) bekötése folyamatban.</p>

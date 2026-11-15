@@ -233,16 +233,26 @@ async function growatt() {
   if (!l.back?.success) throw new Error(`Growatt belépés sikertelen${l.back?.error ? ` (${l.back.error})` : ""} – ellenőrizd a ShinePhone felhasználónevet és jelszót`);
   const cookie = (lr.headers.getSetCookie?.() || [lr.headers.get("set-cookie") || ""]).map((c) => c.split(";")[0]).join("; ");
   const pr = await fetch(`${base}/PlantListAPI.do?userId=${l.back.user.id}`, { headers: { "User-Agent": ua, Cookie: cookie } });
-  const p = await pr.json();
-  const num = (v: unknown) => parseFloat(String(v ?? "0").replace(/[^0-9.]/g, "")) || 0;
+  const p = await pr.json().catch(() => ({}));
+  const num = (v: unknown) => { const t = String(v ?? "0"); const n = parseFloat(t.replace(/[^0-9.]/g, "")) || 0;
+    return /MWh/i.test(t) ? n * 1000 : /kW(?!h)/i.test(t) ? n * 1000 : n; };
+  const plants = await Promise.all(((p.data || []) as any[]).map(async (x) => {
+    const ir = await fetch(`${base}/newTwoPlantAPI.do?op=getAllDeviceListTwo&plantId=${x.plantId}&pageNum=1&pageSize=20`, { headers: { "User-Agent": ua, Cookie: cookie } });
+    const info = await ir.json().catch(() => ({}));
+    const devW = ((info.deviceList || []) as any[]).reduce((s2, d) => s2 + num(d.power), 0);
+    return { name: String(x.plantName), currentW: devW || num(x.currentPower), todayKwh: num(x.todayEnergy), totalKwh: num(x.totalEnergy),
+      online: ((info.deviceList || []) as any[]).map((d) => `${d.deviceSn || d.sn}: ${d.lost ? "offline" : "online"}${d.lastUpdateTime ? ` (${d.lastUpdateTime})` : ""}`).join(", "),
+      raw: JSON.stringify({ plant: x, devices: info.deviceList }).slice(0, 1500) };
+  }));
   return {
-    currentW: num(p.totalData?.currentPowerSum) * (/kW/i.test(String(p.totalData?.currentPowerSum)) ? 1000 : 1),
-    todayKwh: num(p.totalData?.todayEnergySum), totalKwh: num(p.totalData?.totalEnergySum),
-    plants: ((p.data || []) as any[]).map((x) => ({ name: String(x.plantName), current: String(x.currentPower), today: String(x.todayEnergy), total: String(x.totalEnergy) })),
+    currentW: plants.reduce((a, b) => a + b.currentW, 0) || num(p.totalData?.currentPowerSum),
+    todayKwh: plants.reduce((a, b) => a + b.todayKwh, 0) || num(p.totalData?.todayEnergySum),
+    totalKwh: plants.reduce((a, b) => a + b.totalKwh, 0) || num(p.totalData?.totalEnergySum),
+    plants, raw: JSON.stringify(p).slice(0, 1500),
   };
 }
 export const getSolar = createServerFn({ method: "GET" }).handler(async () => {
-  if (!has("GROWATT_USER")) return { demo: true, error: "", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, plants: [{ name: "Otthon", current: "3.42 kW", today: "18.6 kWh", total: "8412 kWh" }] };
+  if (!has("GROWATT_USER")) return { demo: true, error: "", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, plants: [{ name: "Otthon", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, online: "", raw: "" }], raw: "" };
   try { return { demo: false, error: "", ...(await growatt()) }; }
-  catch (e) { return { demo: false, error: String((e as Error).message || e), currentW: 0, todayKwh: 0, totalKwh: 0, plants: [] }; }
+  catch (e) { return { demo: false, error: String((e as Error).message || e), currentW: 0, todayKwh: 0, totalKwh: 0, plants: [], raw: "" }; }
 });
