@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [x] GitHub feltöltési hiba azonosítva: a digest-linux/amd64 és digest-linux/arm64 tiltott neveket külön, perjel nélküli architektúracímkék váltják.
 - [x] Gree+ hőfokállítás: hibás szöveges képességellenőrzés helyett könyvtári hőfokkezelés és parancscsoport; öt Python-próba és három vezérlési szabályteszt sikeres.
 - [ ] Gree+ hőfokállítás élő ellenőrzése: a javított Synology-verzió és a felhasználó klímája szükséges.
 - [x] Okosotthon újraszervezése: kompakt állapotáttekintő, kategóriaváltás és eszközrács; három képernyőméreten ellenőrizve, a redőnyvezérlés bemutatóban működik; élő szolgáltatások nem ellenőrizhetők fiókok nélkül.
