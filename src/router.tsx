@@ -12,8 +12,8 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     // Restore the exact SSR snapshot before components read the browser cache.
-    dehydrate: () => ({ queryState: dehydrate(queryClient) }),
-    hydrate: (state) => { hydrate(queryClient, state.queryState); },
+    dehydrate: () => ({ queryState: JSON.stringify(dehydrate(queryClient)) }),
+    hydrate: (state) => { hydrate(queryClient, JSON.parse(state.queryState)); },
     scrollRestoration: true,
     // Lets Query own freshness; set caching defaults on the QueryClient, not the router.
     defaultPreloadStaleTime: 0,
