@@ -1,20 +1,27 @@
 # Synology Container Manager > Projekt > Létrehozás: ezt a fájlt add meg.
-# Az IP-t (192.168.1.10) és a portokat írd át a sajátodra.
+# Írd át: GITHUB-FELHASZNALO/REPO-NEV és az APP_PASSWORD értékét.
+# A szolgáltatások címeit/kulcsait az app Kapcsolatok oldalán adhatod meg.
 services:
   nas-vezerlo:
-    build: ..
+    image: ghcr.io/GITHUB-FELHASZNALO/REPO-NEV:latest
     container_name: nas-vezerlo
     restart: unless-stopped
     # host network: the blinds hub answers over local UDP (multicast), which bridge networking blocks
     network_mode: host
     environment:
-      QBIT_URL: http://192.168.1.10:8080
-      QBIT_USER: admin
-      QBIT_PASS: jelszo
-      RADARR_URL: http://192.168.1.10:7878
-      RADARR_KEY: ide-a-radarr-api-kulcs
-      SONARR_URL: http://192.168.1.10:8989
-      SONARR_KEY: ide-a-sonarr-api-kulcs
-      PLEX_URL: http://192.168.1.10:32400
-      PLEX_TOKEN: ide-a-plex-token
+      PORT: 3050
+      APP_PASSWORD: valassz-egy-jelszot
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
 
+  # Automatikus frissítés: 5 percenként megnézi, van-e új verzió.
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_POLL_INTERVAL: 300
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_CLEANUP: "true"
