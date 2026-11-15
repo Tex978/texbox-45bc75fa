@@ -1,5 +1,6 @@
 # Okosotthon megújítás
-- [ ] Gree+ fiókos csatlakozás lehetőségének ellenőrzése.
+- [x] Gree+ fiókos csatlakozás lehetőségének ellenőrzése: közvetlen belépés lehetséges, a vezérlési mód eszköztípustól függ.
+- [ ] Gree+ fiókos belépés és vezérlés kialakítása; a klímák pontos típusa szükséges a megfelelő vezérlési módhoz.
 - [ ] Gergő hőmérő hibájának azonosítása és javítása; valós eszközadat vagy hibaüzenet szükséges.
 - [x] Growatt belépés újrahasználata, ritkább frissítés és hibánál várakozás.
 - [x] Öt Gree+ klíma helyi csatlakoztatása és vezérlése.
