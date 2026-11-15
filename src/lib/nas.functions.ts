@@ -43,10 +43,14 @@ async function plex(path: string) {
 }
 async function qbit(path: string, body?: Record<string, string>) {
   const base = env("QBIT_URL");
-  const login = await fetch(`${base}/api/v2/auth/login`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Referer: base },
+  const login = await fetch(`${base}/api/v2/auth/login`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Referer: base, Origin: base },
     body: new URLSearchParams({ username: env("QBIT_USER"), password: env("QBIT_PASS") }) });
-  const sid = (login.headers.get("set-cookie") || "").match(/SID=[^;]+/)?.[0] || "";
-  const r = await fetch(`${base}/api/v2${path}`, { method: body ? "POST" : "GET", headers: { Cookie: sid, Referer: base, "Content-Type": "application/x-www-form-urlencoded" },
+  const lt = (await login.text()).trim();
+  if (login.status === 403) throw new Error("qBittorrent 403: túl sok hibás belépés miatt kitiltott IP, vagy a Host fejléc ellenőrzés tiltja");
+  if (!/^ok/i.test(lt)) throw new Error("qBittorrent: hibás felhasználónév vagy jelszó");
+  // qBittorrent 5.x names the cookie QBT_SID_<port>, older versions SID
+  const sid = (login.headers.get("set-cookie") || "").match(/(QBT_SID_\d+|SID)=[^;]+/)?.[0] || "";
+  const r = await fetch(`${base}/api/v2${path}`, { method: body ? "POST" : "GET", headers: { Cookie: sid, Referer: base, Origin: base, "Content-Type": "application/x-www-form-urlencoded" },
     body: body ? new URLSearchParams(body) : null });
   if (!r.ok) throw new Error(`qBittorrent ${r.status}`);
   const t = await r.text();
