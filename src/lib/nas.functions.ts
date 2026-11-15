@@ -352,13 +352,38 @@ export const blindAction = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const XM = "xm-sess";
+function writeXm(v: string) {
+  const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
+  setCookie(XM, v, { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 30,
+    ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
+}
+const xmArgs = () => [env("XIAOMI_USER"), env("XIAOMI_PASS")] as const;
 export const getThermometers = createServerFn({ method: "GET" }).handler(async () => {
-  if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", sensors: [
+  if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", verifyUrl: "", sensors: [
     { did: "d1", name: "Nappali", model: "miaomiaoce.sensor_ht.t2", online: true, temp: 22.4, hum: 48, battery: 87 },
     { did: "d2", name: "Hálószoba", model: "miaomiaoce.sensor_ht.t2", online: true, temp: 20.1, hum: 52, battery: 64 },
     { did: "d3", name: "Gyerekszoba", model: "cgllc.sensor_ht.g1", online: true, temp: 21.3, hum: 45, battery: 91 } ] };
+  const x = await import("./xiaomi.server");
+  const [u, p] = xmArgs();
+  const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
   try {
-    const { listThermometers } = await import("./xiaomi.server");
-    return { demo: false, error: "", ...(await listThermometers(env("XIAOMI_USER"), env("XIAOMI_PASS"), (env("XIAOMI_REGION") || "de").toLowerCase())) };
-  } catch (e) { return { demo: false, error: String((e as Error).message || e), raw: "", sensors: [] }; }
+    const r = await x.listThermometers(u, p, (env("XIAOMI_REGION") || "de").toLowerCase());
+    const cur = x.currentSession(u, p); if (cur) writeXm(JSON.stringify(cur));
+    return { demo: false, error: "", verifyUrl: "", ...r };
+  } catch (e) {
+    if (e instanceof x.Xiaomi2FA) return { demo: false, error: "", verifyUrl: e.url, raw: "", sensors: [] };
+    return { demo: false, error: String((e as Error).message || e), verifyUrl: "", raw: "", sensors: [] };
+  }
 });
+export const xiaomiSendCode = createServerFn({ method: "POST" }).inputValidator((d: { url: string }) => d)
+  .handler(async ({ data }) => (await import("./xiaomi.server")).sendCode(env("XIAOMI_USER"), data.url));
+export const xiaomiVerify = createServerFn({ method: "POST" })
+  .inputValidator((d: { url: string; ick: string; flag: number; code: string }) => d)
+  .handler(async ({ data }) => {
+    const x = await import("./xiaomi.server");
+    const [u, p] = xmArgs();
+    const s = await x.verifyCode(u, p, data.url, data.ick, data.flag, data.code);
+    writeXm(JSON.stringify(s));
+    return { ok: true };
+  });

@@ -13,26 +13,90 @@ function cookieVal(res: Response, name: string) {
   return "";
 }
 
+export class Xiaomi2FA extends Error { constructor(public url: string) { super("Megerősítés kell – az Okosotthon oldalon kérj kódot"); } }
+function setCookies(res: Response): string[] {
+  return (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [res.headers.get("set-cookie") ?? ""];
+}
+function addJar(jar: Record<string, string>, res: Response) {
+  for (const c of setCookies(res)) for (const part of c.split(/,(?=\s*[A-Za-z0-9_]+=)/)) {
+    const m = part.trim().match(/^([^=;]+)=([^;]*)/); if (m && m[2] && m[2] !== "EXPIRED") jar[m[1]!] = m[2]!;
+  }
+}
+const jarStr = (jar: Record<string, string>) => Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ");
+const devId = (user: string) => "nasvez" + md5(user).slice(0, 10);
+
+// Restored session (from cookie) so we don't log in on every refresh.
+export function restoreSession(user: string, pass: string, raw: string) {
+  try { const s = JSON.parse(raw) as Session; if (s.serviceToken) sessions.set(user + ":" + md5(pass), s); } catch { /* ignore */ }
+}
+export function currentSession(user: string, pass: string) { return sessions.get(user + ":" + md5(pass)); }
+
+async function finishWithLocation(key: string, userId: string, ssecurity: string, location: string, headers: Record<string, string>) {
+  const r3 = await fetch(location, { headers, redirect: "manual" });
+  const serviceToken = cookieVal(r3, "serviceToken");
+  if (!serviceToken) throw new Error("Xiaomi: nem kaptunk munkamenetet (serviceToken)");
+  const sess = { userId, ssecurity, serviceToken, at: Date.now() };
+  sessions.set(key, sess);
+  return sess;
+}
+
 async function login(user: string, pass: string): Promise<Session> {
   const key = user + ":" + md5(pass);
   const s = sessions.get(key);
-  if (s && Date.now() - s.at < 12 * 3600e3) return s;
-  const deviceId = "nasvez" + md5(user).slice(0, 10);
-  const base = { "User-Agent": UA, Cookie: `sdkVersion=accountsdk-18.8.15; deviceId=${deviceId}` };
+  if (s && Date.now() - s.at < 7 * 24 * 3600e3) return s;
+  const base = { "User-Agent": UA, Cookie: `sdkVersion=accountsdk-18.8.15; deviceId=${devId(user)}` };
   const r1 = await fetch("https://account.xiaomi.com/pass/serviceLogin?sid=xiaomiio&_json=true", { headers: base });
   const j1 = parse(await r1.text());
   const body = new URLSearchParams({ sid: "xiaomiio", hash: md5(pass).toUpperCase(), callback: "https://sts.api.io.mi.com/sts",
     qs: "%3Fsid%3Dxiaomiio%26_json%3Dtrue", user, _sign: j1._sign ?? "", _json: "true" });
   const r2 = await fetch("https://account.xiaomi.com/pass/serviceLoginAuth2", { method: "POST", headers: { ...base, "Content-Type": "application/x-www-form-urlencoded" }, body });
   const j2 = parse(await r2.text());
-  if (j2.notificationUrl) throw new Error(`A Xiaomi megerősítést kér: nyisd meg ezt a linket, igazold magad, majd próbáld újra: ${j2.notificationUrl}`);
+  if (j2.notificationUrl) throw new Xiaomi2FA(j2.notificationUrl);
   if (!j2.ssecurity || !j2.location) throw new Error(`Xiaomi belépés sikertelen – ellenőrizd az e-mailt/telefonszámot és jelszót (${j2.desc || j2.code || "ismeretlen hiba"})`);
-  const r3 = await fetch(j2.location, { headers: base, redirect: "manual" });
-  const serviceToken = cookieVal(r3, "serviceToken");
-  if (!serviceToken) throw new Error("Xiaomi: nem kaptunk munkamenetet (serviceToken)");
-  const sess = { userId: String(j2.userId), ssecurity: j2.ssecurity, serviceToken, at: Date.now() };
-  sessions.set(key, sess);
-  return sess;
+  return finishWithLocation(key, String(j2.userId), j2.ssecurity, j2.location, base);
+}
+
+// Step 1 of verification: ask Xiaomi to send a code (e-mail or SMS).
+export async function sendCode(user: string, url: string) {
+  const jar: Record<string, string> = { sdkVersion: "accountsdk-18.8.15", deviceId: devId(user) };
+  const r = await fetch(url.replace("/fe/service/identity/authStart", "/identity/list"), { headers: { "User-Agent": UA, Cookie: jarStr(jar) }, redirect: "manual" });
+  addJar(jar, r);
+  let flag = 8;
+  try { const j = parse(await r.text()); flag = j.flag ?? (j.options?.includes?.(8) ? 8 : j.options?.[0] ?? 8); } catch { /* html */ }
+  if (!jar["identity_session"]!) throw new Error("Xiaomi: nem sikerült elindítani az ellenőrzést");
+  const ep = flag === 4 ? "sendPhoneTicket" : "sendEmailTicket";
+  const r2 = await fetch(`https://account.xiaomi.com/identity/auth/${ep}?_dc=${Date.now()}`, { method: "POST",
+    headers: { "User-Agent": UA, Cookie: jarStr(jar), "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ retry: "0", icode: "", _json: "true", ick: jar["identity_session"]! }) });
+  const j2 = parse(await r2.text());
+  if (j2.code !== 0) throw new Error(`Xiaomi: a kód küldése nem sikerült (${j2.desc || j2.code})`);
+  return { ick: jar["identity_session"]!, flag, via: flag === 4 ? "SMS" : "e-mail" };
+}
+
+// Step 2: verify the code, trust this device, then log in.
+export async function verifyCode(user: string, pass: string, url: string, ick: string, flag: number, code: string) {
+  const jar: Record<string, string> = { sdkVersion: "accountsdk-18.8.15", deviceId: devId(user), identity_session: ick };
+  const ctx = new URL(url).searchParams.get("context") ?? "";
+  const ep = flag === 4 ? "verifyPhone" : "verifyEmail";
+  const r = await fetch(`https://account.xiaomi.com/identity/auth/${ep}?_flag=${flag}&ick=${encodeURIComponent(ick)}&_json=true&sid=xiaomiio&context=${encodeURIComponent(ctx)}&mask=0&_locale=hu_HU`, {
+    method: "POST", headers: { "User-Agent": UA, Cookie: jarStr(jar), "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ _flag: String(flag), ticket: code.trim(), trust: "true", _json: "true", ready: "true" }) });
+  addJar(jar, r);
+  const j = parse(await r.text());
+  if (j.code !== 0 || !j.location) throw new Error(`Xiaomi: hibás vagy lejárt kód (${j.desc || j.code})`);
+  let loc: string | null = j.location;
+  for (let i = 0; loc && i < 10; i++) {
+    const rr: Response = await fetch(loc, { headers: { "User-Agent": UA, Cookie: jarStr(jar) }, redirect: "manual" });
+    addJar(jar, rr);
+    const next = rr.headers.get("location");
+    loc = next ? new URL(next, loc).toString() : null;
+  }
+  sessions.delete(user + ":" + md5(pass));
+  const headers = { "User-Agent": UA, Cookie: jarStr(jar) };
+  const r1 = await fetch("https://account.xiaomi.com/pass/serviceLogin?sid=xiaomiio&_json=true", { headers });
+  const j1 = parse(await r1.text());
+  if (j1.ssecurity && j1.location) return finishWithLocation(user + ":" + md5(pass), String(j1.userId), j1.ssecurity, j1.location, headers);
+  return login(user, pass);
 }
 
 async function hmac(key: Uint8Array<ArrayBuffer>, msg: string) {
