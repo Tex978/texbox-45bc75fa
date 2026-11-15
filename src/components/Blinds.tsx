@@ -1,6 +1,8 @@
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { Card } from "@/components/Shell";
+import { SmartSection as Card } from "@/components/SmartHomeUI";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, ArrowDown, Square, Settings2, Check, X, ChevronDown, ChevronRight, Power, Play, Lightbulb, WashingMachine, Droplets, Battery, Minus, Plus, LogOut, QrCode } from "lucide-react";
 import { getBlinds, blindAction, blindGroupAction, saveBlindMeta } from "@/lib/nas.functions";
 
 export const blindsQuery = queryOptions({ queryKey: ["blinds"], queryFn: () => getBlinds(), refetchInterval: 15000 });
@@ -48,10 +50,10 @@ export function Blinds() {
     <Card title="Redőnyök" className="mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted-foreground">Összes ({data.blinds.length})</span>
-        <button className={btn} onClick={() => group(inc(data.blinds), "open")}>▲ Mind fel</button>
-        <button className={btn} onClick={() => group(inc(data.blinds), "stop")} aria-label="Mind állj">■</button>
-        <button className={btn} onClick={() => group(inc(data.blinds), "close")}>▼ Mind le</button>
-        <button className={`${btn} ml-auto`} onClick={() => setSetup(true)} aria-label="Redőnyök beállítása" title="Nevek és szobák">⚙</button>
+        <Button variant="outline" className={btn} onClick={() => group(inc(data.blinds), "open")}><ArrowUp />Mind fel</Button>
+        <Button variant="outline" className={btn} onClick={() => group(inc(data.blinds), "stop")} aria-label="Mind állj"><Square size={14} /></Button>
+        <Button variant="outline" className={btn} onClick={() => group(inc(data.blinds), "close")}><ArrowDown />Mind le</Button>
+        <Button variant="outline" className={`${btn} ml-auto`} onClick={() => setSetup(true)} aria-label="Redőnyök beállítása" title="Nevek és szobák"><Settings2 /></Button>
       </div>
       {data.error ? <p className="font-mono text-sm text-destructive">● {data.error}</p> : (
         <div className="grid items-start gap-3 sm:grid-cols-2">
@@ -59,15 +61,15 @@ export function Blinds() {
             const avg = Math.round(list.reduce((s, b) => s + Math.max(0, b.position), 0) / list.length);
             const isOpen = open[room] ?? false;
             return (
-              <div key={room} className="rounded-lg border border-border p-3">
+              <div key={room} className="smart-device p-4">
                 <div className="flex items-center gap-2">
-                  <button className="min-w-0 flex-1 text-left" onClick={() => setOpen({ ...open, [room]: !isOpen })}>
-                    <div className="truncate font-medium">{isOpen ? "▾" : "▸"} {room}</div>
+                  <Button variant="outline" className="min-w-0 flex-1 text-left" onClick={() => setOpen({ ...open, [room]: !isOpen })}>
+                    <div className="flex items-center gap-2 truncate font-medium">{isOpen ? <ChevronDown size={17} /> : <ChevronRight size={17} />} {room}</div>
                     <div className="text-xs text-muted-foreground">{list.length} redőny · {posLabel(avg)}</div>
-                  </button>
-                  <button className={btn} onClick={() => group(inc(list), "open")} aria-label={`${room} fel`}>▲</button>
-                  <button className={btn} onClick={() => group(inc(list), "stop")} aria-label={`${room} állj`}>■</button>
-                  <button className={btn} onClick={() => group(inc(list), "close")} aria-label={`${room} le`}>▼</button>
+                  </Button>
+                  <Button variant="outline" className={btn} onClick={() => group(inc(list), "open")} aria-label={`${room} fel`}><ArrowUp /></Button>
+                  <Button variant="outline" className={btn} onClick={() => group(inc(list), "stop")} aria-label={`${room} állj`}><Square size={14} /></Button>
+                  <Button variant="outline" className={btn} onClick={() => group(inc(list), "close")} aria-label={`${room} le`}><ArrowDown /></Button>
                 </div>
                 {isOpen && (
                   <div className="mt-3 space-y-3 border-t border-border pt-3">
@@ -78,8 +80,8 @@ export function Blinds() {
                           <input type="range" min={0} max={100} defaultValue={100 - Math.max(0, b.position)} key={b.position} aria-label={`${b.name} nyitottság`}
                             onPointerUp={(e) => act(b, "position", 100 - Number((e.target as HTMLInputElement).value))} className="w-full accent-current text-primary" />
                         </div>
-                        <button className={btn} onClick={() => act(b, "open")} aria-label={`${b.name} fel`}>▲</button>
-                        <button className={btn} onClick={() => act(b, "close")} aria-label={`${b.name} le`}>▼</button>
+                        <Button variant="outline" className={btn} onClick={() => act(b, "open")} aria-label={`${b.name} fel`}><ArrowUp /></Button>
+                        <Button variant="outline" className={btn} onClick={() => act(b, "close")} aria-label={`${b.name} le`}><ArrowDown /></Button>
                       </div>
                     ))}
                   </div>
@@ -119,7 +121,7 @@ function BlindSetup({ blinds, demo, onClose, excluded, setExcluded }: { blinds: 
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-xl border border-border bg-card sm:rounded-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="font-semibold">Redőnyök – nevek és szobák</h2>
-          <button onClick={onClose} aria-label="Bezárás" className="text-muted-foreground">✕</button>
+          <Button variant="outline" onClick={onClose} aria-label="Bezárás" className="text-muted-foreground"><X /></Button>
         </div>
         <datalist id="blind-rooms">{roomNames.map((r) => <option key={r} value={r} />)}</datalist>
         <div className="space-y-2 overflow-y-auto p-4">
@@ -135,8 +137,8 @@ function BlindSetup({ blinds, demo, onClose, excluded, setExcluded }: { blinds: 
           ))}
         </div>
         <div className="flex justify-end gap-2 border-t border-border p-4">
-          <button className="rounded-md border border-border px-4 py-2 text-sm" onClick={onClose}>Mégse</button>
-          <button disabled={busy} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50" onClick={save}>{busy ? "Mentés…" : "Mentés"}</button>
+          <Button variant="outline" className="rounded-md border border-border px-4 py-2 text-sm" onClick={onClose}>Mégse</Button>
+          <Button variant="outline" disabled={busy} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50" onClick={save}>{busy ? "Mentés…" : "Mentés"}</Button>
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Card } from "@/components/Shell";
+import { SmartSection as Card } from "@/components/SmartHomeUI";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, ArrowDown, Square, Settings2, Check, X, ChevronDown, ChevronRight, Power, Play, Lightbulb, WashingMachine, Droplets, Battery, Minus, Plus, LogOut, QrCode } from "lucide-react";
 import { getTuya, tuyaCommand, tuyaQrStart, tuyaQrFinish, tuyaLogout } from "@/lib/nas.functions";
 
 export const tuyaQuery = queryOptions({ queryKey: ["tuya"], queryFn: () => getTuya(), refetchInterval: 60000 });
@@ -27,23 +29,23 @@ function Dev({ d, name }: { d: { id: string; category: string; online: boolean; 
   const pir = val(d.status, "pir");
   const bright = d.status.find((x) => x.code === "bright_value_v2" || x.code === "bright_value");
   return (
-    <div className="rounded-lg bg-secondary p-3">
+    <div className="smart-device">
       <div className="flex items-start justify-between gap-2">
-        <div><div className="font-medium">{name}</div><div className="text-xs text-muted-foreground">{CAT[d.category] || d.category}{!d.online && " · ○ offline"}</div></div>
-        {sw && <button onClick={() => send(sw.code, !sw.value)} disabled={!d.online}
-          className={`rounded-full px-3 py-1 text-xs font-medium ${sw.value ? "bg-primary text-primary-foreground" : "border border-border"}`}>{sw.value ? "BE" : "KI"}</button>}
+        <div><div className="flex items-center gap-2 font-medium"><Lightbulb size={19} className="shrink-0 text-home-energy" />{name}</div><div className="text-xs text-muted-foreground">{CAT[d.category] || d.category}{!d.online && " · ○ offline"}</div></div>
+        {sw && <Button variant="outline" onClick={() => send(sw.code, !sw.value)} disabled={!d.online}
+          className={`rounded-full px-3 py-1 text-xs font-medium ${sw.value ? "bg-primary text-primary-foreground" : "border border-border"}`}><Power />{sw.value ? "BE" : "KI"}</Button>}
       </div>
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-sm">
         {t != null && <span>{t}°</span>}
-        {hum != null && <span>{String(hum)}%💧</span>}
+        {hum != null && <span className="inline-flex items-center gap-1"><Droplets size={14} />{String(hum)}%</span>}
         {door != null && <span>{door ? "nyitva" : "zárva"}</span>}
         {pir != null && <span>{pir === "pir" ? "mozgás!" : "nincs mozgás"}</span>}
-        {bat != null && <span className="text-muted-foreground">🔋{String(bat)}%</span>}
+        {bat != null && <span className="inline-flex items-center gap-1 text-muted-foreground"><Battery size={15} />{String(bat)}%</span>}
       </div>
       {typeof set === "number" && <div className="mt-2 flex items-center gap-2 text-sm">
-        <button onClick={() => send("temp_set", set - 1)} className="rounded border border-border px-2">−</button>
+        <Button variant="outline" onClick={() => send("temp_set", set - 1)} className="rounded border border-border px-2"><Minus /></Button>
         <span className="font-mono">cél: {set}°</span>
-        <button onClick={() => send("temp_set", set + 1)} className="rounded border border-border px-2">+</button></div>}
+        <Button variant="outline" onClick={() => send("temp_set", set + 1)} className="rounded border border-border px-2"><Plus /></Button></div>}
       {bright && typeof bright.value === "number" && <input type="range" min={bright.code.endsWith("v2") ? 10 : 25} max={bright.code.endsWith("v2") ? 1000 : 255} defaultValue={bright.value}
         onMouseUp={(e) => send(bright.code, Number(e.currentTarget.value))} onTouchEnd={(e) => send(bright.code, Number(e.currentTarget.value))} className="mt-2 w-full" />}
       {msg && <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{msg}</p>}
@@ -63,12 +65,12 @@ function TuyaLink() {
       {!qr ? <div className="space-y-2 text-sm">
         <p className="text-muted-foreground">Smart Life app → Én → ⚙ Beállítások → Fiók és biztonság → <b>User Code</b>. Másold ide:</p>
         <div className="flex gap-2"><input value={uc} onChange={(e) => setUc(e.target.value)} placeholder="User Code" className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1 font-mono" />
-          <button disabled={!uc.trim()} onClick={start} className="rounded-md bg-primary px-4 py-1 font-medium text-primary-foreground">QR-kód kérése</button></div>
+          <Button variant="outline" disabled={!uc.trim()} onClick={start} className="rounded-md bg-primary px-4 py-1 font-medium text-primary-foreground"><QrCode />QR-kód kérése</Button></div>
       </div> : <div className="space-y-3 text-sm">
         <p>Smart Life app → jobb felső sarok <b>⊕ / beolvasás</b> ikon → olvasd be, majd a telefonon nyomd meg a <b>Megerősítés</b> gombot.</p>
         <img src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(qr)}`} alt="Tuya QR-kód" width={220} height={220} className="rounded bg-foreground" />
-        <div className="flex gap-2"><button onClick={finish} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Beolvastam és jóváhagytam</button>
-          <button onClick={() => setQr("")} className="rounded-md border border-border px-4 py-2">Új kód</button></div>
+        <div className="flex gap-2"><Button variant="outline" onClick={finish} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">Beolvastam és jóváhagytam</Button>
+          <Button variant="outline" onClick={() => setQr("")} className="rounded-md border border-border px-4 py-2">Új kód</Button></div>
       </div>}
       {msg && <p className="mt-2 break-all font-mono text-xs text-destructive">{msg === "…" ? "" : "● "}{msg}</p>}
     </Card>
@@ -88,7 +90,7 @@ export function Tuya() {
   return (
     <Card title="Tuya eszközök" className="mt-4">
       {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
-        <div className="mb-3 flex justify-end gap-2"><button onClick={async () => { await tuyaLogout(); qc.invalidateQueries({ queryKey: ["tuya"] }); }} className="rounded border border-border px-3 py-1 text-xs">Kijelentkezés</button><button onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">⚙ {edit ? "Kész" : "Eszközkezelő"}</button></div>
+        <div className="mb-3 flex justify-end gap-2"><Button variant="outline" onClick={async () => { await tuyaLogout(); qc.invalidateQueries({ queryKey: ["tuya"] }); }} className="rounded border border-border px-3 py-1 text-xs"><LogOut />Kijelentkezés</Button><Button variant="outline" onClick={() => setEdit(!edit)} className="rounded border border-border px-3 py-1 text-xs">{edit ? <Check /> : <Settings2 />}{edit ? "Kész" : "Eszközkezelő"}</Button></div>
         {edit ? <div className="space-y-2">{data.devices.map((d) => (
           <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-secondary p-2 text-sm">
             <input value={meta[d.id]?.name ?? ""} placeholder={d.name} onChange={(e) => upd(d.id, { name: e.target.value })} className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1" />
