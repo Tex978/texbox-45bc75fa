@@ -230,7 +230,7 @@ export const getHome = createServerFn({ method: "GET" }).handler(async () => {
   if (!has("HA_URL")) return { demo: true, entities: haDemo as Entity[] };
   const all = (await ha("/api/states")) as Entity[];
   return { demo: false, entities: all.filter((e) => {
-    const d = e.entity_id.split(".")[0];
+    const d = e.entity_id.split(".")[0] || "";
     if (!DOMAINS.includes(d) || e.state === "unavailable") return false;
     if (d === "sensor") return ["power", "energy"].includes(e.attributes.device_class || "") || /growatt|solar|napelem|pv/i.test(e.entity_id);
     return true;
