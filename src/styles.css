@@ -250,15 +250,21 @@
  .app-nav a { flex: 1; justify-content: center; padding: 10px 6px; }
 }
 @media (max-width: 767px) {
- .app-header-inner { padding: 14px 16px 0; gap: 12px; }
- .app-nav { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding-bottom: 12px; }
- .app-nav a { min-width: 0; min-height: 44px; padding: 10px 4px; font-size: 11px; gap: 6px; }
- .app-nav a svg { width: 16px; height: 16px; }
- .app-main { padding: 24px 16px 48px; }
- .app-main h1 { font-size: 26px; }
+ .app-header { position: sticky; top: 0; z-index: 30; }
+ .app-header-inner { padding: 10px 16px 0; gap: 10px; }
+ .app-brand-icon { width: 30px; height: 30px; }
+ .app-brand-name { font-size: 15px; }
+ .app-nav { display: flex; flex-wrap: nowrap; gap: 2px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+ .app-nav::-webkit-scrollbar { display: none; }
+ .app-nav a { flex: 0 0 auto; min-height: 40px; padding: 8px 10px; font-size: 11px; gap: 6px; white-space: nowrap; }
+ .app-nav a svg { width: 15px; height: 15px; }
+ .app-main { padding: 18px 16px 48px; }
+ .app-main h1 { font-size: 24px; }
  .app-main button { min-height: 44px; }
- .app-download { padding: 16px; }
- .app-section { padding: 20px 0; }
+  .app-download { padding: 14px; }
+ .app-section { padding: 14px 0; }
+ .app-section-title { margin-bottom: 14px; font-size: 14px; }
+ .app-main .overview-family-heading { margin-bottom: 18px; }
  .app-main label.rounded-xl { gap: 10px; padding: 12px; border-radius: 8px; }
  .app-main label.rounded-lg > .w-28 { width: 72px; }
 }
