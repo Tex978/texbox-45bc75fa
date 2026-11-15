@@ -31,6 +31,7 @@ use the editor.
 
 <!-- AGENT-MEMORY:BEGIN -->
 - App icons share one photographic cutout and resized public PNGs; use manifest-only home-screen metadata without a service worker so previews and live device reads remain uncached.
+- Overview and smart-home headings reuse the bundled full-body photographic cutout in normal layout flow so the photo never covers device controls.
 - Thermometer history is requested on demand from Xiaomi with bounded reads, decoded in thermo-history.ts, and never synthesized as real measurements; dashboard mobile CSS remains scoped to smart-home.
 - Xiaomi thermometer reads select service/property IDs per model; Monitor 3 has a distinct layout, so avoid applying legacy BLE IDs universally.
 - Growatt reads share a credential-scoped cache with the same duration as the polling interval, in-flight deduplication, reusable session and one-hour failure cooldown; connection tests must use the same guarded read path to avoid repeated logins. Memory-only protection is per process and resets on restart.

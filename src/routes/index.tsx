@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Shell, Card, Bar, Poster } from "@/components/Shell";
 import { getOverview } from "@/lib/nas.functions";
+import childFullBody from "@/assets/child-full-body.png";
 const q = queryOptions({ queryKey: ["overview"], queryFn: () => getOverview(), refetchInterval: 10000 });
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -16,7 +17,10 @@ function Index() {
   const { data } = useSuspenseQuery(q);
   return (
     <Shell demo={data.demo}>
-      <h1 className="mb-6 font-display text-3xl font-bold">Áttekintő</h1>
+      <div className="overview-family-heading">
+        <h1 className="min-w-0 font-display text-3xl font-bold">Áttekintő</h1>
+        <img src={childFullBody} alt="A gyermek teljes alakos, körbevágott fotója" className="family-cutout" width={300} height={1024} />
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Card title="Tárhely">
           <div className="space-y-4">{data.volumes.map((v) => (
