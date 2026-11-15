@@ -5,6 +5,7 @@ import { getSolar, getThermometers, xiaomiSendCode, xiaomiVerify, getPurifiers, 
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
+import { Appliances, appliancesQuery } from "@/components/Appliances";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/home")({
     { title: "Okosotthon – NAS Vezérlő" }, { name: "description", content: "Napelem termelés és okosotthon eszközök egy helyen." },
     { property: "og:title", content: "Okosotthon – NAS Vezérlő" }, { property: "og:description", content: "Napelem termelés és okosotthon eszközök." },
   ] }),
-  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq), context.queryClient.ensureQueryData(pq), context.queryClient.ensureQueryData(lq)]),
+  loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(q), context.queryClient.ensureQueryData(bq), context.queryClient.ensureQueryData(tq), context.queryClient.ensureQueryData(pq), context.queryClient.ensureQueryData(lq), context.queryClient.ensureQueryData(appliancesQuery)]),
   component: Home,
 });
 function Stat({ value, unit, label }: { value: string; unit: string; label: string }) {
@@ -144,8 +145,9 @@ function Home() {
       <Thermometers />
       <Purifiers />
       <Locks />
+      <Appliances />
       <Blinds />
-      <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Bosch, Tapo, Xiaomi) bekötése folyamatban.</p>
+      <p className="mt-6 text-sm text-muted-foreground">További eszközök (Samsung TV, Tuya, Tapo, Dreame) bekötése folyamatban.</p>
     </Shell>
   );
 }
