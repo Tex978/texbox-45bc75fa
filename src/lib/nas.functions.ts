@@ -14,6 +14,7 @@ import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 import { filterMedia, mapArrMedia, imdbIdentifier, imdbScore, type MediaType, type MediaCategory, type MediaItem, type MediaDetail } from "./media";
 import { mediaDemo } from "./media-demo";
 import { homeConnectFailure } from "./home-connect";
+import { mergeThermometerMeta, type ThermometerMeta } from "./thermometer-meta";
 
 const COOKIE = "nas-cfg";
 export const FIELDS = ["TMDB_TOKEN", "OMDB_KEY", "QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN", "DSM_URL", "DSM_USER", "DSM_PASS", "GROWATT_USER", "GROWATT_PASS", "GROWATT_SERVER", "GROWATT_SN", "BLINDS_IP", "BLINDS_KEY", "BLINDS_NAMES", "XIAOMI_USER", "XIAOMI_PASS", "XIAOMI_REGION", "HC_CLIENT_ID", "GREE_UNITS", "GREE_USER", "GREE_PASS", "GREE_REGION"] as const;
@@ -509,8 +510,24 @@ function writeXm(v: string) {
     ...(https ? { sameSite: "none" as const, secure: true, partitioned: true } : { sameSite: "lax" as const }) });
 }
 const xmArgs = () => [env("XIAOMI_USER"), env("XIAOMI_PASS")] as const;
+const THERMO_META = "thermo-meta";
+function readThermometerMeta(): ThermometerMeta {
+  const raw = getCookie(THERMO_META);
+  try { return mergeThermometerMeta({}, JSON.parse(raw || "{}")); } catch { return {}; }
+}
+export const saveThermometerMeta = createServerFn({ method: "POST" })
+  .inputValidator((input: { items: ThermometerMeta; onlyMissing?: boolean }) => {
+    if (!input.items || typeof input.items !== "object" || Array.isArray(input.items) || Object.values(input.items).some(item => !item || typeof item !== "object")) throw new Error("Érvénytelen hőmérőbeállítások.");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    const meta = mergeThermometerMeta(readThermometerMeta(), data.items, data.onlyMissing === true);
+    setCookie(THERMO_META, JSON.stringify(meta), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+    return meta;
+  });
 export const getThermometers = createServerFn({ method: "GET" }).handler(async () => {
-  if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", verifyUrl: "", sensors: [
+  const meta = readThermometerMeta();
+  if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { meta, demo: true, error: "", raw: "", verifyUrl: "", sensors: [
     { did: "d1", name: "Nappali", model: "miaomiaoce.sensor_ht.t2", online: true, temp: 22.4, hum: 48, battery: 87 },
     { did: "d2", name: "Hálószoba", model: "miaomiaoce.sensor_ht.t2", online: true, temp: 20.1, hum: 52, battery: 64 },
     { did: "d3", name: "Gyerekszoba", model: "cgllc.sensor_ht.g1", online: true, temp: 21.3, hum: 45, battery: 91 } ] };
@@ -520,10 +537,10 @@ export const getThermometers = createServerFn({ method: "GET" }).handler(async (
   try {
     const r = await x.listThermometers(u, p, (env("XIAOMI_REGION") || "de").toLowerCase());
     const cur = x.currentSession(u, p); if (cur) writeXm(JSON.stringify(cur));
-    return { demo: false, error: "", verifyUrl: "", ...r };
+    return { meta, demo: false, error: "", verifyUrl: "", ...r };
   } catch (e) {
-    if (e instanceof x.Xiaomi2FA) return { demo: false, error: "", verifyUrl: e.url, raw: "", sensors: [] };
-    return { demo: false, error: String((e as Error).message || e), verifyUrl: "", raw: "", sensors: [] };
+    if (e instanceof x.Xiaomi2FA) return { meta, demo: false, error: "", verifyUrl: e.url, raw: "", sensors: [] };
+    return { meta, demo: false, error: String((e as Error).message || e), verifyUrl: "", raw: "", sensors: [] };
   }
 });
 export const xiaomiSendCode = createServerFn({ method: "POST" }).inputValidator((d: { url: string }) => d)
