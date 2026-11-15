@@ -48,7 +48,8 @@ async function qbit(path: string, body?: Record<string, string>) {
   const lt = (await login.text()).trim();
   if (login.status === 403) throw new Error("qBittorrent 403: túl sok hibás belépés miatt kitiltott IP, vagy a Host fejléc ellenőrzés tiltja");
   if (/^fails/i.test(lt)) throw new Error(`qBittorrent: hibás felhasználónév vagy jelszó (felhasználó: "${env("QBIT_USER")}", jelszó hossza: ${env("QBIT_PASS").length})`);
-  if (!/^ok/i.test(lt)) throw new Error(`qBittorrent: váratlan válasz (${login.status}): ${lt.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 120)}`);
+  // qBittorrent 5.x answers a successful login with 204 and an empty body
+  if (!/^ok/i.test(lt) && !(login.ok && lt === "")) throw new Error(`qBittorrent: váratlan válasz (${login.status}): ${lt.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 120)}`);
   // qBittorrent 5.x names the cookie QBT_SID_<port>, older versions SID
   const sid = (login.headers.get("set-cookie") || "").match(/(QBT_SID_\d+|SID)=[^;]+/)?.[0] || "";
   const r = await fetch(`${base}/api/v2${path}`, { method: body ? "POST" : "GET", headers: { Cookie: sid, Referer: base, Origin: base, "Content-Type": "application/x-www-form-urlencoded" },
