@@ -1,6 +1,7 @@
 # Okosotthon megújítás
-- [ ] Telefonközpontú Okosotthon elrendezés és nagyobb érintési felületek.
-- [ ] Hőmérők előzményei: Xiaomi-adatokból grafikon, 24 órás és 7 napos nézet, üres és hibás állapot.
+- [x] Telefonközpontú Okosotthon elrendezés, alsó szakasznavigáció és nagyobb érintési felületek; négy képernyőméreten ellenőrizve.
+- [x] Hőmérők előzményei: Xiaomi-adatokból grafikon, 24 órás és 7 napos nézet, üres és hibás állapot.
+- [ ] Valós Xiaomi mérési előzmények élő ellenőrzése: az előnézetben nincs beállítva a felhasználó Mi fiókja.
 - [x] Gree+ fiókos csatlakozás lehetőségének ellenőrzése: közvetlen belépés lehetséges, a vezérlési mód eszköztípustól függ.
 - [x] Gree+ fiókos belépés és vezérlés kialakítása, eszközfelderítéssel és parancs utáni állapotellenőrzéssel.
 - [ ] Gree+ élő belépés és Smart One/Smart R/Cascade kompatibilitás ellenőrzése: frissített Synology alkalmazásban megadott fiókadatok szükségesek.
