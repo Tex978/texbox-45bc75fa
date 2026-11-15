@@ -7,7 +7,7 @@ describe("thermometer visibility", () => {
   });
   it("restores a hidden device without losing its name and room", () => {
     const meta = mergeThermometerMeta({ one: { hidden: true, name: "Háló", room: "Emelet" } }, { one: { hidden: false } });
-    expect(meta.one).toEqual({ hidden: false, name: "Háló", room: "Emelet" });
+    expect(meta["one"]).toEqual({ hidden: false, name: "Háló", room: "Emelet" });
     expect(visibleThermometers(sensors, meta)).toHaveLength(2);
   });
   it("does not overwrite shared visibility with migrated browser names", () => {
