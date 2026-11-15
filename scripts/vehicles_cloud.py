@@ -10,12 +10,51 @@ from datetime import datetime, timezone
 
 import aiohttp
 from carconnectivity.carconnectivity import CarConnectivity
+from carconnectivity.errors import AuthenticationError, TemporaryAuthenticationError, TooManyRequestsError, APICompatibilityError
 from renault_api.renault_client import RenaultClient
-from renault_api.gigya.exceptions import PendingTwoFactorAuthenticationException
+from renault_api.gigya.exceptions import PendingTwoFactorAuthenticationException, InvalidCredentialsException
+from renault_api.kamereon.exceptions import QuotaLimitException, AccessDeniedException
+from requests.exceptions import RequestException
 
 logging.disable(logging.CRITICAL)
 INTERVAL = 900
 sessions = {}
+
+
+def failure(error, brand, stage):
+    """Return allowlisted diagnostics only; vendor messages can contain credentials."""
+    name = "Volkswagen" if brand == "vw" else "My Renault"
+    if isinstance(error, (TooManyRequestsError, QuotaLimitException)):
+        reason = "rate_limit"
+        message = "A szolgáltató korlátozta a kéréseket. Ne próbálkozz ismételten."
+    elif isinstance(error, (TimeoutError, RequestException, aiohttp.ClientError, TemporaryAuthenticationError)):
+        reason = "unavailable"
+        message = "A szolgáltató nem érhető el vagy nem válaszolt időben. Ez nem bizonyít hibás jelszót."
+    elif isinstance(error, APICompatibilityError):
+        reason = "compatibility"
+        message = "A szolgáltató belépési oldala megváltozott; a kapcsolat frissítést igényelhet."
+    elif isinstance(error, InvalidCredentialsException):
+        reason = "credentials"
+        message = "A szolgáltató elutasította az e-mailt vagy jelszót. Ellenőrizd a saját alkalmazásában."
+    elif isinstance(error, AuthenticationError):
+        # Inspect known library phrases internally; never return the exception text.
+        details = str(error).lower()
+        if "terms and conditions" in details or "consent" in details:
+            reason = "consent"
+            message = "Lépj be a Volkswagen weboldalán, és fogadd el a kért feltételeket."
+        elif "authorization url could not be fetched" in details:
+            reason = "authorization_unavailable"
+            message = "A Volkswagen nem adta át a belépési címet. A hiba a jelszó ellenőrzése előtt történt."
+        else:
+            reason = "authentication"
+            message = "A szolgáltató nem engedte a belépést. Ellenőrizd a fiókot és az esetleges jóváhagyást a saját alkalmazásában."
+    elif isinstance(error, AccessDeniedException):
+        reason = "access_denied"
+        message = "A fiók nem jogosult az autó adatainak elérésére. Ellenőrizd a hozzárendelést és az online szolgáltatást."
+    else:
+        reason = "unexpected"
+        message = "A kapcsolat váratlan hibába ütközött. A hibaazonosító alapján további vizsgálat szükséges."
+    return f"{name}: {message} [{brand}/{stage}/{reason}] Új lekérdezés legkorábban 15 perc múlva."
 
 
 def number(value):
@@ -53,12 +92,14 @@ class Account:
         self.pending = False
         self.cached = None
         self.cached_at = 0
+        self.stage = "login"
 
     async def login(self):
         if self.client is not None:
             return
         if self.cfg["brand"] == "vw":
-            self.client = CarConnectivity({"carConnectivity": {"connectors": [{"type": "volkswagen", "config": {
+            # Construction performs network login: keep it off the async event loop.
+            self.client = await asyncio.to_thread(CarConnectivity, {"carConnectivity": {"connectors": [{"type": "volkswagen", "config": {
                 "username": self.cfg["user"], "password": self.cfg["password"], "interval": INTERVAL}}]}})
         else:
             self.http = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=45))
@@ -71,6 +112,7 @@ class Account:
 
     async def read(self, code=None):
         if code and self.pending:
+            self.stage = "verification"
             await self.client.session.complete_two_factor_auth(code, remember_device=True)
             self.pending = False
             self.cached = None
@@ -78,15 +120,16 @@ class Account:
             return {"vehicles": [], "error": "", "verification": True, "updatedAt": None}
         if self.cached is not None and time.monotonic() - self.cached_at < INTERVAL:
             return self.cached
+        self.stage = "login"
         await self.login()
         if self.pending:
             return {"vehicles": [], "error": "", "verification": True, "updatedAt": None}
         vehicles = []
+        self.stage = "vehicles"
         if self.cfg["brand"] == "vw":
             # No background polling thread: fetch only through this bounded read path.
             await asyncio.to_thread(self.client.fetch_all)
-            for connector in self.client.connectors.connectors.values():
-                await asyncio.to_thread(connector.update_vehicles)
+            # fetch_all already updates vehicle status in the pinned VW connector.
             vehicles = [vw_reading(v) for v in self.client.garage.list_vehicles()]
         else:
             person = await self.client.get_person()
@@ -127,11 +170,11 @@ async def handle(req):
         sessions[key] = account
     try:
         return await account.read(req.get("code"))
-    except Exception:
+    except Exception as error:
         if account.pending:
             return {"vehicles": [], "error": "Az ellenőrzőkód nem fogadható el. Ellenőrizd, és próbáld újra.", "verification": True, "updatedAt": None}
         # Cache failures too: repeated refreshes must not repeatedly log in.
-        account.cached = {"vehicles": [], "error": "Az autós kapcsolat sikertelen. Ellenőrizd a fiókot, a régiót és az aktív online szolgáltatást.",
+        account.cached = {"vehicles": [], "error": failure(error, cfg["brand"], account.stage),
                           "verification": False, "updatedAt": None}
         account.cached_at = time.monotonic()
         await account.close()

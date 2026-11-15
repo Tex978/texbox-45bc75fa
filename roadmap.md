@@ -1,5 +1,6 @@
 # Okosotthon megújítás
-- [ ] Autós kapcsolathiba vizsgálata, belépési eljárás javítása és biztonságos hibajelzések ellenőrzése.
+- [x] Autós hibakezelés: márka/lépés/ok szerinti biztonságos jelzések, VW blokkoló belépés és dupla lekérdezés javítása; kilenc teszt sikeres.
+- [ ] Mindkét autó belépési hibájának pontos azonosítása: a frissített Synology alkalmazás új hibaazonosítói szükségesek, az élő fiókok itt nem elérhetők.
 - [x] Autók oldal, Volkswagen/My Renault belépés, adatkiolvasás és Renault ellenőrzőkód kezelése; öt Python-teszt és oldalelellenőrzés sikeres.
 - [ ] Autók élő ellenőrzése: frissített Synology alkalmazásban megadott autós fiókok szükségesek.
 - [x] Egységes modern megjelenés minden oldalon: közös színek, ikonmenü, vezérlők; hat oldal ellenőrizve három képernyőméreten.
