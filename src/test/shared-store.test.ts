@@ -11,7 +11,11 @@ async function setup(failWrite = false) {
     }),
     mkdirSync: vi.fn(),
     writeFileSync: vi.fn((path: string, value: string) => { if (failWrite) throw new Error("denied"); files[path] = value; }),
-    renameSync: vi.fn((from: string, to: string) => { files[to] = files[from]; delete files[from]; }),
+    renameSync: vi.fn((from: string, to: string) => {
+      const value = files[from];
+      if (value === undefined) throw new Error("missing temporary file");
+      files[to] = value; delete files[from];
+    }),
   };
   vi.stubGlobal("process", { ...process, getBuiltinModule: () => fs, env: { ...process.env, DATA_FILE: "/data/nas-state.json" } });
   return { store: await import("../lib/shared-store.server"), files, fs };
@@ -22,7 +26,9 @@ describe("shared Synology settings", () => {
     const { store, files } = await setup();
     const config = JSON.stringify({ GREE_USER: "test-account" });
     expect(store.readStoredCookie("nas-cfg", () => config)).toBe(config);
-    expect(JSON.parse(files["/data/nas-state.json"])["nas-cfg"]).toBe(config);
+    const saved = files["/data/nas-state.json"];
+    expect(saved).toBeDefined();
+    expect(JSON.parse(saved ?? "{}")["nas-cfg"]).toBe(config);
     expect(store.readStoredCookie("nas-cfg", () => undefined)).toBe(config);
   });
   it("does not replace shared settings with a different browser's old cookie", async () => {
