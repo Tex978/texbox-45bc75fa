@@ -6,7 +6,7 @@ const COOKIE = "nas-cfg";
 export const FIELDS = ["QBIT_URL", "QBIT_USER", "QBIT_PASS", "RADARR_URL", "RADARR_KEY", "SONARR_URL", "SONARR_KEY", "PLEX_URL", "PLEX_TOKEN"] as const;
 const SECRET = ["QBIT_PASS", "RADARR_KEY", "SONARR_KEY", "PLEX_TOKEN"];
 const readCfg = (): Record<string, string> => { try { return JSON.parse(getCookie(COOKIE) || "{}"); } catch { return {}; } };
-const env = (k: string) => (readCfg()[k] || process.env[k] || "").trim().replace(/\/$/, "");
+const env = (k: string) => { const v = readCfg()[k] || process.env[k] || ""; return SECRET.includes(k) ? v : v.trim().replace(/\/$/, ""); };
 
 export const getConfig = createServerFn({ method: "GET" }).handler(async () => {
   const out: Record<string, string> = {};
@@ -19,7 +19,7 @@ export const saveConfig = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const cur = readCfg(); const next: Record<string, string> = {};
     for (const f of FIELDS) {
-      const v = (data[f] ?? "").trim();
+      const v = SECRET.includes(f) ? data[f] ?? "" : (data[f] ?? "").trim();
       next[f] = SECRET.includes(f) && (v === "" || v === "__set__") ? cur[f] || "" : v;
     }
     const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
@@ -47,7 +47,8 @@ async function qbit(path: string, body?: Record<string, string>) {
     body: new URLSearchParams({ username: env("QBIT_USER"), password: env("QBIT_PASS") }) });
   const lt = (await login.text()).trim();
   if (login.status === 403) throw new Error("qBittorrent 403: túl sok hibás belépés miatt kitiltott IP, vagy a Host fejléc ellenőrzés tiltja");
-  if (!/^ok/i.test(lt)) throw new Error("qBittorrent: hibás felhasználónév vagy jelszó");
+  if (/^fails/i.test(lt)) throw new Error(`qBittorrent: hibás felhasználónév vagy jelszó (felhasználó: "${env("QBIT_USER")}", jelszó hossza: ${env("QBIT_PASS").length})`);
+  if (!/^ok/i.test(lt)) throw new Error(`qBittorrent: váratlan válasz (${login.status}): ${lt.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 120)}`);
   // qBittorrent 5.x names the cookie QBT_SID_<port>, older versions SID
   const sid = (login.headers.get("set-cookie") || "").match(/(QBT_SID_\d+|SID)=[^;]+/)?.[0] || "";
   const r = await fetch(`${base}/api/v2${path}`, { method: body ? "POST" : "GET", headers: { Cookie: sid, Referer: base, Origin: base, "Content-Type": "application/x-www-form-urlencoded" },
