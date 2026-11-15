@@ -52,7 +52,7 @@ function Settings() {
       <h1 className="mb-2 font-display text-3xl font-bold">Kapcsolatok</h1>
       <p className="mb-6 text-sm text-muted-foreground">Add meg a külső címeket és kulcsokat. A titkos mezőket üresen hagyva a korábbi érték megmarad. Az adatok ebben a böngészőben, védett sütiben tárolódnak.</p>
       <div className="grid gap-4 md:grid-cols-2">{services.map((s) => {
-        const st = ["gree", "vw", "renault"].includes(s.key) ? undefined : status[s.key];
+        const st = s.key === "gree" || s.key === "vw" || s.key === "renault" ? undefined : status[s.key];
         return (
           <Card key={s.key} title={s.name}>
             <div className="space-y-3">{s.fields.map(([f, label, ph]) => (
