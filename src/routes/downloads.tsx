@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { Shell, Card, Bar } from "@/components/Shell";
+import { Button } from "@/components/ui/button";
+import { Pause, Play, Trash2 } from "lucide-react";
 import { getTorrents, torrentAction } from "@/lib/nas.functions";
 const q = queryOptions({ queryKey: ["torrents"], queryFn: () => getTorrents(), refetchInterval: 3000 });
 export const Route = createFileRoute("/downloads")({
@@ -22,17 +24,16 @@ function Downloads() {
     }
     await torrentAction({ data: { hash, action } }); qc.invalidateQueries({ queryKey: q.queryKey });
   };
-  const btn = "rounded-md border border-border px-3 py-1 text-xs hover:bg-secondary";
   return (
     <Shell demo={data.demo}>
       <h1 className="mb-6 font-display text-3xl font-bold">Letöltések</h1>
       <div className="space-y-3">{data.list.map((t) => (
-        <Card key={t.hash}>
+        <Card key={t.hash} className="app-download">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div className="break-all font-mono text-sm">{t.name}</div>
             <div className="flex gap-2">
-              <button className={btn} onClick={() => act(t.hash, t.paused ? "resume" : "pause")}>{t.paused ? "Folytatás" : "Szünet"}</button>
-              <button className={`${btn} text-destructive`} onClick={() => confirm("Törlöd a listából? (A fájlok maradnak)") && act(t.hash, "delete")}>Törlés</button>
+              <Button variant="outline" size="icon" title={t.paused ? "Folytatás" : "Szünet"} aria-label={t.paused ? "Folytatás" : "Szünet"} onClick={() => act(t.hash, t.paused ? "resume" : "pause")}>{t.paused ? <Play /> : <Pause />}</Button>
+              <Button variant="ghost" size="icon" className="text-destructive" title="Törlés" aria-label="Törlés" onClick={() => confirm("Törlöd a listából? (A fájlok maradnak)") && act(t.hash, "delete")}><Trash2 /></Button>
             </div>
           </div>
           <Bar value={t.progress} />

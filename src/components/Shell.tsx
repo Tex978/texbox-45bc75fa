@@ -1,42 +1,32 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { LayoutDashboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, type LucideIcon } from "lucide-react";
 const nav = [
-  { to: "/", label: "Áttekintő" }, { to: "/search", label: "Keresés" },
-  { to: "/downloads", label: "Letöltések" }, { to: "/library", label: "Tárhely" }, { to: "/home", label: "Okosotthon" }, { to: "/settings", label: "Kapcsolatok" },
+  { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search },
+  { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/library", label: "Tárhely", icon: HardDrive },
+  { to: "/home", label: "Okosotthon", icon: House }, { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
 export function Shell({ children, demo, className = "" }: { children: ReactNode; demo?: boolean; className?: string }) {
-  return (
-    <div className={`min-h-screen bg-background text-foreground ${className}`}>
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-4">
-          <div className="font-display text-xl font-bold tracking-tight"><span className="text-primary">●</span> NAS Vezérlő</div>
-          {demo && <span className="rounded bg-accent px-2 py-0.5 font-mono text-xs text-accent-foreground">DEMÓ</span>}
-          <nav className="ml-auto flex flex-wrap gap-1">
-            {nav.map((n) => (
-              <Link key={n.to} to={n.to} activeOptions={{ exact: true }}
-                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-                activeProps={{ className: "bg-secondary !text-foreground" }}>{n.label}</Link>
-            ))}
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
-    </div>
-  );
+  return <div className={`app-shell min-h-screen bg-background text-foreground ${className}`}>
+    <header className="app-header border-b border-border"><div className="app-header-inner">
+      <div className="app-brand"><span className="app-brand-icon"><Server size={18} strokeWidth={1.7} /></span><span className="app-brand-name">NAS Vezérlő</span></div>
+      {demo && <span className="app-demo">DEMÓ</span>}
+      <nav className="app-nav" aria-label="Főmenü">{nav.map(({to, label, icon: Icon}) => <Link key={to} to={to} activeOptions={{exact: true}}><Icon size={17} strokeWidth={1.7} />{label}</Link>)}</nav>
+    </div></header>
+    <main className="app-main">{children}</main>
+  </div>;
 }
+const titleIcons: Record<string, LucideIcon> = { "Tárhely": HardDrive, "Nemrég nézett": History, "Legutóbb hozzáadva": Plus };
 export function Card({ title, children, className = "" }: { title?: string; children: ReactNode; className?: string }) {
-  return (
-    <section className={`rounded-xl border border-border bg-card p-5 ${className}`}>
-      {title && <h2 className="mb-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">{title}</h2>}
-      {children}
-    </section>
-  );
+  const Icon = title ? titleIcons[title] ?? (title.startsWith("Most nézik") ? Play : Cable) : undefined;
+  return <section className={`app-section ${className}`}>
+    {title && <h2 className="app-section-title">{Icon && <Icon size={18} strokeWidth={1.7} />}{title}</h2>}{children}
+  </section>;
 }
 export function Bar({ value }: { value: number }) {
-  return <div className="h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} /></div>;
+  return <div className="h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} /></div>;
 }
-
-export function Poster({ src, title, hue = 30 }: { src?: string; title: string; hue?: number }) {
+export function Poster({ src, title }: { src?: string; title: string; hue?: number }) {
   return src ? <img src={src} alt={title} loading="lazy" className="aspect-[2/3] w-full rounded-lg bg-secondary object-cover" />
-    : <div className="flex aspect-[2/3] items-end rounded-lg p-2 text-sm font-bold" style={{ background: `linear-gradient(160deg, oklch(0.45 0.12 ${hue}), oklch(0.2 0.04 ${hue}))` }}>{title}</div>;
+    : <div className="app-poster-placeholder aspect-[2/3] w-full rounded-lg p-2 text-xs"><Film size={24} strokeWidth={1.2} />{title && <span className="line-clamp-2">{title}</span>}</div>;
 }
