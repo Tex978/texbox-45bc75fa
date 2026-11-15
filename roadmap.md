@@ -1,7 +1,8 @@
 # Okosotthon megújítás
 - [x] Gree+ fiókos csatlakozás lehetőségének ellenőrzése: közvetlen belépés lehetséges, a vezérlési mód eszköztípustól függ.
 - [ ] Gree+ fiókos belépés és vezérlés kialakítása; a klímák pontos típusa szükséges a megfelelő vezérlési módhoz.
-- [ ] Gergő hőmérő hibájának azonosítása és javítása; valós eszközadat vagy hibaüzenet szükséges.
+- [x] Monitor 3 hőmérő hiányzó méréseinek javítása a feltöltött adatok és gyártói mérési leírás alapján.
+- [ ] Gergő hőmérő javításának élő ellenőrzése: a frissített Synology alkalmazásban szükséges.
 - [x] Growatt belépés újrahasználata, ritkább frissítés és hibánál várakozás.
 - [x] Öt Gree+ klíma helyi csatlakoztatása és vezérlése.
 - [ ] Valós Gree vezérlés ellenőrzése: a Synologyn futó frissítés és a klímák otthoni IP-címe szükséges.

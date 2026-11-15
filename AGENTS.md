@@ -30,6 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 <!-- AGENT-MEMORY:BEGIN -->
+- Xiaomi thermometer reads select service/property IDs per model; Monitor 3 has a distinct layout, so avoid applying legacy BLE IDs universally.
 - Growatt reads share a credential-scoped cache with the same duration as the polling interval, in-flight deduplication, reusable session and one-hour failure cooldown; connection tests must use the same guarded read path to avoid repeated logins. Memory-only protection is per process and resets on restart.
 - Gree units use the installed gree-hvac-client over local UDP from Docker only; keep its runtime dependency in the image and load it dynamically from gree.server.ts to preserve hosted preview compatibility.
 - Transfer the request-scoped React Query cache through router dehydrate/hydrate callbacks so SSR and initial browser rendering share one data snapshot; use a short default staleTime to avoid immediate duplicate reads.

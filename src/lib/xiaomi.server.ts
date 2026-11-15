@@ -126,6 +126,9 @@ async function call(s: Session, region: string, path: string, params: unknown) {
 // MIoT spec ids shared by common Xiaomi/Qingping BLE thermometers (temperature, humidity, battery).
 const PROPS = [{ siid: 3, piid: 1001, k: "temp" }, { siid: 3, piid: 1002, k: "hum" }, { siid: 3, piid: 1008, k: "hum" }, { siid: 2, piid: 1003, k: "battery" },
   { siid: 2, piid: 1, k: "temp" }, { siid: 2, piid: 2, k: "hum" }, { siid: 3, piid: 1, k: "battery" }] as const;
+// Monitor 3 uses a different service/property layout than the older BLE models.
+const O3_PROPS = [{ siid: 2, piid: 1001, k: "temp" }, { siid: 2, piid: 1002, k: "hum" }, { siid: 3, piid: 1003, k: "battery" }] as const;
+const thermoProps = (model: string) => model === "xiaomi.sensor_ht.o3" ? O3_PROPS : PROPS;
 
 export type Thermo = { did: string; name: string; model: string; online: boolean; temp: number | null; hum: number | null; battery: number | null };
 
@@ -139,13 +142,14 @@ export async function listThermometers(user: string, pass: string, region: strin
   const sensors: Thermo[] = thermos.map((d) => ({ did: d.did, name: d.name, model: d.model, online: !!d.isOnline, temp: null, hum: null, battery: null }));
   let rawProps: unknown = null;
   if (thermos.length) {
-    const params = thermos.flatMap((d) => PROPS.map((p) => ({ did: d.did, siid: p.siid, piid: p.piid })));
+    const params = thermos.flatMap((d) => thermoProps(d.model).map((p) => ({ did: d.did, siid: p.siid, piid: p.piid })));
     try {
       const pr = await call(s, region, "/miotspec/prop/get", { params, datasource: 1 });
       rawProps = pr;
       for (const r of (pr?.result ?? []) as { did: string; siid: number; piid: number; code: number; value: number }[]) {
         if (r.code !== 0 || typeof r.value !== "number") continue;
-        const t = sensors.find((x) => x.did === r.did); const p = PROPS.find((x) => x.siid === r.siid && x.piid === r.piid);
+        const t = sensors.find((x) => x.did === r.did);
+        const p = t ? thermoProps(t.model).find((x) => x.siid === r.siid && x.piid === r.piid) : undefined;
         if (t && p) t[p.k] = p.k === "temp" && Math.abs(r.value) > 100 ? r.value / 10 : r.value;
       }
     } catch (e) { rawProps = String(e); }
@@ -167,7 +171,7 @@ export async function listThermometers(user: string, pass: string, region: strin
       }
     }));
   }
-  return { sensors, raw: JSON.stringify({ devices: list.map((d) => ({ name: d.name, model: d.model, online: d.isOnline })), props: rawProps }).slice(0, 6000) };
+  return { sensors, raw: JSON.stringify({ devices: list.map((d) => ({ did: d.did, name: d.name, model: d.model, online: d.isOnline })), props: rawProps }) };
 }
 
 // Air purifiers (zhimi.airp.*): MIoT spec ids for power, mode, PM2.5, humidity, temperature, filter life.
