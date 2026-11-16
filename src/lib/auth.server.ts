@@ -21,7 +21,8 @@ export function db() {
       CREATE TABLE IF NOT EXISTS invites(token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS permissions(user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, key TEXT NOT NULL, allowed INTEGER NOT NULL, PRIMARY KEY(user_id, key));
       CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, action TEXT NOT NULL, target TEXT, at INTEGER NOT NULL);`);
-    return (conn = d);
+    conn = d; snapshot(fs, d);
+    return d;
   } catch (e) { console.error("texbox.db unavailable", (e as Error).message); return (conn = null); }
 }
 const sha = (s: string) => crypto().createHash("sha256").update(s).digest("hex");
@@ -141,4 +142,14 @@ export function requirePermission(sessionToken: string | undefined, perm?: Permi
   if (!u) throw new Error("Bejelentkezés szükséges.");
   if (perm && !userCan(u, perm)) throw new Error("Ehhez nincs jogosultságod. Kérd meg az admint.");
   return u;
+}
+
+// Daily snapshot of texbox.db in <data>/backups, keeping the newest 14 (Hyper Backup should also cover /data).
+function snapshot(fs: typeof import("node:fs"), d: import("node:sqlite").DatabaseSync) {
+  try {
+    const dir = `${dataDir()}/backups`; fs.mkdirSync(dir, { recursive: true });
+    const name = `texbox-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.db`;
+    if (!fs.existsSync(`${dir}/${name}`)) d.exec(`VACUUM INTO '${dir}/${name}'`);
+    fs.readdirSync(dir).filter((f) => /^texbox-\d{8}\.db$/.test(f)).sort().slice(0, -14).forEach((f) => fs.unlinkSync(`${dir}/${f}`));
+  } catch (e) { console.error("texbox.db snapshot failed", (e as Error).message); }
 }
