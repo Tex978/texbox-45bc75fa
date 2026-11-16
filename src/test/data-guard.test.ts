@@ -81,7 +81,7 @@ describe("data folder guard", () => {
     vi.resetModules();
     const again = await import("@/lib/shared-store.server");
     expect(() => again.storeGet("nas-cfg")).toThrow("nas-state.json");
-    expect(again.storeSet("nas-cfg", "x")).toBe(false);
+    expect(() => again.storeSet("nas-cfg", "x")).toThrow("nas-state.json");
     expect(existsSync(`${dir}/nas-state.json`)).toBe(false);
   });
   it("a different (missing) DATA_DIR is blocked and is not created", () => {
