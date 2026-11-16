@@ -407,28 +407,24 @@ export const searchMedia = createServerFn({ method: "GET" })
       has("SONARR_URL") ? safe(arr("SONARR", `/series/lookup?term=${t}`), []) : [],
     ]);
     return [
-      ...(m as any[])
-        .slice(0, 10)
-        .map((x) => ({
-          id: x.tmdbId,
-          title: x.title,
-          year: x.year,
-          type: "Film",
-          inLibrary: !!x.id,
-          poster: posterOf(x),
-          overview: x.overview || "",
-        })),
-      ...(s as any[])
-        .slice(0, 10)
-        .map((x) => ({
-          id: x.tvdbId,
-          title: x.title,
-          year: x.year,
-          type: "Sorozat",
-          inLibrary: !!x.id,
-          poster: posterOf(x),
-          overview: x.overview || "",
-        })),
+      ...(m as any[]).slice(0, 10).map((x) => ({
+        id: x.tmdbId,
+        title: x.title,
+        year: x.year,
+        type: "Film",
+        inLibrary: !!x.id,
+        poster: posterOf(x),
+        overview: x.overview || "",
+      })),
+      ...(s as any[]).slice(0, 10).map((x) => ({
+        id: x.tvdbId,
+        title: x.title,
+        year: x.year,
+        type: "Sorozat",
+        inLibrary: !!x.id,
+        poster: posterOf(x),
+        overview: x.overview || "",
+      })),
     ];
   });
 
@@ -883,13 +879,11 @@ export const getMediaDetail = createServerFn({ method: "GET" })
     detail.runtime = full.runtime || full.episode_run_time?.[0] || null;
     detail.imdbId = imdbIdentifier(full.imdb_id || full.external_ids?.imdb_id);
     detail.imdbRating = (await omdbRating(detail.imdbId)) || base.imdbRating;
-    detail.cast = (full.credits?.cast || [])
-      .slice(0, 18)
-      .map((x: any) => ({
-        name: x.name,
-        character: x.character || "",
-        photo: tmdbImage(x.profile_path, "w185"),
-      }));
+    detail.cast = (full.credits?.cast || []).slice(0, 18).map((x: any) => ({
+      name: x.name,
+      character: x.character || "",
+      photo: tmdbImage(x.profile_path, "w185"),
+    }));
     detail.images = (full.images?.backdrops || [])
       .slice(0, 8)
       .map((x: any) => tmdbImage(x.file_path, "w780"));
@@ -1490,13 +1484,11 @@ export const getBlinds = createServerFn({ method: "GET" }).handler(
 );
 export const saveBlindMeta = createServerFn({ method: "POST" })
   .inputValidator((d: { items: { mac: string; name: string; room: string }[] }) => ({
-    items: d.items
-      .slice(0, 100)
-      .map((i) => ({
-        mac: String(i.mac).slice(0, 40),
-        name: String(i.name).trim().slice(0, 40),
-        room: String(i.room).trim().slice(0, 30),
-      })),
+    items: d.items.slice(0, 100).map((i) => ({
+      mac: String(i.mac).slice(0, 40),
+      name: String(i.name).trim().slice(0, 40),
+      room: String(i.room).trim().slice(0, 30),
+    })),
   }))
   .handler(async ({ data }) => {
     guard("rooms");

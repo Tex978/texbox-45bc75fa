@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { getMe } from "@/lib/auth.functions";
 import { Shell } from "@/components/Shell";
 import { SmartSection as Card, SensorDetails } from "@/components/SmartHomeUI";
 import { SmartEnergy } from "@/components/SmartEnergy";
@@ -69,7 +70,21 @@ const pq = queryOptions({
   queryFn: () => getPurifiers(),
   refetchInterval: 60000,
 });
-const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
+const lq = queryOptions({
+  queryKey: ["locks"],
+  queryFn: async () => {
+    const me = await getMe();
+    if (me.mode !== "open" && !me.user?.can.locks)
+      return {
+        demo: false,
+        error: "A zárak megtekintéséhez nincs jogosultságod.",
+        raw: "",
+        locks: [],
+      };
+    return getLocks();
+  },
+  refetchInterval: 60000,
+});
 const q = queryOptions({
   queryKey: ["solar"],
   queryFn: () => getSolar(),
@@ -680,7 +695,7 @@ function Home() {
   return (
     <Shell demo={anyDemo} className={`smart-home hd ${light ? "home-light" : ""}`}>
       <div className="hd-layout">
-        <nav className="hd-nav" role="tablist" aria-label="Okosotthon nézetek">
+        <nav className="hd-nav" aria-label="Okosotthon nézetek">
           <div className="hd-nav-brand">
             <House size={20} />
             <span>Otthonom</span>
@@ -690,8 +705,8 @@ function Home() {
               type="button"
               key={id}
               id={`tab-${id}`}
-              role="tab"
-              aria-selected={view === id}
+
+              aria-pressed={view === id}
               aria-controls="home-panel"
               className={view === id ? "hd-nav-active" : ""}
               onClick={() => selectView(id)}
@@ -892,10 +907,10 @@ function Home() {
 
             {view === "devices" && (
               <>
-                <div className="hd-filters" role="tablist" aria-label="Eszköztípusok">
+                <div className="hd-filters" aria-label="Eszköztípusok">
                   <button
                     type="button"
-                    role="tab"
+
                     aria-selected={category === "all"}
                     className={`hd-filter ${category === "all" ? "hd-filter-active" : ""}`}
                     onClick={() => setCategory("all")}
@@ -907,7 +922,7 @@ function Home() {
                     <button
                       type="button"
                       key={id}
-                      role="tab"
+
                       aria-selected={category === id}
                       className={`hd-filter ${category === id ? "hd-filter-active" : ""}`}
                       onClick={() => {

@@ -49,7 +49,8 @@ export function useMediaPref<T>(key: MediaPrefKey) {
       })
       .catch(() =>
         setError("A korábbi keresési beállítás átvétele nem sikerült; a böngészőben megmaradt."),
-      ).finally(() => setMigrationPending(false));
+      )
+      .finally(() => setMigrationPending(false));
   }, [q.data, key, qc, saveFn, queryKey]);
   const save = async (next: T) => {
     try {
