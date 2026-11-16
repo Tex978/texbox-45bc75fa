@@ -1,6 +1,6 @@
 /** Presentation-only device model for the smart-home screens. Reads already-fetched vendor data; never sends commands. */
 export type HomeCategory = "sensors" | "gree" | "air" | "blinds" | "tuya" | "bosch" | "locks";
-export type HomeDevice = { key: string; category: HomeCategory; name: string; room: string; online: boolean; active: boolean; state: string; value?: string };
+export type HomeDevice = { key: string; category: HomeCategory; name: string; room: string; online: boolean; active: boolean; state: string; value?: string | undefined };
 type Status = { code: string; value: string | number | boolean };
 export type HomeSources = {
   sensors: { did: string; name: string; online: boolean; temp?: number | null; hum?: number | null }[];
