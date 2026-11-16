@@ -1,5 +1,11 @@
 // Family accounts on the NAS: SQLite in the data folder, scrypt password hashes, hashed random session tokens.
-import { ensureReady, markCreated, dataDir as guardDataDir, dbPath, type GuardState } from "./data-guard.server";
+import {
+  ensureReady,
+  markCreated,
+  dataDir as guardDataDir,
+  dbPath,
+  type GuardState,
+} from "./data-guard.server";
 import { can, ROLES, PERMISSIONS, type Permission, type Role } from "./permissions";
 type Sqlite = typeof import("node:sqlite");
 type Crypto = typeof import("node:crypto");
@@ -82,7 +88,9 @@ export function db() {
     d.prepare(
       "UPDATE scene_runs SET status='interrupted',finished_at=? WHERE status='running'",
     ).run(Date.now());
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='task_templates'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='task_templates'").get()
+    ) {
       const tasksBackup = `${dataDir()}/backups/pre-tasks-phase3.db`;
       if (!fs.existsSync(tasksBackup)) d.exec(`VACUUM INTO '${tasksBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;
@@ -93,9 +101,12 @@ export function db() {
         CREATE TABLE IF NOT EXISTS task_approvals(occurrence_id TEXT PRIMARY KEY REFERENCES task_occurrences(id), person_key TEXT NOT NULL, points INTEGER NOT NULL CHECK(points>=0), approved_by TEXT NOT NULL, approved_at INTEGER NOT NULL);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='point_ledger'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='point_ledger'").get()
+    ) {
       const pointsBackup = `${dataDir()}/backups/pre-points-phase4.db`;
-      if (!fs.existsSync(pointsBackup)) d.exec(`VACUUM INTO '${pointsBackup.replaceAll("'", "''")}'`);
+      if (!fs.existsSync(pointsBackup))
+        d.exec(`VACUUM INTO '${pointsBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;
         CREATE TABLE IF NOT EXISTS point_ledger(id INTEGER PRIMARY KEY AUTOINCREMENT, person_key TEXT NOT NULL, delta INTEGER NOT NULL CHECK(delta BETWEEN -1000000 AND 1000000), kind TEXT NOT NULL CHECK(kind IN ('task','adjust','redeem')), source TEXT UNIQUE, reason TEXT NOT NULL, actor TEXT NOT NULL, at INTEGER NOT NULL);
         CREATE INDEX IF NOT EXISTS point_person ON point_ledger(person_key,id);
@@ -119,13 +130,24 @@ export function db() {
         CREATE INDEX IF NOT EXISTS menu_day ON menu_entries(day);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='calendar_events'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='calendar_events'").get()
+    ) {
       const calBackup = `${dataDir()}/backups/pre-calendar-phase5b.db`;
       if (!fs.existsSync(calBackup)) d.exec(`VACUUM INTO '${calBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;
         CREATE TABLE IF NOT EXISTS calendar_events(id TEXT PRIMARY KEY, body TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
         CREATE TABLE IF NOT EXISTS calendar_exceptions(event_id TEXT NOT NULL REFERENCES calendar_events(id), orig_date TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('skip','move')), new_date TEXT, actor TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY(event_id,orig_date));
         CREATE TABLE IF NOT EXISTS calendar_task_links(event_id TEXT NOT NULL REFERENCES calendar_events(id), orig_date TEXT NOT NULL, template_id TEXT NOT NULL REFERENCES task_templates(id), created_by TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY(event_id,orig_date));
+        COMMIT;`);
+    }
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='dashboard_prefs'").get()
+    ) {
+      const dashBackup = `${dataDir()}/backups/pre-dashboard-phase6b.db`;
+      if (!fs.existsSync(dashBackup)) d.exec(`VACUUM INTO '${dashBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS dashboard_prefs(person_key TEXT PRIMARY KEY, body TEXT NOT NULL, version INTEGER NOT NULL CHECK(version>=1), updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
         COMMIT;`);
     }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).

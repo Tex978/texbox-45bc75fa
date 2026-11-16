@@ -1045,3 +1045,14 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .dash-child .dash-card-head h2 { font-size: 17px; }
 .dash-child .dash-scene, .dash-child .dash-chip { min-height: 56px; font-size: 15px; padding: 0 18px; }
 .dash-child .dash-list span { font-size: 16px; }
+
+/* 6b personal dashboard editor */
+.dash-hero-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.dash-editor { margin-bottom: 14px; }
+.dash-edit-list { list-style: none; margin: 8px 0 14px; padding: 0; display: grid; gap: 6px; }
+.dash-edit-list li { display: flex; align-items: center; gap: 4px; min-height: 48px; padding: 0 6px 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.dash-edit-list li > span { flex: 1; min-width: 0; font-weight: 500; }
+.dash-edit-list li.is-hidden > span { color: var(--muted-foreground); text-decoration: line-through; }
+.dash-edit-list button { min-width: 44px; min-height: 44px; }
+.dash-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.dash-editor label.dash-chip { cursor: pointer; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; }

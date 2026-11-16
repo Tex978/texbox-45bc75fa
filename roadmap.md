@@ -88,5 +88,7 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] Öt fő terület (Főoldal / Otthon / Feladatok / Család / Média) telefonon alsó sávban, PC-n fejlécben; Több menü: keresés, letöltések, tárhely, szervező, ajándékbolt, családi fiókok, okosotthon/energia, kapcsolatok. Minden régi URL működik.
 - [x] Új főoldal valós, jogosultság-ellenőrzött adatokkal: kedvenc eszközcsoportok + mentett jelenetek indítása (valódi futási napló alapján jelez), mai feladatok + szülői jóváhagyás-figyelmeztetés, következő program, bevásárlás, mai menü, saját pontok + cél, média/NAS összefoglaló. Betöltés/hiba/üres állapot, gyerek nézet nagyobb gombokkal.
 - [x] A régi Plex/NAS áttekintő változatlan tartalommal a /media oldalon.
-- [ ] 6b: személyes kártyasorrend/láthatóság tartós mentése (nincs még per-felhasználós preferenciatár; nem készült új séma), kedvenc eszközök élő állapota és gyorsvezérlése a főoldalon (most link az Otthonhoz).
+- [x] 6b: személyes főoldal (fel/le sorrend, elrejtés, alapértelmezett visszaállítás, kedvenc jelenetek) a NAS SQLite `dashboard_prefs` táblájában, `pre-dashboard-phase6b.db` mentés után; verzióütközés-védelem, szülő kezelheti a gyermekprofilokét. Fejlesztői tesztek kész, élő NAS-on (újraindítás, két telefon) ellenőrizendő.
+- [ ] 6c: személyes konkrét kedvenc eszközök (klíma/lámpa) élő állapottal a főoldalon; addig közös eszközcsoportok látszanak.
+- [ ] 2b időzített jelenetek, valódi emlékeztető/ütemező, családi jegyzetek — külön fázisok.
 - [ ] Továbbra is nyitott: 2b időzített jelenetek, valódi emlékeztetők, családi jegyzetek, élő NAS-ellenőrzés.

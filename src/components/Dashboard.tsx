@@ -1,12 +1,18 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   AlertCircle,
   CalendarDays,
   ChefHat,
   ClipboardList,
+  ArrowDown,
+  ArrowUp,
+  Eye,
+  EyeOff,
+  Pencil,
+  RotateCcw,
   Clapperboard,
   House,
   Play,
@@ -24,6 +30,14 @@ import { scenesList, scenesRun, scenesRuns } from "@/lib/scenes.functions";
 import { shopList, menuGet } from "@/lib/organizer.functions";
 import { calendarGet } from "@/lib/calendar.functions";
 import { getOverview } from "@/lib/nas.functions";
+import { dashboardGet, dashboardSave } from "@/lib/dashboard.functions";
+import {
+  CARD_LABELS,
+  defaultPrefs,
+  moveCard,
+  type CardId,
+  type DashboardPrefs,
+} from "@/lib/dashboard-schema";
 import { sharedPrefsQuery } from "@/lib/use-shared-pref";
 import { mealLabels } from "@/lib/organizer-schema";
 import { addDays, budapestToday } from "@/lib/task-schema";
@@ -95,7 +109,7 @@ const runLabels: Record<string, string> = {
   interrupted: "megszakadt",
 };
 
-function HomeQuick() {
+function HomeQuick({ favorites = [] }: { favorites?: string[] }) {
   const scenes = useQuery({ queryKey: ["scenes"], queryFn: () => scenesList(), retry: false });
   const prefs = useQuery(sharedPrefsQuery);
   const run = useServerFn(scenesRun),
@@ -130,7 +144,11 @@ function HomeQuick() {
       setBusy("");
     }
   }
-  const list = scenes.data?.scenes.slice(0, 6) ?? [];
+  const all = scenes.data?.scenes ?? [];
+  // Personal favourite scenes (validated server-side) first; otherwise the newest six.
+  const list = favorites.length
+    ? favorites.map((id) => all.find((s) => s.id === id)).filter((s) => !!s)
+    : all.slice(0, 6);
   return (
     <Widget title="Otthon gyorsan" icon={House} to="/home" link="Okosotthon" className="dash-wide">
       <div className="dash-chips" aria-label="Kedvenc eszközcsoportok">
@@ -408,10 +426,173 @@ function MediaCard() {
     </Widget>
   );
 }
+export const dashboardQuery = {
+  queryKey: ["dashboard-prefs"],
+  queryFn: () => dashboardGet({ data: {} }),
+  retry: false,
+} as const;
+function Editor({
+  draft,
+  setDraft,
+  allowed,
+  onSave,
+  onCancel,
+  onReset,
+  busy,
+}: {
+  draft: DashboardPrefs;
+  setDraft: (p: DashboardPrefs) => void;
+  allowed: CardId[];
+  onSave: () => void;
+  onCancel: () => void;
+  onReset: () => void;
+  busy: boolean;
+}) {
+  const scenes = useQuery({ queryKey: ["scenes"], queryFn: () => scenesList(), retry: false });
+  const order = draft.order.filter((c) => allowed.includes(c));
+  const toggleHidden = (c: CardId) =>
+    setDraft({
+      ...draft,
+      hidden: draft.hidden.includes(c) ? draft.hidden.filter((x) => x !== c) : [...draft.hidden, c],
+    });
+  const toggleScene = (id: string) =>
+    setDraft({
+      ...draft,
+      scenes: draft.scenes.includes(id)
+        ? draft.scenes.filter((x) => x !== id)
+        : [...draft.scenes, id],
+    });
+  return (
+    <section className="dash-card dash-editor" aria-label="Főoldal szerkesztése">
+      <h2 className="dash-sub">Kártyák sorrendje és láthatósága</h2>
+      <ol className="dash-edit-list">
+        {order.map((c, i) => {
+          const hidden = draft.hidden.includes(c);
+          return (
+            <li key={c} className={hidden ? "is-hidden" : ""}>
+              <span>{CARD_LABELS[c]}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`${CARD_LABELS[c]} feljebb`}
+                disabled={i === 0}
+                onClick={() => setDraft({ ...draft, order: moveCard(order, c, -1) })}
+              >
+                <ArrowUp size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`${CARD_LABELS[c]} lejjebb`}
+                disabled={i === order.length - 1}
+                onClick={() => setDraft({ ...draft, order: moveCard(order, c, 1) })}
+              >
+                <ArrowDown size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-pressed={!hidden}
+                aria-label={`${CARD_LABELS[c]} ${hidden ? "megjelenítése" : "elrejtése"}`}
+                onClick={() => toggleHidden(c)}
+              >
+                {hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+              </Button>
+            </li>
+          );
+        })}
+      </ol>
+      {allowed.includes("home") && (
+        <>
+          <h3 className="dash-sub">
+            <Sparkles size={15} /> Kedvenc jelenetek a főoldalon
+          </h3>
+          {scenes.data?.scenes.length ? (
+            <div className="dash-chips">
+              {scenes.data.scenes.map((sc) => (
+                <label key={sc.id} className="dash-chip">
+                  <input
+                    type="checkbox"
+                    checked={draft.scenes.includes(sc.id)}
+                    onChange={() => toggleScene(sc.id)}
+                  />{" "}
+                  {draft.scenes.includes(sc.id) ? `${draft.scenes.indexOf(sc.id) + 1}. ` : ""}
+                  {sc.name}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="dash-note">
+              {scenes.error ? scenes.error.message : "Nincs elérhető mentett jelenet."}
+            </p>
+          )}
+          <p className="dash-note">
+            Konkrét kedvenc eszközök személyes kiválasztása később jön; addig a közös
+            eszközcsoportok látszanak.
+          </p>
+        </>
+      )}
+      <div className="dash-edit-actions">
+        <Button onClick={onSave} disabled={busy}>
+          {busy ? "Mentés…" : "Mentés"}
+        </Button>
+        <Button variant="outline" onClick={onCancel} disabled={busy}>
+          Mégse
+        </Button>
+        <Button variant="ghost" onClick={onReset} disabled={busy}>
+          <RotateCcw size={14} /> Alapértelmezett visszaállítása
+        </Button>
+      </div>
+    </section>
+  );
+}
 export function Dashboard() {
   const me = useQuery(meQuery).data?.user;
   const child = me?.role === "child";
   const h = new Date().getHours();
+  const qc = useQueryClient();
+  const dash = useQuery({ ...dashboardQuery, enabled: !!me });
+  const save = useServerFn(dashboardSave);
+  const [editing, setEditing] = useState(false),
+    [draft, setDraft] = useState<DashboardPrefs | null>(null),
+    [busy, setBusy] = useState(false),
+    [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null);
+  const prefs = dash.data?.prefs ?? defaultPrefs(child ? "child" : "adult");
+  const allowed = dash.data?.allowed ?? prefs.order;
+  useEffect(() => {
+    if (!editing) setDraft(null);
+  }, [editing]);
+  async function persist(reset: boolean) {
+    if (!dash.data || !draft) return;
+    if (reset && !window.confirm("Visszaállítod a főoldalt az alapértelmezett elrendezésre?"))
+      return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await save({ data: { version: dash.data.version, prefs: reset ? null : draft, reset } });
+      await qc.invalidateQueries({ queryKey: dashboardQuery.queryKey });
+      setEditing(false);
+      setMsg({
+        text: reset ? "Alapértelmezett elrendezés visszaállítva." : "Főoldal mentve a NAS-on.",
+      });
+    } catch (e) {
+      setMsg({ text: e instanceof Error ? e.message : "A mentés nem sikerült.", bad: true });
+      if (e instanceof Error && e.message.includes("másik eszközön"))
+        void qc.invalidateQueries({ queryKey: dashboardQuery.queryKey });
+    } finally {
+      setBusy(false);
+    }
+  }
+  const cards: Record<CardId, ReactNode> = {
+    home: <HomeQuick key="home" favorites={prefs.scenes} />,
+    tasks: <TodayCard key="tasks" child={child} />,
+    event: <NextEvent key="event" />,
+    shopping: <Shopping key="shopping" />,
+    menu: <TodayMenu key="menu" />,
+    points: <Points key="points" />,
+    media: <MediaCard key="media" />,
+  };
+  const visible = prefs.order.filter((c) => allowed.includes(c) && !prefs.hidden.includes(c));
   return (
     <div className={`dash ${child ? "dash-child" : ""}`}>
       <section className="dash-hero">
@@ -426,19 +607,57 @@ export function Dashboard() {
           {h < 10 ? "Jó reggelt" : h < 18 ? "Szia" : "Jó estét"}
           {me ? `, ${me.displayName.split(" ")[0]}` : ""}!
         </h1>
-        <p className="page-subtitle">
-          A kártyák sorrendje egyelőre alapértelmezett; a személyes testreszabás a következő
-          fejlesztési körben jön.
-        </p>
+        <div className="dash-hero-row">
+          <p className="page-subtitle">
+            {dash.data
+              ? dash.data.saved
+                ? "Saját, a NAS-on mentett elrendezésed."
+                : "Alapértelmezett elrendezés — szerkesztéssel a saját fiókodhoz mentheted."
+              : dash.error
+                ? dash.error.message
+                : me
+                  ? "Elrendezés betöltése…"
+                  : "Alapértelmezett elrendezés; a személyes főoldalhoz jelentkezz be a NAS-on."}
+          </p>
+          {dash.data && !editing && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setDraft(prefs);
+                setEditing(true);
+                setMsg(null);
+              }}
+            >
+              <Pencil size={14} /> Főoldal szerkesztése
+            </Button>
+          )}
+        </div>
+        {msg && (
+          <p className={msg.bad ? "task-error" : "task-ok"} role="status">
+            {msg.text}
+          </p>
+        )}
       </section>
+      {editing && draft && (
+        <Editor
+          draft={draft}
+          setDraft={setDraft}
+          allowed={allowed}
+          busy={busy}
+          onSave={() => void persist(false)}
+          onReset={() => void persist(true)}
+          onCancel={() => setEditing(false)}
+        />
+      )}
       <div className="dash-grid">
-        <HomeQuick />
-        <TodayCard child={child} />
-        <NextEvent />
-        <Shopping />
-        <TodayMenu />
-        <Points />
-        <MediaCard />
+        {visible.length ? (
+          visible.map((c) => cards[c])
+        ) : (
+          <p className="dash-empty">
+            Minden kártya el van rejtve. A szerkesztőben visszahozhatod őket.
+          </p>
+        )}
       </div>
     </div>
   );
