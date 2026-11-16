@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { Shell, Card, PageHeader } from "@/components/Shell";
 import { StorageStatus } from "@/components/StorageStatus";
+import { UserAvatar } from "@/components/Avatar";
+import { AVATAR_ICONS, AVATAR_ICON_LABELS } from "@/lib/profile-schema";
+import { auditList } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -53,6 +56,11 @@ export const Route = createFileRoute("/family")({
   }),
   component: Family,
 });
+const PERM_GROUPS: { title: string; perms: Permission[] }[] = [
+  { title: "Otthon és eszközök", perms: ["home", "locks", "rooms"] },
+  { title: "Család, feladatok, jutalmak", perms: ["family"] },
+  { title: "Média és letöltések", perms: ["request", "downloads"] },
+];
 const listQuery = { queryKey: ["family"], queryFn: () => familyList(), retry: false } as const;
 
 export function Family() {
@@ -225,9 +233,11 @@ export function Family() {
                   value={child.icon}
                   onChange={(e) => setChild({ ...child, icon: e.target.value })}
                 >
-                  <option value="child">Gyermek</option>
-                  <option value="star">Csillag</option>
-                  <option value="cat">Cica</option>
+                  {AVATAR_ICONS.filter((i) => i !== "initials").map((i) => (
+                    <option key={i} value={i}>
+                      {AVATAR_ICON_LABELS[i]}
+                    </option>
+                  ))}
                 </select>
                 <Button className="h-11">
                   <Baby />
@@ -243,13 +253,17 @@ export function Family() {
               {data.children.map((c) => (
                 <section key={c.id} className="family-card">
                   <div className="family-head">
-                    <span className="app-avatar">
-                      {c.icon === "star" ? "★" : c.icon === "cat" ? "🐱" : <Baby size={18} />}
-                    </span>
+                    <UserAvatar
+                      name={c.displayName}
+                      avatar={{ icon: c.icon as never, color: "c2" }}
+                      size={40}
+                    />
                     <div className="min-w-0 flex-1">
                       <strong>{c.displayName}</strong>
                       <p className="text-xs text-muted-foreground">
-                        {c.disabled ? "Inaktív profil" : "Szülő által kezelt gyermekprofil"}
+                        {c.disabled
+                          ? "Inaktív profil"
+                          : "Szülő által kezelt gyermekprofil · önálló belépés nincs"}
                       </p>
                     </div>
                   </div>
@@ -285,9 +299,11 @@ export function Family() {
                       aria-label={`${c.displayName} ikonja`}
                       className="h-11 rounded-md border border-input bg-background px-3"
                     >
-                      <option value="child">Gyermek</option>
-                      <option value="star">Csillag</option>
-                      <option value="cat">Cica</option>
+                      {AVATAR_ICONS.filter((i) => i !== "initials").map((i) => (
+                        <option key={i} value={i}>
+                          {AVATAR_ICON_LABELS[i]}
+                        </option>
+                      ))}
                     </select>
                     <Button variant="secondary">Mentés</Button>
                   </form>
@@ -307,6 +323,7 @@ export function Family() {
               {data.users.map((u) => (
                 <section key={u.id} className="family-card">
                   <div className="family-head">
+                    <UserAvatar name={u.displayName} avatar={u.avatar} size={40} />
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold">
                         {u.displayName}{" "}
@@ -320,7 +337,7 @@ export function Family() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        @{u.username} ·{" "}
+                        {ROLE_LABELS[u.role]} · @{u.username} ·{" "}
                         {u.disabled
                           ? "letiltva"
                           : u.hasPassword
@@ -414,30 +431,41 @@ export function Family() {
                       )}
                   </div>
                   {data.canManageAccounts && u.role !== "admin" && (
-                    <div className="family-perms">
-                      {PERMISSIONS.filter(
-                        (p) =>
-                          p !== "settings" &&
-                          p !== "users" &&
-                          (u.role !== "child" || p !== "family"),
-                      ).map((p: Permission) => {
-                        const on = can(u.role, p, u.permissions);
+                    <div className="grid gap-3">
+                      {PERM_GROUPS.map((g) => {
+                        const items = g.perms.filter((p) => u.role !== "child" || p !== "family");
+                        if (!items.length) return null;
                         return (
-                          <label key={p} className="family-perm">
-                            {PERMISSION_LABELS[p]}
-                            <Switch
-                              checked={on}
-                              onCheckedChange={(v) =>
-                                void run(() =>
-                                  update({
-                                    data: { id: u.id, permissions: { ...u.permissions, [p]: v } },
-                                  }),
-                                )
-                              }
-                            />
-                          </label>
+                          <div key={g.title} className="perm-group">
+                            <h4>{g.title}</h4>
+                            <div className="family-perms">
+                              {items.map((p: Permission) => (
+                                <label key={p} className="family-perm">
+                                  {PERMISSION_LABELS[p]}
+                                  <Switch
+                                    checked={can(u.role, p, u.permissions)}
+                                    onCheckedChange={(v) =>
+                                      void run(() =>
+                                        update({
+                                          data: {
+                                            id: u.id,
+                                            permissions: { ...u.permissions, [p]: v },
+                                          },
+                                        }),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                          </div>
                         );
                       })}
+                      <p className="text-xs text-muted-foreground">
+                        Kapcsolatok/titkos adatok és családtagok kezelése csak adminé. Jelenetekhez
+                        és egyes eszközökhöz a Jelenetek oldalon adható külön engedély; szobánkénti
+                        jogosultság még nincs.
+                      </p>
                     </div>
                   )}
                 </section>
@@ -445,7 +473,55 @@ export function Family() {
             </div>
           </fieldset>
         )}
+        {data?.canManageAccounts && <FamilyAudit />}
       </div>
     </Shell>
+  );
+}
+
+function FamilyAudit() {
+  const q = useQuery({
+    queryKey: ["audit", "family"],
+    queryFn: () => auditList({ data: { scope: "family" } }),
+    retry: false,
+  });
+  const [kind, setKind] = useState("all");
+  const rows = (q.data ?? []).filter((a) =>
+    kind === "all"
+      ? true
+      : kind === "family"
+        ? a.action.startsWith("user-") ||
+          a.action.startsWith("child-") ||
+          a.action === "sessions-revoke"
+        : !a.action.startsWith("user-") && !a.action.startsWith("child-"),
+  );
+  return (
+    <Card title="Fiókesemények (admin)">
+      <select
+        aria-label="Eseményszűrő"
+        className="mb-3 h-11 rounded-md border border-input bg-background px-3"
+        value={kind}
+        onChange={(e) => setKind(e.target.value)}
+      >
+        <option value="all">Minden esemény</option>
+        <option value="family">Családtag-műveletek</option>
+        <option value="self">Belépések és saját beállítások</option>
+      </select>
+      {q.error && <p role="alert">{(q.error as Error).message}</p>}
+      {rows.slice(0, 50).map((a, i) => (
+        <div key={i} className="audit-row">
+          <span>
+            <strong>{a.actor}</strong>: {a.label}
+            {a.target ? ` – ${a.target}` : ""}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {new Date(a.at).toLocaleString("hu-HU", { timeZone: "Europe/Budapest" })}
+          </span>
+        </div>
+      ))}
+      {!q.isLoading && rows.length === 0 && (
+        <p className="text-sm text-muted-foreground">Nincs megjeleníthető esemény.</p>
+      )}
+    </Card>
   );
 }

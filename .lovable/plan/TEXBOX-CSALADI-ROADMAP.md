@@ -37,7 +37,7 @@ Megfogható eredmény: meglévő admin megtartása, stabil profilmenü, működ�
 - [x] Szülői gyermekprofil saját névvel/ikonnal, szerkesztés, inaktiválás; mindkét szülő kezelheti. Nem önálló hitelesítő fiók. A régi gyermek-loginfiókok változatlanul megmaradnak; automatikus összevonás nincs.
 - [x] Felnőtt meghívás, státusz, linkmásolás, reset, aktív munkamenetszám és admin által lezárás. Nincs „levél elküldve” állítás.
 - [x] Tulajdonosi fiók nem törölhető/tiltható/lefokozható; adminfiókok módosítása, létrehozása/resetje tulajdonosi művelet. Felnőtt nem kap kapcsolati titok/fiókadmin jogosultságot.
-- [ ] Saját profil szerkesztése, auditnapló olvasható felülete és munkamenetek egyenkénti listája/lezárása: 1b.
+- [x] Saját profil szerkesztése, auditnapló olvasható felülete és munkamenetek egyenkénti listája/lezárása: 1b (fejlesztői környezetben kész, NAS-on nyitott).
 - [ ] Szoba/eszköz/jelenet ACL: a 2. fázis biztonsági előfeltétele; addig a meglévő funkciójogok élnek.
 - [ ] Személyes kedvencek/téma/főoldal és értesítések migrációja: 1b/6. Meglévő közös értékek nem törölhetők; először személyes másolat, majd személyes módosítások.
 
@@ -198,3 +198,10 @@ Naptár CRUD + ismétlődés + alkalom-kivétel + feladathivatkozás kész izol�
 ## 8a – Családi jegyzetek és ügyek (fejlesztői környezetben kész, NAS-on nyitott)
 - Kész: `family_notes`, `family_note_events` (audit), `matter_task_links` (egy ügy → egy feladat); személyes elem csak a létrehozónak; közös elem felnőtteknek, gyereknek csak kifejezett megosztással; gyerek nem ír; közös elemet a létrehozó és a jogosult szülők szerkeszthetik, láthatóságot csak a létrehozó állít; archiválás fizikai törlés helyett.
 - Nyitott (8b): ügyhatáridő-emlékeztető, naptáresemény-kapcsolás, főoldali kártya.
+
+## 1b – Saját profil, jelszó, eszközök, jogosultságok (fejlesztői környezetben kész, NAS-on nyitott)
+- Kész: `/profile` (név, beépített ikon/szín, verzióvédelem), jelszócsere jelenlegi jelszóval + erősségszabály + fiókonkénti zár, más eszközök opcionális kijelentkeztetése; saját munkamenetlista nem visszafejthető azonosítóval, egyedi/összes többi lezárása, a jelenlegi védett; saját és admin családi eseménynapló (nyers adatok nélkül); családi kártyák avatarral, szereppel, meghívóstátusszal; jogok kategóriákba rendezve csak a létező kulcsokkal. Szerverfüggvény-POST Origin-ellenőrzés. Új tábla: `user_profiles`; mentés: `backups/pre-profile-phase1b.db`.
+- Javítva: ügy→feladat (`matterToTask`) egy tranzakcióban; a feladatmodul tranzakciója beágyazva savepointot használ. Hibás link-lépés esetén a feladat sem marad meg.
+- Felhasználónév szándékosan nem módosítható. Gyermekprofil továbbra sem tud önállóan belépni.
+- Nyitott 1c: admin nézet más felnőtt eszközeiről, szoba-szintű jog, utolsó aktivitás, profilkép-feltöltés.
+- NAS-ellenőrzés: frissítés előtt teljes `/data` mentés; frissítés után a `backups/pre-profile-phase1b.db` megléte, régi belépés működése, két eszközön névváltás, egy eszköz kijelentkeztetése, jelszócsere.

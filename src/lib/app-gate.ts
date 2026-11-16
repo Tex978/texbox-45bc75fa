@@ -135,7 +135,7 @@ export async function gate(request: Request): Promise<Response | null> {
       "<form><h1>A belépés átmenetileg nem elérhető</h1><p>A fiókok tárolója nem olvasható. Ellenőrizd a NAS data mappáját.</p></form>",
       503,
     );
-  if (post && path.startsWith("/__")) {
+  if (post && (path.startsWith("/__") || path.startsWith("/_serverFn"))) {
     const origin = request.headers.get("origin");
     const expected = `${https(request) ? "https" : "http"}://${request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host}`;
     if (origin && origin !== expected)
