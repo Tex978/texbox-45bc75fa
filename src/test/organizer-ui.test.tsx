@@ -24,6 +24,13 @@ vi.mock("@/lib/organizer.functions", () => ({
   menuRemove: vi.fn(),
   menuCopy: vi.fn(),
 }));
+vi.mock("@/lib/notes.functions", () => ({
+  notesList: vi.fn(),
+  noteSave: vi.fn(),
+  noteArchive: vi.fn(),
+  noteHistory: vi.fn(),
+  matterTask: vi.fn(),
+}));
 vi.mock("@/lib/calendar.functions", () => ({
   calendarGet: vi.fn(),
   calendarSave: vi.fn(),
