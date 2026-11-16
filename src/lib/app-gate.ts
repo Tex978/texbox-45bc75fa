@@ -49,6 +49,10 @@ const setupPage = (e?: string) =>
     `<form method="post" action="/__setup"><h1>Első admin fiók</h1><p>Add meg a régi közös jelszót (APP_PASSWORD), majd hozd létre a saját admin fiókodat.</p>${err(e)}${field("legacy", "Régi közös jelszó", "password", "required")}${field("username", "Felhasználónév", "text", 'autocapitalize="none" required')}${field("name", "Megjelenített név")}${field("pw", "Új jelszó (min. 8 karakter)", "password", 'autocomplete="new-password" minlength="8" required')}<button>Admin létrehozása</button></form>`,
     e ? 400 : 200,
   );
+const setupNoticePage = () =>
+  html(
+    `<form><h1>Az első admin fiók a NAS-on hozható létre</h1><p>Ez a cím nem a saját NAS-odon fut, ezért itt nem tudunk fiókot menteni. Nyisd meg a TexBoxot a saját NAS-címeden (pl. <code>http://NAS-IP:3050</code>), és ott hozd létre az admin fiókodat a közös jelszó (APP_PASSWORD) megadásával.</p></form>`,
+  );
 const invitePage = (t: string, name: string, e?: string) =>
   html(
     `<form method="post" action="/__invite"><h1>Szia, ${esc(name)}!</h1><p>Állítsd be a jelszavadat a TexBoxhoz.</p>${err(e)}<input type="hidden" name="t" value="${esc(t)}">${field("pw", "Új jelszó (min. 8 karakter)", "password", 'autocomplete="new-password" minlength="8" required autofocus')}<button>Jelszó mentése</button></form>`,
