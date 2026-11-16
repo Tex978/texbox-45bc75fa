@@ -1,0 +1,135 @@
+// Family accounts on the NAS: SQLite in the data folder, scrypt password hashes, hashed random session tokens.
+import { can, ROLES, PERMISSIONS, type Permission, type Role } from "./permissions";
+type Sqlite = typeof import("node:sqlite");
+type Crypto = typeof import("node:crypto");
+const mod = <T,>(name: string): T | null => { try { return (globalThis as any).process?.getBuiltinModule?.(name) ?? null; } catch { return null; } };
+const crypto = () => mod<Crypto>("node:crypto")!;
+export const SESSION_COOKIE = "texbox-session";
+const dataDir = () => ((globalThis as any).process?.env?.DATA_DIR as string) || (((globalThis as any).process?.env?.DATA_FILE as string) || "/data/nas-state.json").replace(/\/[^/]*$/, "") || "/data";
+let conn: import("node:sqlite").DatabaseSync | null | undefined;
+export function resetAuthDb() { try { conn?.close(); } catch { /* ignore */ } conn = undefined; attempts.clear(); }
+export function db() {
+  if (conn !== undefined) return conn;
+  const sqlite = mod<Sqlite>("node:sqlite"); const fs = mod<typeof import("node:fs")>("node:fs");
+  if (!sqlite || !fs) return (conn = null);
+  try {
+    fs.mkdirSync(dataDir(), { recursive: true });
+    const d = new sqlite.DatabaseSync(`${dataDir()}/texbox.db`);
+    d.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
+      CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL, password_hash TEXT, role TEXT NOT NULL, disabled INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS sessions(id_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, user_agent TEXT, created_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS invites(token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS permissions(user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, key TEXT NOT NULL, allowed INTEGER NOT NULL, PRIMARY KEY(user_id, key));
+      CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, action TEXT NOT NULL, target TEXT, at INTEGER NOT NULL);`);
+    return (conn = d);
+  } catch (e) { console.error("texbox.db unavailable", (e as Error).message); return (conn = null); }
+}
+const sha = (s: string) => crypto().createHash("sha256").update(s).digest("hex");
+const token = () => crypto().randomBytes(32).toString("base64url");
+export function hashPassword(pw: string): string {
+  const salt = crypto().randomBytes(16);
+  return `scrypt$${salt.toString("hex")}$${crypto().scryptSync(pw, salt, 64).toString("hex")}`;
+}
+export function verifyPassword(pw: string, stored: string | null): boolean {
+  const [kind, salt, hash] = (stored || "").split("$");
+  if (kind !== "scrypt" || !salt || !hash) return false;
+  const got = crypto().scryptSync(pw, Buffer.from(salt, "hex"), 64);
+  return crypto().timingSafeEqual(got, Buffer.from(hash, "hex"));
+}
+export function validPassword(pw: string) { return typeof pw === "string" && pw.length >= 8 && pw.length <= 200; }
+export const normUser = (u: string) => String(u || "").trim().toLowerCase();
+const validUsername = (u: string) => /^[a-z0-9._-]{2,32}$/.test(u);
+
+export type User = { id: string; username: string; displayName: string; role: Role; disabled: boolean; hasPassword: boolean; permissions: Partial<Record<Permission, boolean>> };
+function rowToUser(r: any): User {
+  const perms: Partial<Record<Permission, boolean>> = {};
+  for (const p of db()!.prepare("SELECT key, allowed FROM permissions WHERE user_id=?").all(r.id) as any[]) if ((PERMISSIONS as readonly string[]).includes(p.key)) perms[p.key as Permission] = !!p.allowed;
+  return { id: r.id, username: r.username, displayName: r.display_name, role: r.role, disabled: !!r.disabled, hasPassword: !!r.password_hash, permissions: perms };
+}
+export function userCount(): number { const d = db(); return d ? Number((d.prepare("SELECT count(*) c FROM users").get() as any).c) : 0; }
+export function listUsers(): User[] { return (db()!.prepare("SELECT * FROM users ORDER BY created_at").all() as any[]).map(rowToUser); }
+export function getUser(id: string): User | null { const r = db()!.prepare("SELECT * FROM users WHERE id=?").get(id); return r ? rowToUser(r) : null; }
+export function audit(userId: string | null, action: string, target = "") { db()?.prepare("INSERT INTO audit_log(user_id,action,target,at) VALUES(?,?,?,?)").run(userId, action, target, Date.now()); }
+
+export function createUser(input: { username: string; displayName: string; role: Role; password?: string }): User {
+  const username = normUser(input.username);
+  if (!validUsername(username)) throw new Error("A felhasználónév 2–32 karakter: kisbetű, szám, pont, kötőjel.");
+  if (!ROLES.includes(input.role)) throw new Error("Érvénytelen szerepkör.");
+  if (input.password !== undefined && !validPassword(input.password)) throw new Error("A jelszó legalább 8 karakter.");
+  const d = db()!; if (d.prepare("SELECT 1 FROM users WHERE username=?").get(username)) throw new Error("Ez a felhasználónév már foglalt.");
+  const id = crypto().randomUUID();
+  d.prepare("INSERT INTO users(id,username,display_name,password_hash,role,disabled,created_at) VALUES(?,?,?,?,?,0,?)")
+    .run(id, username, (input.displayName || username).trim().slice(0, 60), input.password ? hashPassword(input.password) : null, input.role, Date.now());
+  return getUser(id)!;
+}
+function adminCount(exceptId?: string) { return Number((db()!.prepare("SELECT count(*) c FROM users WHERE role='admin' AND disabled=0 AND id<>?").get(exceptId ?? "") as any).c); }
+export function updateUser(id: string, patch: { displayName?: string; role?: Role; disabled?: boolean; permissions?: Partial<Record<Permission, boolean>> }) {
+  const d = db()!; const u = getUser(id); if (!u) throw new Error("Nincs ilyen felhasználó.");
+  const demoting = (patch.role && patch.role !== "admin") || patch.disabled;
+  if (u.role === "admin" && demoting && adminCount(id) === 0) throw new Error("Legalább egy aktív adminnak maradnia kell.");
+  if (patch.role && !ROLES.includes(patch.role)) throw new Error("Érvénytelen szerepkör.");
+  d.prepare("UPDATE users SET display_name=?, role=?, disabled=? WHERE id=?").run((patch.displayName ?? u.displayName).trim().slice(0, 60) || u.username, patch.role ?? u.role, (patch.disabled ?? u.disabled) ? 1 : 0, id);
+  if (patch.disabled) d.prepare("DELETE FROM sessions WHERE user_id=?").run(id);
+  if (patch.permissions) {
+    d.prepare("DELETE FROM permissions WHERE user_id=?").run(id);
+    for (const [k, v] of Object.entries(patch.permissions)) if ((PERMISSIONS as readonly string[]).includes(k) && typeof v === "boolean") d.prepare("INSERT INTO permissions(user_id,key,allowed) VALUES(?,?,?)").run(id, k, v ? 1 : 0);
+  }
+  return getUser(id)!;
+}
+export function deleteUser(id: string) {
+  const u = getUser(id); if (!u) return;
+  if (u.role === "admin" && adminCount(id) === 0) throw new Error("Az utolsó admin nem törölhető.");
+  db()!.prepare("DELETE FROM users WHERE id=?").run(id);
+}
+/** One-time link for first password or reset; returns the raw token (only shown once to the admin). */
+export function createInviteToken(userId: string, hours = 72): string {
+  const t = token(); const d = db()!;
+  d.prepare("DELETE FROM invites WHERE user_id=?").run(userId);
+  d.prepare("INSERT INTO invites(token_hash,user_id,expires_at) VALUES(?,?,?)").run(sha(t), userId, Date.now() + hours * 3600_000);
+  return t;
+}
+export function inviteUser(t: string): User | null {
+  const r = db()?.prepare("SELECT user_id FROM invites WHERE token_hash=? AND expires_at>?").get(sha(t), Date.now()) as any;
+  return r ? getUser(r.user_id) : null;
+}
+export function acceptInvite(t: string, pw: string): string {
+  const u = inviteUser(t); if (!u || u.disabled) throw new Error("A link lejárt vagy érvénytelen.");
+  if (!validPassword(pw)) throw new Error("A jelszó legalább 8 karakter.");
+  const d = db()!;
+  d.prepare("UPDATE users SET password_hash=? WHERE id=?").run(hashPassword(pw), u.id);
+  d.prepare("DELETE FROM invites WHERE user_id=?").run(u.id);
+  d.prepare("DELETE FROM sessions WHERE user_id=?").run(u.id);
+  audit(u.id, "password-set");
+  return createSession(u.id, "");
+}
+
+const sessionDays = () => Math.min(365, Math.max(1, Number((globalThis as any).process?.env?.SESSION_DAYS) || 30));
+export const sessionMaxAge = () => sessionDays() * 86400;
+export function createSession(userId: string, ua: string): string {
+  const t = token(); const d = db()!; const now = Date.now();
+  d.prepare("DELETE FROM sessions WHERE expires_at<?").run(now);
+  d.prepare("INSERT INTO sessions(id_hash,user_id,expires_at,user_agent,created_at) VALUES(?,?,?,?,?)").run(sha(t), userId, now + sessionMaxAge() * 1000, ua.slice(0, 200), now);
+  return t;
+}
+export function sessionUser(t: string | undefined): User | null {
+  if (!t) return null; const d = db(); if (!d) return null;
+  const r = d.prepare("SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id_hash=? AND s.expires_at>? AND u.disabled=0").get(sha(t), Date.now());
+  return r ? rowToUser(r) : null;
+}
+export function endSession(t: string | undefined) { if (t) db()?.prepare("DELETE FROM sessions WHERE id_hash=?").run(sha(t)); }
+
+// Brute-force protection: 5 failures per username+IP lock for 5 minutes (per process).
+const attempts = new Map<string, { n: number; until: number }>();
+export function login(username: string, pw: string, ip: string, ua: string): { token: string } | { error: string } {
+  const key = `${normUser(username)}|${ip}`; const a = attempts.get(key); const now = Date.now();
+  if (a && a.until > now) return { error: "Túl sok hibás próbálkozás. Várj 5 percet." };
+  const r = db()!.prepare("SELECT * FROM users WHERE username=?").get(normUser(username)) as any;
+  if (!r || r.disabled || !verifyPassword(pw, r.password_hash)) {
+    const n = (a && a.until <= now && a.n >= 5 ? 0 : a?.n ?? 0) + 1;
+    attempts.set(key, { n, until: n >= 5 ? now + 300_000 : 0 });
+    return { error: "Hibás felhasználónév vagy jelszó." };
+  }
+  attempts.delete(key); audit(r.id, "login");
+  return { token: createSession(r.id, ua) };
+}
+export function userCan(u: User, p: Permission) { return can(u.role, p, u.permissions); }
