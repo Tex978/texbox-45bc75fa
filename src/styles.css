@@ -346,6 +346,8 @@
   .home-sensor-grid, .home-dashboard-grid .home-sensor-grid { grid-template-columns: minmax(0,1fr); gap: 10px; }
   .home-view-panel .sensor-device { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; padding: 14px 14px 0; min-height: 0; }
   .sensor-heading { grid-column: 1; grid-row: 1; }
+  .sensor-heading .truncate { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
+  .home-view-panel .sensor-device { column-gap: 12px; }
   .home-view-panel .sensor-device .sensor-reading { grid-column: 2; grid-row: 1; margin: 0; font-size: 30px; line-height: 1.2; }
   .sensor-device > .sensor-details { grid-column: 1 / -1; margin-top: 14px; display: flex; flex-wrap: nowrap; gap: 12px; }
   .sensor-device > .sensor-details > span:last-child { width: auto; margin-left: auto; }

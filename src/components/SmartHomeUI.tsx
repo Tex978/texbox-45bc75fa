@@ -11,12 +11,13 @@ const sectionIcons: Record<string, LucideIcon> = {
 const sectionNames: Record<string, string> = { "Hőmérők (Xiaomi)": "Hőmérők", "Bosch háztartási gépek": "Háztartási gépek", "Tuya / Smart Life eszközök": "Tuya · Smart Life", "Tuya eszközök": "Tuya · Smart Life" };
 const subtitles: Record<string, string> = { "Hőmérők (Xiaomi)": "Xiaomi", "Légtisztító": "Xiaomi", "Okoszár": "Xiaomi", "Bosch háztartási gépek": "Bosch · Home Connect", "Redőnyök": "Connector" };
 
-export function SmartSection({ title = "", children, className = "" }: { title?: string; children: ReactNode; className?: string }) {
+export function SmartSection({ title = "", children, className = "", action }: { title?: string; children: ReactNode; className?: string; action?: ReactNode }) {
   const Icon = sectionIcons[title] ?? Lightbulb;
   return <section className={`smart-section ${className}`}>
     <header className="smart-section-heading">
       <span className="smart-icon"><Icon size={21} strokeWidth={1.7} /></span>
       <div><h2>{sectionNames[title] ?? title}</h2>{subtitles[title] && <p>{subtitles[title]}</p>}</div>
+      {action && <span className="ml-auto shrink-0">{action}</span>}
     </header>
     {children}
   </section>;
