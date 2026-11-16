@@ -16,7 +16,7 @@ export function ChatAttachments({
     <div className="chat-files">
       {files.map((f) => (
         <div className="chat-file" key={f.id}>
-          {f.deleted || f.missing || (f.kind!=="video"&&failed.includes(f.id)) ? (
+          {f.deleted || f.missing || (f.kind !== "video" && failed.includes(f.id)) ? (
             <p role="status">
               {f.name} — {f.deleted ? "Törölt fájl" : "A fájl nem érhető el."}
             </p>
@@ -48,7 +48,9 @@ export function ChatAttachments({
                   onError={() => setFailed((v) => [...v, f.id])}
                 />
               )}
-              {f.kind==="video"&&failed.includes(f.id)&&<p>Ez a videó itt nem játszható le; töltsd le a fájlt.</p>}
+              {f.kind === "video" && failed.includes(f.id) && (
+                <p>Ez a videó itt nem játszható le; töltsd le a fájlt.</p>
+              )}
               <div className="chat-file-info">
                 <FileText size={16} />
                 <span>
