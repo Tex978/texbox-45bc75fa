@@ -20,7 +20,7 @@ const categories = [
   { id: "popular", title: "Népszerű", icon: Flame }, { id: "trending", title: "Felkapott", icon: TrendingUp },
 ] as const;
 export const Route = createFileRoute("/search")({
-  validateSearch: (input: Record<string, unknown>): { view?: string } => ({ view: typeof input.view === "string" ? input.view : undefined }),
+  validateSearch: (input: Record<string, unknown>): { view?: string } => typeof input["view"] === "string" ? { view: input["view"] } : {},
   head: () => ({ meta: [
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     { title: "Filmek és sorozatok – NAS Vezérlő" }, { name: "description", content: "Filmes és sorozatos ajánlások, új megjelenések, történetek, szereplők és előzetesek." },

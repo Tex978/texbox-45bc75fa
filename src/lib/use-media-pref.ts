@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMe } from "./auth.functions";
@@ -8,12 +8,12 @@ import type { MediaPrefKey } from "./media-preferences";
 export function useMediaPref<T>(key: MediaPrefKey) {
   const me = useQuery({ queryKey: ["me"], queryFn: () => getMe(), staleTime: 60000 });
   const qc = useQueryClient();
-  const queryKey = ["media-prefs", me.data?.user?.id ?? "legacy"];
+  const queryKey = useMemo(() => ["media-prefs", me.data?.user?.id ?? "legacy"], [me.data?.user?.id]);
   const q = useQuery({ queryKey, queryFn: () => getMediaPrefs(), enabled: !!me.data && (me.data.mode === "open" || !!me.data.user), staleTime: 30000 });
   const saveFn = useServerFn(saveMediaPref);
   const migrated = useRef(false);
   const [error, setError] = useState("");
-  const prefs = q.data ? JSON.parse(q.data.prefs) as Record<string, T> : undefined;
+  const prefs = useMemo(() => q.data ? JSON.parse(q.data.prefs) as Record<string, T> : undefined, [q.data]);
   const value = prefs?.[key];
   useEffect(() => {
     if (!q.data || migrated.current) return;
