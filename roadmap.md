@@ -1,3 +1,13 @@
+# TexBox átfogó fejlesztés (jóváhagyott terv)
+- [x] M1 Biztonsági alap: családi fiókok a NAS-on, belépés/kijelentkezés, első admin (/__setup), jogosultság minden módosító műveleten, titkosított kapcsolati adatok, napi adatbázis-mentés, telepítési leírás.
+- [x] M3 (alap) Család oldal: meghívó és jelszó link, szerepkörök, egyedi jogosultságok, letiltás, profilmenü.
+- [ ] M2 Közös beállítások szerveren (kedvencek, téma, Gree szobák, localStorage átvitel) – következő kör.
+- [ ] M4 Keresés szűrők (műfaj, év, értékelés, elérhetőség, megőrzés).
+- [ ] M5 Streaming felfedező oldal (TMDB HU szolgáltatók).
+- [ ] M6 Egységes app-keret és oldalak újratervezése.
+- [ ] M7 Energia saját idősortárolás.
+- [ ] Élő ellenőrzés a Synologyn: frissítés után az admin létrehozása és TEXBOX_SECRET_KEY megadása a felhasználónál.
+
 # Okosotthon megújítás
 - [x] Klímák: egy kiválasztott részletes panel, kompakt gyorsvezérlők, böngészős szobabeosztás; Okosotthon/Energia elrendezés; 50 teszt és automatikus build sikeres, mobil/desktop panelváltás és szobamentés tesztadatokkal ellenőrizve. A teljes lint korábbi hibái nem érintett szerverfájlokban maradtak.
 - [x] Telefonközpontú Okosotthon: tömör fejléc, állandó alsó kategóriamenü, külön klíma/Bosch/Smart Life nézetek, olvasható hőmérősorok és alsó előzményablak; négy képernyőméreten ellenőrizve, élő hőmérő eszközkezelő és 7 napos előzményválasztás működik; öt regressziós teszt sikeres.
