@@ -4,6 +4,10 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { gate } from "./lib/app-gate";
 
+// Self-hosted Node only: start the timed-scene scheduler once per process (DB lease keeps it single-instance).
+if (typeof process !== "undefined" && process.versions?.node && !process.env["VITEST"])
+  void import("./lib/scheduler.server").then((m) => m.startScheduler()).catch(() => undefined);
+
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
