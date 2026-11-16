@@ -61,11 +61,13 @@ it("sends and reads back SQLite messages through the authenticated chat UI", asy
   fireEvent.click(screen.getByRole("button", { name: "Üzenet küldése" }));
   await screen.findByText("Én is😺 indulok.");
   expect(chatList(dadToken).items.at(-1)).toMatchObject({ text: "Én is😺 indulok.", name: "Anya" });
-  fireEvent.click(screen.getAllByRole("button", { name: "Láttam / oké reakció, 0" })[0]);
+  const reactButton = screen.getAllByRole("button", { name: "Láttam / oké reakció, 0" })[0];
+  if (!reactButton) throw new Error("Missing reaction button");
+  fireEvent.click(reactButton);
   await screen.findByRole("button", { name: "Láttam / oké reakció, 1" });
-  expect(chatList(dadToken).items[0].reactions[0].people[0].name).toBe("Anya");
+  expect(chatList(dadToken).items[0]?.reactions[0]?.people[0]?.name).toBe("Anya");
   fireEvent.click(screen.getByRole("button", { name: "Láttam / oké reakció, 1" }));
-  await waitFor(() => expect(chatList(dadToken).items[0].reactions).toEqual([]));
+  await waitFor(() => expect(chatList(dadToken).items[0]?.reactions).toEqual([]));
   resetAuthDb();
   expect(chatList(dadToken).items).toHaveLength(2);
   qc.clear();

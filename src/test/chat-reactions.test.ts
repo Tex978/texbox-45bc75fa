@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
+const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof import("node:sqlite");
 import {
   createUser,
   createSession,
@@ -42,8 +42,8 @@ it("supports all seven concrete cat emoji values", () => {
   expect(CAT_EMOJIS).toEqual(["😺", "😸", "😻", "🙀", "😿", "😾", "🐾"]);
   CAT_EMOJIS.forEach((e, i) => {
     chatReact(mom, v(e, i));
-    expect(chatList(dad).items[0].myReaction).toBeNull();
-    expect(chatList(mom).items[0].myReaction).toBe(e);
+    expect(chatList(dad).items[0]?.myReaction).toBeNull();
+    expect(chatList(mom).items[0]?.myReaction).toBe(e);
   });
 });
 it("aggregates people, preserves reactions and UTF-8 text across restart", () => {
@@ -51,8 +51,9 @@ it("aggregates people, preserves reactions and UTF-8 text across restart", () =>
   chatReact(dad, v("🐾"));
   resetAuthDb();
   const m = chatList(mom).items[0];
+  if (!m) throw new Error("Missing message");
   expect(m.text).toBe("👨‍👩‍👧‍👦 ❤️ 😺");
-  expect(m.reactions[0].people.map((p) => p.name).sort()).toEqual(["Anya", "Apa"]);
+  expect(m.reactions[0]?.people.map((p) => p.name).sort()).toEqual(["Anya", "Apa"]);
   expect(m.reactionVersion).toBe(1);
   expect(chatStatus(mom).unread).toBe(1);
 });
@@ -63,8 +64,8 @@ it("idempotent retry does not duplicate or flip off; switch/remove only one's ow
   chatReact(mom, v("😻", 1));
   chatReact(mom, v(null, 2));
   expect(chatReact(mom, v(null, 2)).version).toBe(3);
-  expect(chatList(mom).items[0].reactions[0].people).toHaveLength(1);
-  expect(chatList(dad).items[0].myReaction).toBe("😺");
+  expect(chatList(mom).items[0]?.reactions[0]?.people).toHaveLength(1);
+  expect(chatList(dad).items[0]?.myReaction).toBe("😺");
 });
 it("two devices conflict rather than silently overwriting a newer reaction", () => {
   const other = createSession(momId, "mobile2");
@@ -72,7 +73,7 @@ it("two devices conflict rather than silently overwriting a newer reaction", () 
   expect(() => chatReact(other, v("😸"))).toThrow(/másik eszköz/);
   chatReact(other, v("😸", 1));
   expect(() => chatReact(mom, v(null, 1))).toThrow();
-  expect(chatList(mom).items[0].myReaction).toBe("😸");
+  expect(chatList(mom).items[0]?.myReaction).toBe("😸");
 });
 it("unique actor vote enforced across separate SQLite connections", () => {
   chatReact(mom, v("🐾"));
@@ -98,7 +99,7 @@ it("unique actor vote enforced across separate SQLite connections", () => {
 });
 it("rejects forged identities, unknown emoji, deleted messages and unauthorized sessions", () => {
   expect(() => chatReact(mom, { ...v("😺"), userId: "fake" } as ChatReaction)).toThrow();
-  expect(() => chatReact(mom, { ...v("😺"), emoji: "<svg>" } as ChatReaction)).toThrow();
+  expect(() => chatReact(mom, { ...v("😺"), emoji: "<svg>" } as unknown as ChatReaction)).toThrow();
   for (const t of [undefined, "fake", kid]) expect(() => chatReact(t, v("😺"))).toThrow();
   chatReact(mom, v("😺"));
   db()?.prepare("DELETE FROM chat_messages WHERE id=?").run(messageId);
@@ -112,7 +113,7 @@ it("revoked or disabled users cannot mutate; disabled votes disappear from count
   const t = createSession(momId, "other");
   updateUser(momId, { disabled: true });
   expect(() => chatReact(t, v(null, 1))).toThrow();
-  expect(chatList(dad).items[0].reactions).toEqual([]);
+  expect(chatList(dad).items[0]?.reactions).toEqual([]);
 });
 it("takes snapshot before additive migration without losing prior messages", () => {
   resetAuthDb();
@@ -121,7 +122,7 @@ it("takes snapshot before additive migration without losing prior messages", () 
   d.close();
   rmSync(join(dir, "backups/pre-chat-reactions.db"));
   resetAuthDb();
-  expect(chatList(mom).items[0].id).toBe(messageId);
+  expect(chatList(mom).items[0]?.id).toBe(messageId);
   expect(existsSync(join(dir, "backups/pre-chat-reactions.db"))).toBe(true);
   const backup = new DatabaseSync(join(dir, "backups/pre-chat-reactions.db"), { readOnly: true });
   try {
