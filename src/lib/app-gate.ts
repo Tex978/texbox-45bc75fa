@@ -49,6 +49,12 @@ const setupPage = (e?: string) =>
     `<form method="post" action="/__setup"><h1>Első admin fiók</h1><p>Add meg a régi közös jelszót (APP_PASSWORD), majd hozd létre a saját admin fiókodat.</p>${err(e)}${field("legacy", "Régi közös jelszó", "password", "required")}${field("username", "Felhasználónév", "text", 'autocapitalize="none" required')}${field("name", "Megjelenített név")}${field("pw", "Új jelszó (min. 8 karakter)", "password", 'autocomplete="new-password" minlength="8" required')}<button>Admin létrehozása</button></form>`,
     e ? 400 : 200,
   );
+const setupNoticePage = (reason: "storage" | "password") =>
+  html(
+    reason === "storage"
+      ? `<form><h1>Az első admin fiók a NAS-on hozható létre</h1><p>Ez a cím nem a saját NAS-odon fut, ezért itt nem tudunk fiókot menteni. Nyisd meg a TexBoxot a saját NAS-címeden (pl. <code>http://NAS-IP:3050</code>), és ott hozd létre az admin fiókodat a közös jelszó (APP_PASSWORD) megadásával.</p></form>`
+      : `<form><h1>Hiányzó közös jelszó</h1><p>A fiókok mentése itt elérhető, de a közös jelszó (APP_PASSWORD) nincs beállítva, ezért az admin fiók nem hozható létre. Írd be a docker-compose.yml <code>environment</code> részébe, indítsd újra a projektet, majd nyisd meg újra ezt az oldalt.</p></form>`,
+  );
 const invitePage = (t: string, name: string, e?: string) =>
   html(
     `<form method="post" action="/__invite"><h1>Szia, ${esc(name)}!</h1><p>Állítsd be a jelszavadat a TexBoxhoz.</p>${err(e)}<input type="hidden" name="t" value="${esc(t)}">${field("pw", "Új jelszó (min. 8 karakter)", "password", 'autocomplete="new-password" minlength="8" required autofocus')}<button>Jelszó mentése</button></form>`,
@@ -156,10 +162,14 @@ export async function gate(request: Request): Promise<Response | null> {
     return loginPage();
   }
 
+  // The first-admin page only exists where accounts can actually be saved (the NAS, with APP_PASSWORD set).
+  if (path === "/__setup" && !(hasDb && accounts === 0 && legacy))
+    return setupNoticePage(hasDb && accounts === 0 ? "password" : "storage");
+
   if (!legacy) return null; // hosted preview / unconfigured: open as before
 
   // No accounts yet: shared password still works, and unlocks first-admin setup.
-  if (hasDb && path === "/__setup") {
+  if (hasDb && accounts === 0 && path === "/__setup") {
     if (!post) return setupPage();
     const f = await request.formData();
     if (!same(String(f.get("legacy") || ""), legacy))

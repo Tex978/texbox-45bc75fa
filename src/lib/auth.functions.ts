@@ -13,9 +13,16 @@ export const getMe = createServerFn({ method: "GET" }).handler(async (): Promise
 });
 
 const admin = () => {
-  if (isHostedAccountPreview()) throw new Error("A családi fiókok a Synology NAS-on kezelhetők; az előnézet nem éri el a NAS felhasználóit. Nyisd meg a TexBoxot a saját NAS-címeden.");
+  // Hosted previews (and any runtime without the NAS database) cannot see household accounts.
+  if (isHostedAccountPreview() || db() === null)
+    throw new Error(
+      "A családi fiókok a Synology NAS-on kezelhetők; ez a nézet nem éri el a NAS felhasználóit. Nyisd meg a TexBoxot a saját NAS-címeden.",
+    );
   const u = requirePermission(getCookie(SESSION_COOKIE), "users");
-  if (!u) throw new Error("A családi fiókokhoz előbb hozd létre az admin fiókot (APP_PASSWORD + /__setup).");
+  if (!u)
+    throw new Error(
+      "A családi fiókokhoz előbb hozd létre az admin fiókot a NAS-címeden (/__setup).",
+    );
   return u;
 };
 const origin = () => { const r = getRequest(); const h = r.headers; const proto = h.get("x-forwarded-proto") || new URL(r.url).protocol.replace(":", ""); return `${proto}://${h.get("x-forwarded-host") || h.get("host") || new URL(r.url).host}`; };
