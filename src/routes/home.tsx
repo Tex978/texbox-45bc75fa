@@ -221,7 +221,8 @@ function Home() {
     { id: "blinds" as const, title: "Árnyékolás", value: `${blinds.blinds.length}`, detail: `redőny${blinds.demo ? " · Minta" : ""}`, icon: BlindsIcon, tone: "blinds" },
     { id: "tuya" as const, title: "Eszközök", value: `${appliances.appliances.length + tuyaShown.length}`, detail: appliances.error || tuya.error ? "Kapcsolati hiba" : "Bosch · Smart Life", icon: Power, tone: "devices" },
   ];
-  const rooms = Object.entries(shownThermometers.reduce<Record<string, typeof shownThermometers>>((acc, s) => { const room = thermometers.meta[s.did]?.room?.trim() || "Szoba nélkül"; (acc[room] ||= []).push(s); return acc; }, {}));
+  const rooms = Object.entries(shownThermometers.reduce<Record<string, typeof shownThermometers>>((acc, s) => { const room = thermometers.meta[s.did]?.room?.trim(); if (room) (acc[room] ||= []).push(s); return acc; }, {}));
+  const unassigned = shownThermometers.filter((s) => !thermometers.meta[s.did]?.room?.trim());
   const fmt = (n: number) => n.toLocaleString("hu-HU", { maximumFractionDigits: 1 });
   const ThemeIcon = theme === "system" ? SunMoon : theme === "light" ? Sun : Moon;
   const nextTheme: Record<Theme, Theme> = { system: "light", light: "dark", dark: "system" };
@@ -271,6 +272,7 @@ function Home() {
               <RoomCard room={room} list={list} fmt={fmt} />
               <ul className="home-room-list">{list.map((s) => <li key={s.did}><span className={`status-dot ${s.online ? "bg-home-success" : "bg-muted-foreground"}`} /><span className="min-w-0 flex-1 truncate">{thermometers.meta[s.did]?.name || s.name}</span><span className="tabular-nums">{s.temp != null ? `${fmt(s.temp)}°` : "–"}</span>{s.hum != null && <span className="tabular-nums text-muted-foreground">{s.hum}%</span>}</li>)}</ul>
             </section>)}</div>}
+          {unassigned.length > 0 && <><h2 className="home-heading">Hely nélküli hőmérők</h2><ul className="home-room-list home-settings-list">{unassigned.map((s) => <li key={s.did}><span className={`status-dot ${s.online ? "bg-home-success" : "bg-muted-foreground"}`} /><span className="min-w-0 flex-1 truncate">{thermometers.meta[s.did]?.name || s.name}</span><span className="tabular-nums">{s.temp != null ? `${fmt(s.temp)}°` : "–"}</span>{s.hum != null && <span className="tabular-nums text-muted-foreground">{s.hum}%</span>}</li>)}</ul></>}
           <p className="home-note">A szobákat a hőmérők helye alapján csoportosítjuk. A többi eszköz az Eszközök fülön, típus szerint érhető el.</p>
         </>}
 
