@@ -111,7 +111,7 @@ describe("family tasks on real isolated SQLite", () => {
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
     expect(first(listTasks(dad, now).occurrences).events).toHaveLength(1);
   });
-  it("adult completion auto approves but does not create a point ledger", () => {
+  it("adult completion auto approves and credits the personal ledger exactly once (phase 4)", () => {
     saveTask(mom, input({ assignee: `user:${mom.id}` }));
     const o = first(listTasks(mom, now).occurrences);
     expect(actOnTask(mom, { id: o.id, version: o.version, action: "complete" }).status).toBe(
@@ -119,8 +119,8 @@ describe("family tasks on real isolated SQLite", () => {
     );
     expect(db()?.prepare("SELECT points FROM task_approvals").get()).toMatchObject({ points: 10 });
     expect(
-      db()?.prepare("SELECT 1 FROM sqlite_master WHERE name='point_ledger'").get(),
-    ).toBeUndefined();
+      db()?.prepare("SELECT person_key,delta FROM point_ledger").all(),
+    ).toEqual([{ person_key: `user:${mom.id}`, delta: 10 }]);
     expect(() => actOnTask(mom, { id: o.id, version: o.version, action: "complete" })).toThrow();
   });
   it("managed child completion by parent needs either parent's single approval", async () => {
