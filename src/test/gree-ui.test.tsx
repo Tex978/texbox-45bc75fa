@@ -7,6 +7,11 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }));
 vi.mock("@/lib/nas.functions", () => ({ getGree: vi.fn(), greeControl: vi.fn() }));
+vi.mock("@/lib/prefs.functions", () => ({
+  getSharedPrefs: vi.fn(async () => ({ prefs: {}, shared: true })),
+  saveSharedPref: vi.fn(async ({ data }: { data: { key: string; value: unknown } }) => ({ prefs: { [data.key]: data.value } })),
+}));
+import { saveSharedPref } from "@/lib/prefs.functions";
 const units = [
   {
     ip: "192.168.1.60",
@@ -84,7 +89,8 @@ describe("climate selection and commands", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Klíma A szobája" }), {
       target: { value: "Nappali" },
     });
-    expect(JSON.parse(localStorage.getItem("home-gree-rooms") ?? "{}").assignments).toEqual({
+    await waitFor(() => expect(vi.mocked(saveSharedPref)).toHaveBeenCalled());
+    expect((vi.mocked(saveSharedPref).mock.calls.at(-1)![0] as any).data.value.assignments).toEqual({
       "192.168.1.60": "Nappali",
     });
   });
