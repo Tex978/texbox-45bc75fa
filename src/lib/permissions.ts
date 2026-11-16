@@ -40,6 +40,7 @@ export function can(
   overrides: Partial<Record<Permission, boolean>> = {},
 ): boolean {
   if (role === "admin") return true;
+  if (role === "child" && perm === "family") return false;
   if (ADMIN_ONLY.includes(perm)) return false;
   return overrides[perm] ?? DEFAULTS[role].includes(perm);
 }

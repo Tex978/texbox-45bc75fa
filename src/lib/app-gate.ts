@@ -155,8 +155,6 @@ export async function gate(request: Request): Promise<Response | null> {
       return "token" in r ? go(request, "/", r.token) : loginPage(r.error);
     }
     if (sessionUser(cookieOf(request, SESSION_COOKIE))) return null;
-    // Return session status through its normal RPC shape instead of an HTML login form.
-    // getMe reveals no private data without a validated cookie; every other endpoint stays gated.
     if (path.startsWith("/_serverFn") || path.startsWith("/api/"))
       return new Response(JSON.stringify({ error: "Bejelentkezés szükséges." }), {
         status: 401,

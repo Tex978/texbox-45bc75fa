@@ -4,7 +4,7 @@ type Sqlite = typeof import("node:sqlite");
 type Crypto = typeof import("node:crypto");
 const mod = <T>(name: string): T | null => {
   try {
-    return (globalThis as any).process?.getBuiltinModule?.(name) ?? null;
+    return (globalThis.process?.getBuiltinModule?.(name) as T | undefined) ?? null;
   } catch {
     return null;
   }
@@ -25,8 +25,8 @@ export function isHostedAccountPreview() {
   return globalThis.navigator?.userAgent === "Cloudflare-Workers";
 }
 const dataDir = () =>
-  ((globalThis as any).process?.env?.DATA_DIR as string) ||
-  (((globalThis as any).process?.env?.DATA_FILE as string) || "/data/nas-state.json").replace(
+  (globalThis.process?.env?.DATA_DIR as string) ||
+  ((globalThis.process?.env?.DATA_FILE as string) || "/data/nas-state.json").replace(
     /\/[^/]*$/,
     "",
   ) ||
@@ -58,6 +58,9 @@ export function db() {
       CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, action TEXT NOT NULL, target TEXT, at INTEGER NOT NULL);`);
     // Snapshot the existing database before adding new, independent family tables.
     snapshot(fs, d);
+    // Mandatory, consistent pre-upgrade backup: a failed backup stops the additive migration.
+    const backup = `${dataDir()}/backups/pre-family-phase1.db`;
+    if (!fs.existsSync(backup)) d.exec(`VACUUM INTO '${backup.replaceAll("'", "''")}'`);
     d.exec(`BEGIN IMMEDIATE;
       CREATE TABLE IF NOT EXISTS family_meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS child_profiles(id TEXT PRIMARY KEY, display_name TEXT NOT NULL, icon TEXT NOT NULL DEFAULT 'child', created_by TEXT NOT NULL REFERENCES users(id), disabled INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
@@ -101,11 +104,19 @@ export type User = {
   hasPassword: boolean;
   permissions: Partial<Record<Permission, boolean>>;
 };
-function rowToUser(r: any): User {
+type UserRow = {
+  id: string;
+  username: string;
+  display_name: string;
+  password_hash: string | null;
+  role: Role;
+  disabled: number;
+};
+function rowToUser(r: UserRow): User {
   const perms: Partial<Record<Permission, boolean>> = {};
   for (const p of accountDb()
     .prepare("SELECT key, allowed FROM permissions WHERE user_id=?")
-    .all(r.id) as any[])
+    .all(r.id) as { key: string; allowed: number }[])
     if ((PERMISSIONS as readonly string[]).includes(p.key))
       perms[p.key as Permission] = !!p.allowed;
   return {
@@ -122,16 +133,16 @@ export const authStorageUnavailable = () =>
   !isHostedAccountPreview() && db() === null && mod<typeof import("node:fs")>("node:fs") !== null;
 export function userCount(): number {
   const d = db();
-  return d ? Number((d.prepare("SELECT count(*) c FROM users").get() as any).c) : 0;
+  return d ? Number((d.prepare("SELECT count(*) c FROM users").get() as { c: number }).c) : 0;
 }
 export function listUsers(): User[] {
-  return (accountDb().prepare("SELECT * FROM users ORDER BY created_at").all() as any[]).map(
+  return (accountDb().prepare("SELECT * FROM users ORDER BY created_at").all() as UserRow[]).map(
     rowToUser,
   );
 }
 export function getUser(id: string): User | null {
   const r = accountDb().prepare("SELECT * FROM users WHERE id=?").get(id);
-  return r ? rowToUser(r) : null;
+  return r ? rowToUser(r as UserRow) : null;
 }
 export function audit(userId: string | null, action: string, target = "") {
   db()
@@ -176,7 +187,7 @@ function adminCount(exceptId?: string) {
     (
       accountDb()
         .prepare("SELECT count(*) c FROM users WHERE role='admin' AND disabled=0 AND id<>?")
-        .get(exceptId ?? "") as any
+        .get(exceptId ?? "") as { c: number }
     ).c,
   );
 }
@@ -243,7 +254,7 @@ export function createInviteToken(userId: string, hours = 72): string {
 export function inviteUser(t: string): User | null {
   const r = db()
     ?.prepare("SELECT user_id FROM invites WHERE token_hash=? AND expires_at>?")
-    .get(sha(t), Date.now()) as any;
+    .get(sha(t), Date.now()) as { user_id: string } | undefined;
   return r ? getUser(r.user_id) : null;
 }
 export function acceptInvite(t: string, pw: string): string {
@@ -259,7 +270,7 @@ export function acceptInvite(t: string, pw: string): string {
 }
 
 const sessionDays = () =>
-  Math.min(365, Math.max(1, Number((globalThis as any).process?.env?.SESSION_DAYS) || 30));
+  Math.min(365, Math.max(1, Number(globalThis.process?.env?.SESSION_DAYS) || 30));
 export const sessionMaxAge = () => sessionDays() * 86400;
 export function createSession(userId: string, ua: string): string {
   const t = token();
@@ -280,7 +291,7 @@ export function sessionUser(t: string | undefined): User | null {
       "SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id_hash=? AND s.expires_at>? AND u.disabled=0",
     )
     .get(sha(t), Date.now());
-  return r ? rowToUser(r) : null;
+  return r ? rowToUser(r as UserRow) : null;
 }
 export function endSession(t: string | undefined) {
   if (t) db()?.prepare("DELETE FROM sessions WHERE id_hash=?").run(sha(t));
@@ -298,9 +309,8 @@ export function login(
   const a = attempts.get(key);
   const now = Date.now();
   if (a && a.until > now) return { error: "Túl sok hibás próbálkozás. Várj 5 percet." };
-  const r = accountDb()
-    .prepare("SELECT * FROM users WHERE username=?")
-    .get(normUser(username)) as any;
+  const r = accountDb().prepare("SELECT * FROM users WHERE username=?").get(normUser(username)) as
+    UserRow | undefined;
   if (!r || r.disabled || !verifyPassword(pw, r.password_hash)) {
     const n = (a && a.until <= now && a.n >= 5 ? 0 : (a?.n ?? 0)) + 1;
     if (attempts.size > 10000) attempts.delete(attempts.keys().next().value ?? "");

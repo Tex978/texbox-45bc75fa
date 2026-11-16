@@ -53,4 +53,6 @@ use the editor.
 - Shared-store values are AES-GCM encrypted at rest when TEXBOX_SECRET_KEY is set (plaintext migrated on first load); never return secret values to clients.
 - Household UI preferences (favorites, theme, rooms, hidden devices) go through useSharedPref and the whitelisted PREF_KEYS in shared-prefs.ts, stored in the shared NAS store with per-key permissions; localStorage is only a one-time migration source, so all devices stay in sync.
 - Non-smart-home pages use Shell with a phone bottom tab bar (four primary routes plus a Több menu) and shared PageHeader/EmptyState; smart-home keeps its own tabs, so Shell skips the tab bar there.
+- Family phase 1 adds only independent SQLite tables after a mandatory pre-upgrade snapshot; the first existing active admin is tagged as owner without rewriting users/sessions, and child_profiles never become login credentials. Keep owner-only security administration separate from parent family permissions.
+- Session/profile UI must render loading, error, preview and expired states with recovery controls; never hide the account affordance when the me query fails, and revalidate on mount/focus and periodically.
 <!-- AGENT-MEMORY:END -->

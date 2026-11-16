@@ -300,7 +300,7 @@ function Family() {
                 </section>
               ))}
             </div>
-            <Card title="Önálló fiókok" />
+            <h2 className="text-lg font-semibold">Önálló fiókok</h2>
             <div className="family-grid">
               {data.users.map((u) => (
                 <section key={u.id} className="family-card">
