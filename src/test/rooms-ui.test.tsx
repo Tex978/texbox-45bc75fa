@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createUser, createSession, resetAuthDb } from "@/lib/auth.server";
 import { type RoomAction } from "@/lib/rooms";
@@ -73,12 +73,15 @@ it("moves real Xiaomi sensor and purifier through UI into persistent NAS room me
     </QueryClientProvider>,
   );
   const input = await screen.findByLabelText("Új szoba neve");
+  await waitFor(() => expect(input).not.toBeDisabled());
   fireEvent.change(input, { target: { value: "Nappali" } });
   fireEvent.click(screen.getByRole("button", { name: "Szoba felvétele" }));
   await screen.findByText("Szobabeállítás mentve.");
+  await waitFor(() => expect(screen.getByLabelText("Xiaomi hőmérő szobája")).not.toBeDisabled());
   const sensor = screen.getByLabelText("Xiaomi hőmérő szobája");
   fireEvent.change(sensor, { target: { value: "Nappali" } });
   await screen.findByText("Szobabeállítás mentve.");
+  await waitFor(() => expect(screen.getByLabelText("Xiaomi légtisztító szobája")).not.toBeDisabled());
   fireEvent.change(screen.getByLabelText("Xiaomi légtisztító szobája"), {
     target: { value: "Nappali" },
   });
