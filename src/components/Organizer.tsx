@@ -716,6 +716,7 @@ export function Organizer() {
           ["Bevásárlás", ShoppingCart],
           ["Receptek", BookOpen],
           ["Heti menü", CalendarDays],
+          ["Naptár", CalendarDays],
         ].map(([t, I]) => {
           const Icon = I as typeof ShoppingCart;
           return (
