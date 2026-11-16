@@ -16,7 +16,7 @@ export function ThermometerHistory({ did, name }: { did: string; name: string })
   const unit = metric === "temp" ? "°C" : "%";
   return <Dialog open={open} onOpenChange={setOpen}>
     <DialogTrigger asChild><Button variant="ghost" className="mt-3 w-full justify-between border-t border-border rounded-none" aria-label={`${name} előzmények`}><span className="text-xs">Előzmények</span><History size={16} /></Button></DialogTrigger>
-    <DialogContent className="smart-home history-dialog max-h-[90dvh] overflow-y-auto">
+    <DialogContent className="smart-home history-dialog max-h-[90dvh] overflow-y-auto max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0">
       <DialogHeader><DialogTitle className="pr-6">{name}</DialogTitle><DialogDescription>Mérési előzmények · Xiaomi</DialogDescription></DialogHeader>
       <div className="grid grid-cols-2 gap-2">{[1, 7].map((period) => <Button key={period} variant={days === period ? "default" : "outline"} aria-pressed={days === period} onClick={() => setDays(period)}>{period === 1 ? "24 óra" : "7 nap"}</Button>)}</div>
       <div className="grid grid-cols-2 gap-2"><Button variant={metric === "temp" ? "secondary" : "ghost"} aria-pressed={metric === "temp"} onClick={() => setMetric("temp")}><Thermometer size={16} />Hőmérséklet</Button><Button variant={metric === "hum" ? "secondary" : "ghost"} aria-pressed={metric === "hum"} onClick={() => setMetric("hum")}><Droplets size={16} />Pára</Button></div>
