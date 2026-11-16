@@ -1,5 +1,5 @@
 # TexBox átfogó fejlesztés (jóváhagyott terv)
-- [ ] Aktuális kör: Streaming összevonása a Kereséssel, régi URL átirányítása, teljes alkalmazás biztonsági/UX auditja és kompatibilis javítások, tesztek/lint/mobil-desktop ellenőrzés.
+- [x] Aktuális kör: Streaming a Keresésben, régi URL átirányítva; személyes NAS-szűrők; jogosultság/titokkezelés, energiahiány, műveleti visszajelzések és mobil használat javítva; 82 teszt sikeres, automatikus build OK, 390/1440 px ellenőrizve.
 - [x] M1 Biztonsági alap: családi fiókok a NAS-on, belépés/kijelentkezés, első admin (/__setup), jogosultság minden módosító műveleten, titkosított kapcsolati adatok, napi adatbázis-mentés, telepítési leírás.
 - [x] M3 (alap) Család oldal: meghívó és jelszó link, szerepkörök, egyedi jogosultságok, letiltás, profilmenü.
 - [x] M2 Közös beállítások a NAS-on: kedvencek, téma, Gree szobák, redőny-kizárások, Bosch nevek; böngészős értékek egyszeri átvétele; 63 teszt sikeres.
