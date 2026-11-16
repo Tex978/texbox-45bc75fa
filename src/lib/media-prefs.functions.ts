@@ -8,8 +8,9 @@ function read() {
   const user = requirePermission(getCookie(SESSION_COOKIE));
   const key = mediaPrefStoreKey(user?.id);
   let prefs: Record<string, unknown> = {};
+  const stored = storeGet(key);
   try {
-    prefs = JSON.parse(storeGet(key) || "{}");
+    prefs = JSON.parse(stored || "{}");
   } catch {
     /* retain a safe empty view */
   }

@@ -21,6 +21,7 @@ export function useMediaPref<T>(key: MediaPrefKey) {
   const saveFn = useServerFn(saveMediaPref);
   const migrated = useRef(false);
   const [error, setError] = useState("");
+  const [migrationPending, setMigrationPending] = useState(false);
   const prefs = useMemo(
     () => (q.data ? (JSON.parse(q.data.prefs) as Record<string, T>) : undefined),
     [q.data],
@@ -36,6 +37,7 @@ export function useMediaPref<T>(key: MediaPrefKey) {
       return;
     }
     if (!raw) return;
+    setMigrationPending(true);
     saveFn({ data: { key, value: raw, onlyMissing: true } })
       .then((r) => {
         qc.setQueryData(queryKey, r);
@@ -47,7 +49,7 @@ export function useMediaPref<T>(key: MediaPrefKey) {
       })
       .catch(() =>
         setError("A korábbi keresési beállítás átvétele nem sikerült; a böngészőben megmaradt."),
-      );
+      ).finally(() => setMigrationPending(false));
   }, [q.data, key, qc, saveFn, queryKey]);
   const save = async (next: T) => {
     try {
@@ -61,7 +63,7 @@ export function useMediaPref<T>(key: MediaPrefKey) {
   return {
     value,
     save,
-    loading: q.isPending,
+    loading: q.isPending || migrationPending,
     error: error || (q.isError ? "A mentett keresési beállítások nem tölthetők be." : ""),
   };
 }

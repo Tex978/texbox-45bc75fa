@@ -114,6 +114,7 @@ function Search() {
   );
 }
 function SearchBrowse() {
+  const { view } = Route.useSearch();
   const [q, setQ] = useState("");
   const [dq, setDq] = useState("");
   const [type, setType] = useState<MediaType>("Film");
@@ -169,7 +170,7 @@ function SearchBrowse() {
   }, [q]);
   const { data, isFetching, isError, refetch } = useQuery({
     ...browseOptions(type, category, dq, page, filters),
-    enabled: restored && Route.useSearch().view !== "streaming",
+    enabled: restored && view !== "streaming",
   });
   const req = async (item: MediaItem) => {
     const key = item.type + item.id;

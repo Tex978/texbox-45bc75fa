@@ -299,7 +299,7 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
       total: +(d.totalSpace / 1e12).toFixed(1),
     }));
   if (dsm.length) vols.push(...dsm);
-  let watched: {
+  const watched: {
     title: string;
     year: number;
     type: string;

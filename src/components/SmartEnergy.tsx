@@ -220,7 +220,7 @@ export function SmartEnergy({ data }: { data: Solar }) {
           value={flow ? power(flow.load) : "–"}
           detail="Jelenlegi felhasználás"
           tone="load"
-          active={!!(flow?.load ?? 0) > 0}
+          active={(flow?.load ?? 0) > 0}
         />
       </div>
 
