@@ -253,7 +253,9 @@ export function Gree({
   const list = data.units.filter(
     (u) =>
       roomFilter === "all" ||
-      (roomFilter === "none" ? !state.assignments[u.ip] : `room:${state.assignments[u.ip]}` === roomFilter),
+      (roomFilter === "none"
+        ? !state.assignments[u.ip]
+        : `room:${state.assignments[u.ip]}` === roomFilter),
   );
   const selected = list.find((u) => u.ip === (selectedIp ?? localSelected)) ?? list[0];
   const select = (ip: string) => {
@@ -403,7 +405,7 @@ export function Gree({
             room={room}
             onSave={(name) => {
               save(renameGreeRoom(state, room, name));
-                if (roomFilter === `room:${room}`) setRoomFilter(`room:${name.trim()}`);
+              if (roomFilter === `room:${room}`) setRoomFilter(`room:${name.trim()}`);
             }}
           />
         ))}
