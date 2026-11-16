@@ -1,16 +1,42 @@
 // Client-safe profile rules: built-in avatars, password strength, simple user-agent labels, audit labels.
 export const AVATAR_ICONS = [
-  "initials", "child", "star", "cat", "dog", "heart", "sun", "moon", "leaf", "rocket", "music", "bike",
+  "initials",
+  "child",
+  "star",
+  "cat",
+  "dog",
+  "heart",
+  "sun",
+  "moon",
+  "leaf",
+  "rocket",
+  "music",
+  "bike",
 ] as const;
 export type AvatarIcon = (typeof AVATAR_ICONS)[number];
 export const AVATAR_ICON_LABELS: Record<AvatarIcon, string> = {
-  initials: "Monogram", child: "Gyermek", star: "Csillag", cat: "Cica", dog: "Kutya", heart: "Szív",
-  sun: "Nap", moon: "Hold", leaf: "Levél", rocket: "Rakéta", music: "Zene", bike: "Bicikli",
+  initials: "Monogram",
+  child: "Gyermek",
+  star: "Csillag",
+  cat: "Cica",
+  dog: "Kutya",
+  heart: "Szív",
+  sun: "Nap",
+  moon: "Hold",
+  leaf: "Levél",
+  rocket: "Rakéta",
+  music: "Zene",
+  bike: "Bicikli",
 };
 export const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6"] as const;
 export type AvatarColor = (typeof AVATAR_COLORS)[number];
 export const AVATAR_COLOR_LABELS: Record<AvatarColor, string> = {
-  c1: "Jégkék", c2: "Zöld", c3: "Borostyán", c4: "Levendula", c5: "Korall", c6: "Grafit",
+  c1: "Jégkék",
+  c2: "Zöld",
+  c3: "Borostyán",
+  c4: "Levendula",
+  c5: "Korall",
+  c6: "Grafit",
 };
 export type Avatar = { icon: AvatarIcon; color: AvatarColor };
 export const DEFAULT_AVATAR: Avatar = { icon: "initials", color: "c1" };
@@ -29,7 +55,8 @@ export function passwordProblem(pw: string, ctx: { username?: string; displayNam
     return "Használj legalább kétféle karaktert (kis-/nagybetű, szám, jel), vagy legalább 16 karaktert.";
   const low = pw.toLowerCase();
   for (const w of [ctx.username, ctx.displayName, "texbox", "jelszo", "password", "12345678"])
-    if (w && w.length >= 3 && low.includes(w.toLowerCase())) return "A jelszó ne tartalmazza a nevedet vagy egyszerű szavakat.";
+    if (w && w.length >= 3 && low.includes(w.toLowerCase()))
+      return "A jelszó ne tartalmazza a nevedet vagy egyszerű szavakat.";
   return null;
 }
 export function passwordStrength(pw: string): 0 | 1 | 2 | 3 {
@@ -43,12 +70,35 @@ export function passwordStrength(pw: string): 0 | 1 | 2 | 3 {
 export function describeUserAgent(ua: string | null | undefined): string {
   const s = ua || "";
   if (!s) return "Ismeretlen eszköz";
-  const os = /Android/i.test(s) ? "Android" : /iPhone|iPad|iPod/i.test(s) ? "iPhone/iPad"
-    : /Windows/i.test(s) ? "Windows" : /Mac OS X|Macintosh/i.test(s) ? "Mac"
-    : /Linux/i.test(s) ? "Linux" : "Ismeretlen rendszer";
-  const br = /Edg\//.test(s) ? "Edge" : /OPR\/|Opera/.test(s) ? "Opera" : /SamsungBrowser/.test(s) ? "Samsung Internet"
-    : /Firefox\//.test(s) ? "Firefox" : /Chrome\//.test(s) ? "Chrome" : /Safari\//.test(s) ? "Safari" : "Böngésző";
-  const kind = /Mobile|Android|iPhone/i.test(s) ? "telefon" : /iPad|Tablet/i.test(s) ? "tablet" : "számítógép";
+  const os = /Android/i.test(s)
+    ? "Android"
+    : /iPhone|iPad|iPod/i.test(s)
+      ? "iPhone/iPad"
+      : /Windows/i.test(s)
+        ? "Windows"
+        : /Mac OS X|Macintosh/i.test(s)
+          ? "Mac"
+          : /Linux/i.test(s)
+            ? "Linux"
+            : "Ismeretlen rendszer";
+  const br = /Edg\//.test(s)
+    ? "Edge"
+    : /OPR\/|Opera/.test(s)
+      ? "Opera"
+      : /SamsungBrowser/.test(s)
+        ? "Samsung Internet"
+        : /Firefox\//.test(s)
+          ? "Firefox"
+          : /Chrome\//.test(s)
+            ? "Chrome"
+            : /Safari\//.test(s)
+              ? "Safari"
+              : "Böngésző";
+  const kind = /Mobile|Android|iPhone/i.test(s)
+    ? "telefon"
+    : /iPad|Tablet/i.test(s)
+      ? "tablet"
+      : "számítógép";
   return `${br} · ${os} (${kind})`;
 }
 

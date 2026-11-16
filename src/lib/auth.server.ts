@@ -193,9 +193,12 @@ export function db() {
         CREATE TABLE IF NOT EXISTS matter_task_links(note_id TEXT PRIMARY KEY REFERENCES family_notes(id), template_id TEXT NOT NULL REFERENCES task_templates(id), created_by TEXT NOT NULL, at INTEGER NOT NULL);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='user_profiles'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='user_profiles'").get()
+    ) {
       const profileBackup = `${dataDir()}/backups/pre-profile-phase1b.db`;
-      if (!fs.existsSync(profileBackup)) d.exec(`VACUUM INTO '${profileBackup.replaceAll("'", "''")}'`);
+      if (!fs.existsSync(profileBackup))
+        d.exec(`VACUUM INTO '${profileBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;
         CREATE TABLE IF NOT EXISTS user_profiles(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, icon TEXT NOT NULL, color TEXT NOT NULL, version INTEGER NOT NULL CHECK(version>=1), updated_at INTEGER NOT NULL);
         COMMIT;`);
@@ -608,14 +611,14 @@ export function updateOwnProfile(
   inTx(() => {
     const d = accountDb();
     const u = d.prepare("SELECT disabled FROM users WHERE id=?").get(me.id) as
-      | { disabled: number }
-      | undefined;
+      { disabled: number } | undefined;
     if (!u || u.disabled) throw new Error("A fiók nem érhető el.");
     const cur = d.prepare("SELECT version FROM user_profiles WHERE user_id=?").get(me.id) as
-      | { version: number }
-      | undefined;
+      { version: number } | undefined;
     if (Number(cur?.version ?? 0) !== Number(input.version))
-      throw new Error("A profilt közben egy másik eszközön módosították. Töltsd újra és próbáld meg ismét.");
+      throw new Error(
+        "A profilt közben egy másik eszközön módosították. Töltsd újra és próbáld meg ismét.",
+      );
     d.prepare("UPDATE users SET display_name=? WHERE id=?").run(name, me.id);
     d.prepare(
       `INSERT INTO user_profiles(user_id,icon,color,version,updated_at) VALUES(?,?,?,1,?)
@@ -639,8 +642,7 @@ export function changeOwnPassword(
   const a = pwAttempts.get(me.id);
   if (a && a.until > now) throw new Error("Túl sok hibás próbálkozás. Várj 5 percet.");
   const row = accountDb().prepare("SELECT * FROM users WHERE id=?").get(me.id) as
-    | UserRow
-    | undefined;
+    UserRow | undefined;
   if (!row || row.disabled) throw new Error("A fiók nem érhető el.");
   if (!verifyPassword(String(input.current ?? ""), row.password_hash)) {
     const n = (a && a.until <= now && a.n >= 5 ? 0 : (a?.n ?? 0)) + 1;
@@ -699,9 +701,9 @@ export function listOwnSessions(userId: string, currentToken: string | undefined
 }
 export function revokeOwnSession(me: User, publicId: string, currentToken: string | undefined) {
   const cur = currentToken ? sha(currentToken) : "";
-  const rows = accountDb()
-    .prepare("SELECT id_hash FROM sessions WHERE user_id=?")
-    .all(me.id) as { id_hash: string }[];
+  const rows = accountDb().prepare("SELECT id_hash FROM sessions WHERE user_id=?").all(me.id) as {
+    id_hash: string;
+  }[];
   const hit = rows.find((r) => publicSessionId(r.id_hash) === publicId);
   if (!hit) throw new Error("Ez az eszköz már ki van jelentkeztetve.");
   if (hit.id_hash === cur)
@@ -719,7 +721,13 @@ export function revokeOtherOwnSessions(me: User, currentToken: string | undefine
   return n;
 }
 
-export type AuditEntry = { at: number; action: string; label: string; actor: string; target: string };
+export type AuditEntry = {
+  at: number;
+  action: string;
+  label: string;
+  actor: string;
+  target: string;
+};
 /** Own entries for everyone; family-wide entries only for account admins. Never returns raw targets. */
 export function listAudit(me: User, scope: "me" | "family", limit = 100): AuditEntry[] {
   if (scope === "family" && !userCan(me, "users"))

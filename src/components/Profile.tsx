@@ -29,7 +29,11 @@ import {
 } from "@/lib/profile-schema";
 
 const fmt = (t: number) =>
-  new Intl.DateTimeFormat("hu-HU", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Budapest" }).format(t);
+  new Intl.DateTimeFormat("hu-HU", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Budapest",
+  }).format(t);
 const STRENGTH = ["Túl rövid", "Gyenge", "Megfelelő", "Erős"];
 
 function useRunner() {
@@ -57,7 +61,10 @@ function useRunner() {
 function Msg({ m }: { m: { ok: boolean; text: string } | null }) {
   if (!m) return null;
   return (
-    <p role={m.ok ? "status" : "alert"} className={`text-sm ${m.ok ? "text-muted-foreground" : "text-destructive"}`}>
+    <p
+      role={m.ok ? "status" : "alert"}
+      className={`text-sm ${m.ok ? "text-muted-foreground" : "text-destructive"}`}
+    >
       {m.text}
     </p>
   );
@@ -132,7 +139,13 @@ function ProfileCard({ p }: { p: P }) {
         </div>
         <label className="grid gap-1 text-sm">
           Megjelenített név
-          <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} required className="h-11" />
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={60}
+            required
+            className="h-11"
+          />
         </label>
         <p className="text-xs text-muted-foreground">
           A felhasználónév (@{p.username}) a belépéshez kell, és biztonsági okból nem módosítható.
@@ -141,7 +154,13 @@ function ProfileCard({ p }: { p: P }) {
           <legend className="mb-1 text-sm">Profilikon</legend>
           <div className="profile-pick">
             {AVATAR_ICONS.map((i) => (
-              <button type="button" key={i} aria-pressed={icon === i} aria-label={AVATAR_ICON_LABELS[i]} onClick={() => setIcon(i)}>
+              <button
+                type="button"
+                key={i}
+                aria-pressed={icon === i}
+                aria-label={AVATAR_ICON_LABELS[i]}
+                onClick={() => setIcon(i)}
+              >
                 <UserAvatar name={name || p.username} avatar={{ icon: i, color }} size={36} />
               </button>
             ))}
@@ -151,7 +170,13 @@ function ProfileCard({ p }: { p: P }) {
           <legend className="mb-1 text-sm">Szín</legend>
           <div className="profile-pick">
             {AVATAR_COLORS.map((c) => (
-              <button type="button" key={c} aria-pressed={color === c} aria-label={AVATAR_COLOR_LABELS[c]} onClick={() => setColor(c)}>
+              <button
+                type="button"
+                key={c}
+                aria-pressed={color === c}
+                aria-label={AVATAR_COLOR_LABELS[c]}
+                onClick={() => setColor(c)}
+              >
                 <UserAvatar name={name || p.username} avatar={{ icon, color: c }} size={36} />
               </button>
             ))}
@@ -180,21 +205,52 @@ function PasswordCard({ username, displayName }: { username: string; displayName
           e.preventDefault();
           void run(async () => {
             if (f.next !== f.again) throw new Error("A két új jelszó nem egyezik.");
-            const r = await change({ data: { current: f.current, next: f.next, signOutOthers: f.others } });
+            const r = await change({
+              data: { current: f.current, next: f.next, signOutOthers: f.others },
+            });
             setF({ current: "", next: "", again: "", others: true });
-            return r.signedOut ? `Jelszó módosítva, ${r.signedOut} másik eszköz kijelentkeztetve.` : "Jelszó módosítva.";
+            return r.signedOut
+              ? `Jelszó módosítva, ${r.signedOut} másik eszköz kijelentkeztetve.`
+              : "Jelszó módosítva.";
           }, [["sessions"], ["audit"]]);
         }}
       >
-        <Input type="password" autoComplete="current-password" required aria-label="Jelenlegi jelszó" placeholder="Jelenlegi jelszó" value={f.current} onChange={(e) => setF({ ...f, current: e.target.value })} className="h-11" />
-        <Input type="password" autoComplete="new-password" required aria-label="Új jelszó" placeholder="Új jelszó (legalább 10 karakter)" value={f.next} onChange={(e) => setF({ ...f, next: e.target.value })} className="h-11" />
+        <Input
+          type="password"
+          autoComplete="current-password"
+          required
+          aria-label="Jelenlegi jelszó"
+          placeholder="Jelenlegi jelszó"
+          value={f.current}
+          onChange={(e) => setF({ ...f, current: e.target.value })}
+          className="h-11"
+        />
+        <Input
+          type="password"
+          autoComplete="new-password"
+          required
+          aria-label="Új jelszó"
+          placeholder="Új jelszó (legalább 10 karakter)"
+          value={f.next}
+          onChange={(e) => setF({ ...f, next: e.target.value })}
+          className="h-11"
+        />
         {f.next && (
           <p className="text-sm text-muted-foreground">
             Erősség: <strong>{STRENGTH[s]}</strong>
             {problem ? ` – ${problem}` : ""}
           </p>
         )}
-        <Input type="password" autoComplete="new-password" required aria-label="Új jelszó újra" placeholder="Új jelszó újra" value={f.again} onChange={(e) => setF({ ...f, again: e.target.value })} className="h-11" />
+        <Input
+          type="password"
+          autoComplete="new-password"
+          required
+          aria-label="Új jelszó újra"
+          placeholder="Új jelszó újra"
+          value={f.again}
+          onChange={(e) => setF({ ...f, again: e.target.value })}
+          className="h-11"
+        />
         <label className="flex min-h-11 items-center justify-between gap-3 text-sm">
           Minden más eszközömről jelentkeztessen ki
           <Switch checked={f.others} onCheckedChange={(v) => setF({ ...f, others: v })} />
@@ -217,7 +273,8 @@ function SessionsCard() {
   return (
     <Card title="Bejelentkezett eszközeim">
       <p className="mb-3 text-sm text-muted-foreground">
-        Az eszköz nevét a böngésző által belépéskor küldött adatokból becsüljük; helyet és IP-címet nem tárolunk.
+        Az eszköz nevét a böngésző által belépéskor küldött adatokból becsüljük; helyet és IP-címet
+        nem tárolunk.
       </p>
       {q.isLoading && <p className="text-muted-foreground">Betöltés…</p>}
       {q.error && <p role="alert">{(q.error as Error).message}</p>}
@@ -228,7 +285,8 @@ function SessionsCard() {
               <MonitorSmartphone className="h-5 w-5 flex-none text-muted-foreground" />
               <div className="min-w-0">
                 <div className="font-medium">
-                  {s.device} {s.current && <span className="text-xs text-primary">· ez az eszköz</span>}
+                  {s.device}{" "}
+                  {s.current && <span className="text-xs text-primary">· ez az eszköz</span>}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Belépés: {fmt(s.createdAt)} · Lejár: {fmt(s.expiresAt)}
@@ -237,10 +295,22 @@ function SessionsCard() {
             </div>
             {s.current ? (
               <Button variant="outline" size="sm" asChild>
-                <a href="/__logout"><LogOut /> Kijelentkezés</a>
+                <a href="/__logout">
+                  <LogOut /> Kijelentkezés
+                </a>
               </Button>
             ) : (
-              <Button variant="outline" size="sm" disabled={busy} onClick={() => void run(async () => { await revoke({ data: { id: s.id } }); return "Eszköz kijelentkeztetve."; }, [["sessions"], ["audit"]])}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await revoke({ data: { id: s.id } });
+                    return "Eszköz kijelentkeztetve.";
+                  }, [["sessions"], ["audit"]])
+                }
+              >
                 <LogOut /> Kijelentkeztetés
               </Button>
             )}
@@ -254,24 +324,35 @@ function SessionsCard() {
           disabled={busy}
           onClick={() => {
             if (confirm("Minden más eszközödről kijelentkeztetsz?"))
-              void run(async () => `${(await others()).count} eszköz kijelentkeztetve.`, [["sessions"], ["audit"]]);
+              void run(
+                async () => `${(await others()).count} eszköz kijelentkeztetve.`,
+                [["sessions"], ["audit"]],
+              );
           }}
         >
           Minden más eszköz kijelentkeztetése
         </Button>
       )}
-      <div className="mt-2"><Msg m={msg} /></div>
+      <div className="mt-2">
+        <Msg m={msg} />
+      </div>
     </Card>
   );
 }
 
 function AuditCard() {
-  const q = useQuery({ queryKey: ["audit", "me"], queryFn: () => auditList({ data: { scope: "me" } }), retry: false });
+  const q = useQuery({
+    queryKey: ["audit", "me"],
+    queryFn: () => auditList({ data: { scope: "me" } }),
+    retry: false,
+  });
   return (
     <Card title="Fiókom eseményei">
       {q.isLoading && <p className="text-muted-foreground">Betöltés…</p>}
       {q.error && <p role="alert">{(q.error as Error).message}</p>}
-      {q.data?.length === 0 && <p className="text-sm text-muted-foreground">Még nincs rögzített esemény.</p>}
+      {q.data?.length === 0 && (
+        <p className="text-sm text-muted-foreground">Még nincs rögzített esemény.</p>
+      )}
       <div>
         {q.data?.slice(0, 30).map((a, i) => (
           <div key={i} className="audit-row">

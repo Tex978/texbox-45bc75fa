@@ -233,11 +233,11 @@ export function Family() {
                   value={child.icon}
                   onChange={(e) => setChild({ ...child, icon: e.target.value })}
                 >
-{AVATAR_ICONS.filter((i) => i !== "initials").map((i) => (
-                  <option key={i} value={i}>
-                    {AVATAR_ICON_LABELS[i]}
-                  </option>
-                ))}
+                  {AVATAR_ICONS.filter((i) => i !== "initials").map((i) => (
+                    <option key={i} value={i}>
+                      {AVATAR_ICON_LABELS[i]}
+                    </option>
+                  ))}
                 </select>
                 <Button className="h-11">
                   <Baby />
@@ -253,7 +253,11 @@ export function Family() {
               {data.children.map((c) => (
                 <section key={c.id} className="family-card">
                   <div className="family-head">
-                    <UserAvatar name={c.displayName} avatar={{ icon: c.icon as never, color: "c2" }} size={40} />
+                    <UserAvatar
+                      name={c.displayName}
+                      avatar={{ icon: c.icon as never, color: "c2" }}
+                      size={40}
+                    />
                     <div className="min-w-0 flex-1">
                       <strong>{c.displayName}</strong>
                       <p className="text-xs text-muted-foreground">
@@ -295,11 +299,11 @@ export function Family() {
                       aria-label={`${c.displayName} ikonja`}
                       className="h-11 rounded-md border border-input bg-background px-3"
                     >
-{AVATAR_ICONS.filter((i) => i !== "initials").map((i) => (
-                  <option key={i} value={i}>
-                    {AVATAR_ICON_LABELS[i]}
-                  </option>
-                ))}
+                      {AVATAR_ICONS.filter((i) => i !== "initials").map((i) => (
+                        <option key={i} value={i}>
+                          {AVATAR_ICON_LABELS[i]}
+                        </option>
+                      ))}
                     </select>
                     <Button variant="secondary">Mentés</Button>
                   </form>
@@ -443,7 +447,10 @@ export function Family() {
                                     onCheckedChange={(v) =>
                                       void run(() =>
                                         update({
-                                          data: { id: u.id, permissions: { ...u.permissions, [p]: v } },
+                                          data: {
+                                            id: u.id,
+                                            permissions: { ...u.permissions, [p]: v },
+                                          },
                                         }),
                                       )
                                     }
@@ -455,8 +462,8 @@ export function Family() {
                         );
                       })}
                       <p className="text-xs text-muted-foreground">
-                        Kapcsolatok/titkos adatok és családtagok kezelése csak adminé. Jelenetekhez és
-                        egyes eszközökhöz a Jelenetek oldalon adható külön engedély; szobánkénti
+                        Kapcsolatok/titkos adatok és családtagok kezelése csak adminé. Jelenetekhez
+                        és egyes eszközökhöz a Jelenetek oldalon adható külön engedély; szobánkénti
                         jogosultság még nincs.
                       </p>
                     </div>
@@ -480,7 +487,13 @@ function FamilyAudit() {
   });
   const [kind, setKind] = useState("all");
   const rows = (q.data ?? []).filter((a) =>
-    kind === "all" ? true : kind === "family" ? a.action.startsWith("user-") || a.action.startsWith("child-") || a.action === "sessions-revoke" : !a.action.startsWith("user-") && !a.action.startsWith("child-"),
+    kind === "all"
+      ? true
+      : kind === "family"
+        ? a.action.startsWith("user-") ||
+          a.action.startsWith("child-") ||
+          a.action === "sessions-revoke"
+        : !a.action.startsWith("user-") && !a.action.startsWith("child-"),
   );
   return (
     <Card title="Fiókesemények (admin)">

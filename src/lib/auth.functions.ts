@@ -215,9 +215,12 @@ const self = (): User => {
       "A saját profil a Synology NAS-on kezelhető; ez az előnézet nem éri el a családi fiókokat, így itt semmi nem mentődik.",
     );
   if (authStorageUnavailable())
-    throw new Error("A NAS fióktárolója nem olvasható. A fiókbeállítások biztonsági okból szünetelnek.");
+    throw new Error(
+      "A NAS fióktárolója nem olvasható. A fiókbeállítások biztonsági okból szünetelnek.",
+    );
   const u = requirePermission(getCookie(SESSION_COOKIE));
-  if (!u) throw new Error("Saját profilhoz előbb hozd létre az admin fiókot a NAS-címeden (/__setup).");
+  if (!u)
+    throw new Error("Saját profilhoz előbb hozd létre az admin fiókot a NAS-címeden (/__setup).");
   return u;
 };
 export const profileGet = createServerFn({ method: "GET" }).handler(async () => {

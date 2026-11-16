@@ -48,7 +48,8 @@ import {
   sessionsRevokeOthers,
 } from "@/lib/auth.functions";
 
-const ANDROID = "Mozilla/5.0 (Linux; Android 14; Pixel) AppleWebKit Chrome/120 Mobile Safari/537.36";
+const ANDROID =
+  "Mozilla/5.0 (Linux; Android 14; Pixel) AppleWebKit Chrome/120 Mobile Safari/537.36";
 const PC = "Mozilla/5.0 (Windows NT 10.0) AppleWebKit Chrome/120 Safari/537.36 Edg/120";
 let dir: string, owner: User, anna: User, kid: User;
 const tok = (u: string, pw: string, ua: string) => {
@@ -61,26 +62,49 @@ beforeEach(() => {
   process.env["DATA_DIR"] = dir;
   resetAuthDb();
   owner = createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
-  anna = createUser({ username: "anna", displayName: "Anna", role: "adult", password: "jelszo123" });
-  kid = createUser({ username: "bence", displayName: "Bence", role: "child", password: "jelszo123" });
+  anna = createUser({
+    username: "anna",
+    displayName: "Anna",
+    role: "adult",
+    password: "jelszo123",
+  });
+  kid = createUser({
+    username: "bence",
+    displayName: "Bence",
+    role: "child",
+    password: "jelszo123",
+  });
   ctx.token = undefined;
 });
 
 describe("1b own profile", () => {
   it("creates the pre-profile snapshot and keeps old password hashes and sessions", () => {
-    const before = (db()!.prepare("SELECT password_hash FROM users WHERE id=?").get(owner.id) as { password_hash: string }).password_hash;
+    const before = (
+      db()!.prepare("SELECT password_hash FROM users WHERE id=?").get(owner.id) as {
+        password_hash: string;
+      }
+    ).password_hash;
     const t = tok("apa", "jelszo123", PC);
     resetAuthDb();
     expect(existsSync(join(dir, "backups", "pre-profile-phase1b.db"))).toBe(true);
-    expect((db()!.prepare("SELECT password_hash FROM users WHERE id=?").get(owner.id) as { password_hash: string }).password_hash).toBe(before);
+    expect(
+      (
+        db()!.prepare("SELECT password_hash FROM users WHERE id=?").get(owner.id) as {
+          password_hash: string;
+        }
+      ).password_hash,
+    ).toBe(before);
     expect(sessionUser(t)?.id).toBe(owner.id);
     expect(getUser(owner.id)?.avatar).toEqual({ icon: "initials", color: "c1" });
   });
   it("saves name/avatar for the caller only, visible from a second browser and after restart", async () => {
-    const pc = tok("anna", "jelszo123", PC), phone = tok("anna", "jelszo123", ANDROID);
+    const pc = tok("anna", "jelszo123", PC),
+      phone = tok("anna", "jelszo123", ANDROID);
     ctx.token = pc;
     const p = await profileGet();
-    await profileUpdate({ data: { displayName: "Anna Néni", icon: "cat", color: "c4", version: p.version } });
+    await profileUpdate({
+      data: { displayName: "Anna Néni", icon: "cat", color: "c4", version: p.version },
+    });
     resetAuthDb();
     ctx.token = phone;
     const me = await getMe();
@@ -91,8 +115,12 @@ describe("1b own profile", () => {
   it("rejects stale versions, bad icons and works only with a session", async () => {
     ctx.token = tok("anna", "jelszo123", PC);
     await profileUpdate({ data: { displayName: "A", icon: "sun", color: "c2", version: 0 } });
-    await expect(profileUpdate({ data: { displayName: "B", icon: "sun", color: "c2", version: 0 } })).rejects.toThrow("másik eszközön");
-    await expect(profileUpdate({ data: { displayName: "B", icon: "<script>", color: "c2", version: 1 } })).rejects.toThrow("Érvénytelen");
+    await expect(
+      profileUpdate({ data: { displayName: "B", icon: "sun", color: "c2", version: 0 } }),
+    ).rejects.toThrow("másik eszközön");
+    await expect(
+      profileUpdate({ data: { displayName: "B", icon: "<script>", color: "c2", version: 1 } }),
+    ).rejects.toThrow("Érvénytelen");
     ctx.token = undefined;
     await expect(profileGet()).rejects.toThrow("Bejelentkezés");
     ctx.token = "forged";
@@ -100,8 +128,12 @@ describe("1b own profile", () => {
   });
   it("child login edits only itself and cannot raise its own permissions", async () => {
     ctx.token = tok("bence", "jelszo123", ANDROID);
-    await profileUpdate({ data: { displayName: "Bence", icon: "rocket", color: "c3", version: 0 } });
-    await expect(familyUpdate({ data: { id: kid.id, permissions: { users: true, settings: true } } })).rejects.toThrow();
+    await profileUpdate({
+      data: { displayName: "Bence", icon: "rocket", color: "c3", version: 0 },
+    });
+    await expect(
+      familyUpdate({ data: { id: kid.id, permissions: { users: true, settings: true } } }),
+    ).rejects.toThrow();
     await expect(auditList({ data: { scope: "family" } })).rejects.toThrow();
     ctx.token = tok("anna", "jelszo123", PC);
     await expect(familyUpdate({ data: { id: anna.id, role: "admin" } })).rejects.toThrow();
@@ -111,13 +143,22 @@ describe("1b own profile", () => {
 
 describe("1b password", () => {
   it("requires the current password, validates strength and can sign out other devices", async () => {
-    const pc = tok("anna", "jelszo123", PC), phone = tok("anna", "jelszo123", ANDROID);
+    const pc = tok("anna", "jelszo123", PC),
+      phone = tok("anna", "jelszo123", ANDROID);
     const other = tok("apa", "jelszo123", PC);
     ctx.token = pc;
-    await expect(passwordChange({ data: { current: "rossz", next: "Uj-Jelszo-2026", signOutOthers: true } })).rejects.toThrow("jelenlegi");
-    await expect(passwordChange({ data: { current: "jelszo123", next: "rovid", signOutOthers: true } })).rejects.toThrow("10");
-    await expect(passwordChange({ data: { current: "jelszo123", next: "annaanna2026", signOutOthers: true } })).rejects.toThrow("nevedet");
-    const r = await passwordChange({ data: { current: "jelszo123", next: "Kek-Hegy-2026", signOutOthers: true } });
+    await expect(
+      passwordChange({ data: { current: "rossz", next: "Uj-Jelszo-2026", signOutOthers: true } }),
+    ).rejects.toThrow("jelenlegi");
+    await expect(
+      passwordChange({ data: { current: "jelszo123", next: "rovid", signOutOthers: true } }),
+    ).rejects.toThrow("10");
+    await expect(
+      passwordChange({ data: { current: "jelszo123", next: "annaanna2026", signOutOthers: true } }),
+    ).rejects.toThrow("nevedet");
+    const r = await passwordChange({
+      data: { current: "jelszo123", next: "Kek-Hegy-2026", signOutOthers: true },
+    });
     expect(r.signedOut).toBe(1);
     expect(sessionUser(pc)?.id).toBe(anna.id);
     expect(sessionUser(phone)).toBeNull();
@@ -128,8 +169,14 @@ describe("1b password", () => {
   it("locks after 5 wrong current passwords", async () => {
     ctx.token = tok("anna", "jelszo123", PC);
     for (let i = 0; i < 5; i++)
-      await expect(passwordChange({ data: { current: "x", next: "Kek-Hegy-2026", signOutOthers: false } })).rejects.toThrow();
-    await expect(passwordChange({ data: { current: "jelszo123", next: "Kek-Hegy-2026", signOutOthers: false } })).rejects.toThrow("Túl sok");
+      await expect(
+        passwordChange({ data: { current: "x", next: "Kek-Hegy-2026", signOutOthers: false } }),
+      ).rejects.toThrow();
+    await expect(
+      passwordChange({
+        data: { current: "jelszo123", next: "Kek-Hegy-2026", signOutOthers: false },
+      }),
+    ).rejects.toThrow("Túl sok");
   });
   it("invite/reset links keep working unchanged", () => {
     const u = createUser({ username: "nagyi", displayName: "Nagyi", role: "adult" });
@@ -151,19 +198,26 @@ describe("1b sessions", () => {
     const list = await sessionsList();
     expect(list).toHaveLength(2);
     expect(list.filter((s) => s.current)).toHaveLength(1);
-    expect(list.map((s) => s.device).sort()).toEqual(["Chrome · Android (telefon)", "Edge · Windows (számítógép)"]);
-    const hashes = (db()!.prepare("SELECT id_hash FROM sessions").all() as { id_hash: string }[]).map((r) => r.id_hash);
+    expect(list.map((s) => s.device).sort()).toEqual([
+      "Chrome · Android (telefon)",
+      "Edge · Windows (számítógép)",
+    ]);
+    const hashes = (
+      db()!.prepare("SELECT id_hash FROM sessions").all() as { id_hash: string }[]
+    ).map((r) => r.id_hash);
     for (const s of list) expect(hashes).not.toContain(s.id);
     expect(JSON.stringify(list)).not.toContain("Mozilla");
   });
   it("revokes a single other device immediately, protects the current one and others' sessions", async () => {
-    const pc = tok("anna", "jelszo123", PC), phone = tok("anna", "jelszo123", ANDROID);
+    const pc = tok("anna", "jelszo123", PC),
+      phone = tok("anna", "jelszo123", ANDROID);
     const apa = tok("apa", "jelszo123", PC);
     ctx.token = apa;
     const apaSession = (await sessionsList())[0]!;
     ctx.token = pc;
     const list = await sessionsList();
-    const cur = list.find((s) => s.current)!, other = list.find((s) => !s.current)!;
+    const cur = list.find((s) => s.current)!,
+      other = list.find((s) => !s.current)!;
     await expect(sessionRevoke({ data: { id: cur.id } })).rejects.toThrow("jelenlegi");
     await expect(sessionRevoke({ data: { id: apaSession.id } })).rejects.toThrow();
     expect(sessionUser(apa)?.id).toBe(owner.id);
@@ -194,7 +248,9 @@ describe("1b sessions", () => {
 describe("1b audit", () => {
   it("shows own events to everyone, family events only to admins, never raw secrets", async () => {
     ctx.token = tok("anna", "jelszo123", PC);
-    await passwordChange({ data: { current: "jelszo123", next: "Kek-Hegy-2026", signOutOthers: false } });
+    await passwordChange({
+      data: { current: "jelszo123", next: "Kek-Hegy-2026", signOutOthers: false },
+    });
     const mine = await auditList({ data: { scope: "me" } });
     expect(mine.map((a) => a.action)).toContain("password-change");
     expect(mine.every((a) => a.actor === "Anna" || a.target === "Anna")).toBe(true);
