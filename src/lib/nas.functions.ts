@@ -18,6 +18,7 @@ import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 import { filterMedia, mapArrMedia, imdbIdentifier, imdbScore, type MediaType, type MediaCategory, type MediaItem, type MediaDetail } from "./media";
 import { mediaDemo } from "./media-demo";
+import { activeCount, discoverParams, matchesAvailability, matchesRaw, needsDiscover, normalizeFilters, type MediaFilters } from "./media-filters";
 import { homeConnectFailure } from "./home-connect";
 import { mergeThermometerMeta, type ThermometerMeta } from "./thermometer-meta";
 
@@ -241,19 +242,21 @@ async function tmdbItem(x: any, type: MediaType): Promise<MediaItem | null> {
 }
 
 export const browseMedia = createServerFn({ method: "GET" })
-  .inputValidator((d: { type: MediaType; category: MediaCategory; q: string; page: number }) => {
+  .inputValidator((d: { type: MediaType; category: MediaCategory; q: string; page: number; filters?: Partial<MediaFilters> }) => {
     if (!["Film", "Sorozat"].includes(d.type) || !["recommended", "new", "popular", "trending"].includes(d.category)) throw new Error("Ismeretlen kategória.");
-    return { ...d, q: d.q.trim().slice(0, 150), page: Math.max(1, Math.min(50, Math.floor(d.page) || 1)) };
+    return { ...d, q: d.q.trim().slice(0, 150), page: Math.max(1, Math.min(50, Math.floor(d.page) || 1)), filters: normalizeFilters(d.filters, d.type) };
   })
   .handler(async ({ data }) => {
     const app = data.type === "Film" ? "RADARR" : "SONARR";
     const kind = data.type === "Film" ? "movie" : "tv";
-    const result = (items: MediaItem[], notice = "", demo = false, hasMore = false) => ({ items, notice, demo, hasMore });
+    const f = data.filters;
+    const discover = !data.q && needsDiscover(f);
+    const result = (all: MediaItem[], notice = "", demo = false, hasMore = false) => ({ items: all.filter((i) => matchesAvailability(i.inLibrary, f.availability)), notice, demo, hasMore, filtered: activeCount(f) > 0 });
     try {
       if (has("TMDB_TOKEN")) {
-        let path = data.q ? `/search/${kind}` : data.category === "trending" ? `/trending/${kind}/week` : data.category === "new" ? `/discover/${kind}` : `/${kind}/popular`;
+        let path = data.q ? `/search/${kind}` : discover ? `/discover/${kind}` : data.category === "trending" ? `/trending/${kind}/week` : data.category === "new" ? `/discover/${kind}` : `/${kind}/popular`;
         let personalized = false;
-        if (!data.q && data.category === "recommended" && has(app + "_URL", app + "_KEY")) {
+        if (!data.q && !discover && data.category === "recommended" && has(app + "_URL", app + "_KEY")) {
           const owned = await arr(app, kind === "movie" ? "/movie" : "/series");
           const seed = [...owned].filter((x: any) => x.tmdbId).sort((a: any, b: any) => String(b.added).localeCompare(String(a.added)))[0];
           if (seed) { path = `/${kind}/${seed.tmdbId}/recommendations`; personalized = true; }
@@ -262,12 +265,15 @@ export const browseMedia = createServerFn({ method: "GET" })
         const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
         const params: Record<string, string> = { page: String(data.page), include_adult: "false" };
         if (data.q) params["query"] = data.q;
+        if (discover) Object.assign(params, discoverParams(kind, f));
         if (!data.q && data.category === "new") {
-          params["sort_by"] = "popularity.desc";
-          params[kind === "movie" ? "primary_release_date.gte" : "first_air_date.gte"] = since;
-          params[kind === "movie" ? "primary_release_date.lte" : "first_air_date.lte"] = today;
+          if (!discover) params["sort_by"] = "popularity.desc";
+          if (!f.yearFrom) params[kind === "movie" ? "primary_release_date.gte" : "first_air_date.gte"] = since;
+          if (!f.yearTo) params[kind === "movie" ? "primary_release_date.lte" : "first_air_date.lte"] = today;
         }
         const response = await tmdb(path, params);
+        // Text search ignores discover filters, so they are applied to the returned page.
+        if (data.q || data.category === "trending" && !discover) response.results = response.results.filter((x: any) => matchesRaw(x, f));
         const items: MediaItem[] = [];
         // Batches bound simultaneous metadata requests and preserve provider order.
         for (let i = 0; i < response.results.length; i += 4) {
@@ -282,9 +288,9 @@ export const browseMedia = createServerFn({ method: "GET" })
             if (match && item.imdbRating === null) item.imdbRating = imdbScore(match.ratings?.imdb?.value);
           }
         }
-        return result(items, !data.q && data.category === "recommended" && !personalized ? "Személyes előzmény még nincs · népszerű válogatás" : "", false, data.page < response.total_pages);
+        return result(items, !data.q && !discover && data.category === "recommended" && !personalized ? "Személyes előzmény még nincs · népszerű válogatás" : "", false, data.page < response.total_pages);
       }
-      if (!has(app + "_URL", app + "_KEY")) return result(filterMedia(mediaDemo, data.type, data.q), "Bemutató kínálat · nem aktuális vagy személyre szabott ajánlás", true);
+      if (!has(app + "_URL", app + "_KEY")) return result(filterMedia(mediaDemo, data.type, data.q).filter((i) => (!f.yearFrom || i.year >= f.yearFrom) && (!f.yearTo || i.year <= f.yearTo)), "Bemutató kínálat · nem aktuális vagy személyre szabott ajánlás", true);
       if (data.q) {
         const found = await arr(app, `${kind === "movie" ? "/movie" : "/series"}/lookup?term=${encodeURIComponent(data.q)}`);
         return result(found.map((x: any) => mapArrMedia(x, data.type)));
