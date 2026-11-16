@@ -1062,3 +1062,21 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .schedule-on, .schedule-off { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); }
 .schedule-on { color: var(--primary); border-color: var(--primary); }
 .schedule-off { color: var(--muted-foreground); }
+
+/* 7a notification centre */
+.app-profile-slot { display: flex; align-items: center; gap: 4px; }
+.app-bell { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; color: var(--foreground); }
+.app-bell:hover, .app-bell:focus-visible { background: var(--accent); }
+.app-bell-count { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.notif-page { display: grid; gap: 14px; max-width: 860px; }
+.notif-filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.notif-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted-foreground); }
+.notif-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.notif-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+.notif-list li.is-unread { border-left: 4px solid var(--primary); }
+.notif-list li small { display: block; color: var(--muted-foreground); font-size: 12px; }
+.notif-list li strong { display: block; }
+.notif-list li p { margin: 2px 0 0; font-size: 14px; color: var(--muted-foreground); }
+.notif-actions { display: flex; align-items: center; gap: 6px; }
+.notif-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.notif-settings { display: grid; gap: 4px; }
