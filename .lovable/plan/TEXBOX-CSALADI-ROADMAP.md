@@ -184,3 +184,8 @@ Naptár CRUD + ismétlődés + alkalom-kivétel + feladathivatkozás kész izol�
 - Kész: additív `dashboard_prefs` tábla (person_key, verzió), kötelező `backups/pre-dashboard-phase6b.db` snapshot; saját elrendezés minden fióknak, szülő kezeli a gyermekprofilokét; ismeretlen/tiltott kártya és jelenet szűrése; verzióütközés érthető hibával; audit; előnézetben nincs mentés.
 - Szerkesztő: fel/le gombok (billentyűzet, érintés), szem ikon, kedvenc jelenetek sorrendje, Mentés/Mégse, megerősített visszaállítás.
 - Nyitott: 6c konkrét kedvenc eszközök élő állapottal; drag-drop; élő NAS restart/két eszköz teszt.
+
+## 2b/1 – Időzített jelenetek (fejlesztői környezetben kész, NAS-on nyitott)
+- Kész: napi / kiválasztott napok / N hetente / egyszeri szabály, Europe/Budapest (tavaszi rés kimarad, őszi ismétlés csak elsőre), kikapcsolt alapállapot, megerősítő összefoglaló, szerkesztés = újra kikapcsol, jelenet módosítása/törlése leállítja.
+- Ütemező: Node szerverfolyamat, a szerverbelépő betöltésekor és minden kérésnél idempotensen indul; SQLite lease (90 s) biztosítja az egy példányt; UNIQUE(rule_id, slot) atomikus claim; 3 perces türelmi idő, utána „kimaradt”; félbehagyott futás „megszakadt”, nem ismétlődik. Zárat tartalmazó jelenet nem időzíthető. `TEXBOX_SCHEDULER=off` kikapcsolja.
+- Nyitott: élő NAS-ellenőrzés (indulási napló, valódi próbafutás egyeztetett jelenettel), 2b/2 érzékelő-triggerek, értesítések.

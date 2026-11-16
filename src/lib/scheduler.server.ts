@@ -1,8 +1,9 @@
 // Background scheduler bootstrap for the self-hosted Node process (the server entry calls this; idempotent).
-let started: Promise<boolean> | null = null;
+// Process-wide flag survives duplicate module instances (dev reloads, split chunks); the DB lease covers processes.
+const g = globalThis as { __texboxScheduler?: Promise<boolean> };
 export function startScheduler(intervalMs = 20_000) {
-  if (started) return started;
-  started = (async () => {
+  if (g.__texboxScheduler) return g.__texboxScheduler;
+  return (g.__texboxScheduler = (async () => {
     if (typeof process === "undefined" || !process.versions?.node) return false;
     if (process.env["TEXBOX_SCHEDULER"] === "off" || process.env["VITEST"]) return false;
     const auth = await import("./auth.server");
@@ -29,6 +30,5 @@ export function startScheduler(intervalMs = 20_000) {
     timer.unref?.();
     void run();
     return true;
-  })();
-  return started;
+  })());
 }
