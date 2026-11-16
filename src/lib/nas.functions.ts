@@ -6,10 +6,19 @@ import type { Permission } from "./permissions";
 // Family-account permission check (no-op until the first admin account exists).
 const guard = (perm?: Permission) => requirePermission(readBrowserCookie(SESSION_COOKIE), perm);
 // Shared server-side store first (same data on every device), browser cookie as fallback/migration source.
-const getCookie = (name: string): string | undefined => readStoredCookie(name, readBrowserCookie);
+const getCookie = (name: string): string | undefined => {
+  const existing = storeGet(name);
+  if (existing != null) return existing;
+  if (readBrowserCookie(name)) guard("settings"); // Only admins may import missing legacy connection/session settings.
+  return readStoredCookie(name, readBrowserCookie);
+};
 const setCookie = (name: string, value: string, opts: Parameters<typeof writeBrowserCookie>[2]) => {
-  if (!storeSet(name, value) && storeAvailable()) throw new Error("Nem sikerült a Synologyra menteni. Ellenőrizd a data mappa csatolását és írási jogosultságát; a beállítások nem lettek elmentve.");
-  writeBrowserCookie(name, value, opts);
+  const saved = storeSet(name, value);
+  if (!saved && storeAvailable()) throw new Error("Nem sikerült a Synologyra menteni. Ellenőrizd a data mappa csatolását és írási jogosultságát; a beállítások nem lettek elmentve.");
+  if (saved) {
+    // Expire the legacy copy only after durable persistence succeeds.
+    writeBrowserCookie(name, "", { ...opts, maxAge: 0 });
+  } else throw new Error("A titkos kapcsolati adatokhoz tartós NAS-tárolás szükséges.");
 };
 import { md5 } from "./md5";
 import { createSolarCache, SOLAR_SESSION_MS } from "./growatt-cache";
@@ -195,7 +204,7 @@ export const requestMedia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const getStatus = createServerFn({ method: "GET" }).handler(async () => {
+export const getStatus = createServerFn({ method: "GET" }).handler(async () => { guard("settings");
   const ping = async (ok: boolean, p: () => Promise<unknown>) => (!ok ? "nincs beállítva" : (await p().then(() => "ok", (e) => {
     const c = e?.cause; const code = c?.code || c?.cause?.code || "";
     const hint = /ECONNREFUSED/.test(code) ? "a port zárva / rossz port" : /ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT|EHOSTUNREACH/.test(code) ? "időtúllépés: a cím kívülről nem érhető el"
@@ -694,7 +703,7 @@ export const purifierAction = createServerFn({ method: "POST" })
     await x.setPurifier(u, p, xmRegion(), data.did, data.key, data.value);
     return { ok: true };
   });
-export const getLocks = createServerFn({ method: "GET" }).handler(async () => {
+export const getLocks = createServerFn({ method: "GET" }).handler(async () => { guard("locks");
   if (!has("XIAOMI_USER", "XIAOMI_PASS")) return { demo: true, error: "", raw: "", locks: [
     { did: "l1", name: "Bejárati ajtó", model: "xiaomi.lock.d100e", online: true, battery: 82, values: {} as Record<string, string | number | boolean> } ] };
   const x = await import("./xiaomi.server");

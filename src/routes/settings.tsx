@@ -38,12 +38,16 @@ function Settings() {
   const [form, setForm] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(cfg).map(([k, v]) => [k, v === "__set__" ? "" : v])));
   const [saving, setSaving] = useState(false);
   const [greeStatus, setGreeStatus] = useState("");
+  const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
   const save = async () => {
-    setSaving(true);
+    if (saving) return;
+    setSaving(true); setSaved(false);
     setSaveError("");
     try {
-      await saveConfig({ data: form }); await qc.invalidateQueries();
+      await saveConfig({ data: form });
+      setForm((f) => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, secret(k) ? "" : v])));
+      setSaved(true); await qc.invalidateQueries();
       if (form["GREE_USER"] || form["GREE_UNITS"]) {
         const result = await qc.fetchQuery(greeQuery);
         setGreeStatus(result.error || (result.units.length ? `${result.units.length} klíma · ${result.units.filter((unit) => unit.online).length} elérhető` : "Nem találtunk klímát a fiókban."));
@@ -72,9 +76,10 @@ function Settings() {
               {s.key === "media" ? (cfg["TMDB_TOKEN"] ? "TMDB elmentve" : "TMDB nincs csatlakoztatva") + " · " + (cfg["OMDB_KEY"] ? "OMDb elmentve" : "OMDb nincs csatlakoztatva") : s.key === "gree" ? greeStatus : `● ${st === "ok" ? "Elérhető" : st}`}</div>
           </Card>);
       })}</div>
-      <Button onClick={save} disabled={saving} className="mt-6">
+      <div className="settings-save"><Button onClick={save} disabled={saving} >
         {saving ? "Mentés és tesztelés…" : "Mentés és tesztelés"}</Button>
       {saveError && <p role="alert" className="mt-3 text-sm text-destructive">{saveError}</p>}
+      {saved && !saveError && <p role="status" className="text-sm text-muted-foreground">Beállítások elmentve.</p>}</div>
     </Shell>
   );
 }

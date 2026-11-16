@@ -47,6 +47,7 @@ function rowToUser(r: any): User {
   for (const p of db()!.prepare("SELECT key, allowed FROM permissions WHERE user_id=?").all(r.id) as any[]) if ((PERMISSIONS as readonly string[]).includes(p.key)) perms[p.key as Permission] = !!p.allowed;
   return { id: r.id, username: r.username, displayName: r.display_name, role: r.role, disabled: !!r.disabled, hasPassword: !!r.password_hash, permissions: perms };
 }
+export const authStorageUnavailable = () => db() === null && mod<typeof import("node:fs")>("node:fs") !== null;
 export function userCount(): number { const d = db(); return d ? Number((d.prepare("SELECT count(*) c FROM users").get() as any).c) : 0; }
 export function listUsers(): User[] { return (db()!.prepare("SELECT * FROM users ORDER BY created_at").all() as any[]).map(rowToUser); }
 export function getUser(id: string): User | null { const r = db()!.prepare("SELECT * FROM users WHERE id=?").get(id); return r ? rowToUser(r) : null; }
@@ -137,6 +138,7 @@ export function userCan(u: User, p: Permission) { return can(u.role, p, u.permis
 
 /** Server-function guard. Legacy mode (no family accounts yet) keeps the old open/shared-password behaviour. */
 export function requirePermission(sessionToken: string | undefined, perm?: Permission): User | null {
+  if (authStorageUnavailable()) throw new Error("A fiókok tárolója nem elérhető. A belépés biztonsági okból szünetel.");
   if (db() === null || userCount() === 0) return null;
   const u = sessionUser(sessionToken);
   if (!u) throw new Error("Bejelentkezés szükséges.");

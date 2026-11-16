@@ -2,18 +2,18 @@
 // - Family accounts exist in texbox.db: every request needs a valid session (login / invite pages excepted).
 // - No accounts yet + APP_PASSWORD set: the shared password unlocks the first-admin setup page.
 // - No accounts and no APP_PASSWORD (hosted preview): open, as before.
-import { acceptInvite, createUser, db, endSession, inviteUser, login, createSession, sessionMaxAge, sessionUser, SESSION_COOKIE, userCount, audit } from "./auth.server";
+import { authStorageUnavailable, acceptInvite, createUser, db, endSession, inviteUser, login, createSession, sessionMaxAge, sessionUser, SESSION_COOKIE, userCount, audit } from "./auth.server";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const html = (body: string, status = 200, headers: Record<string, string> = {}) => new Response(`<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>TexBox – belépés</title>
-<style>:root{color-scheme:dark}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 0%,#1d2733,#0f1216 60%);color:#e9edf2;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-form{display:grid;gap:12px;width:min(340px,88vw);padding:28px;border-radius:20px;background:#161b21;border:1px solid #27303a;box-shadow:0 20px 60px #0008}
+<style>*,*::before,*::after{box-sizing:border-box}:root{color-scheme:dark}body{margin:0;padding:16px;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 30% 0%,#1d2733,#0f1216 60%);color:#e9edf2;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+form{display:grid;gap:12px;width:min(396px,calc(100vw - 32px));padding:28px;border-radius:20px;background:#161b21;border:1px solid #27303a;box-shadow:0 20px 60px #0008}
 h1{margin:0 0 4px;font-size:22px}p{margin:0;color:#97a3b0;font-size:14px;line-height:1.45}label{display:grid;gap:6px;font-size:13px;color:#b7c1cc}
 input,button{padding:13px 14px;border-radius:12px;border:1px solid #2c3642;background:#0f1318;color:#e9edf2;font-size:16px}button{background:#7cc4f0;color:#0b1520;border:0;font-weight:700;cursor:pointer;margin-top:4px}
 .err{background:#3a1717;border:1px solid #6b2a2a;color:#ffc9c9;padding:10px 12px;border-radius:10px;font-size:14px}</style></head><body>${body}</body></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", ...headers } });
 const field = (name: string, label: string, type = "text", extra = "") => `<label>${label}<input name="${name}" type="${type}" ${extra}></label>`;
-const err = (e?: string) => (e ? `<div class="err">${esc(e)}</div>` : "");
-const loginPage = (e?: string) => html(`<form method="post" action="/__login"><h1>TexBox</h1><p>Jelentkezz be a saját fiókoddal.</p>${err(e)}${field("username", "Felhasználónév", "text", 'autocomplete="username" autocapitalize="none" required autofocus')}${field("pw", "Jelszó", "password", 'autocomplete="current-password" required')}<button>Belépés</button></form>`, e ? 401 : 200);
+const err = (e?: string) => (e ? `<div class="err" role="alert">${esc(e)}</div>` : "");
+const loginPage = (e?: string) => html(`<form method="post" action="/__login"><h1>TexBox</h1><p>Jelentkezz be a saját fiókoddal.</p>${err(e)}${field("username", "Felhasználónév", "text", 'autocomplete="username" autocapitalize="none" required autofocus')}${field("pw", "Jelszó", "password", 'autocomplete="current-password" required')}<button>Belépés</button><p>Elfelejtett jelszóhoz kérj új linket az admintól.</p></form>`, e ? 401 : 200);
 const setupPage = (e?: string) => html(`<form method="post" action="/__setup"><h1>Első admin fiók</h1><p>Add meg a régi közös jelszót (APP_PASSWORD), majd hozd létre a saját admin fiókodat.</p>${err(e)}${field("legacy", "Régi közös jelszó", "password", "required")}${field("username", "Felhasználónév", "text", 'autocapitalize="none" required')}${field("name", "Megjelenített név")}${field("pw", "Új jelszó (min. 8 karakter)", "password", 'autocomplete="new-password" minlength="8" required')}<button>Admin létrehozása</button></form>`, e ? 400 : 200);
 const invitePage = (t: string, name: string, e?: string) => html(`<form method="post" action="/__invite"><h1>Szia, ${esc(name)}!</h1><p>Állítsd be a jelszavadat a TexBoxhoz.</p>${err(e)}<input type="hidden" name="t" value="${esc(t)}">${field("pw", "Új jelszó (min. 8 karakter)", "password", 'autocomplete="new-password" minlength="8" required autofocus')}<button>Jelszó mentése</button></form>`, e ? 400 : 200);
 
@@ -31,6 +31,12 @@ function same(a: string, b: string) { if (a.length !== b.length) return false; l
 
 export async function gate(request: Request): Promise<Response | null> {
   const url = new URL(request.url); const path = url.pathname; const post = request.method === "POST";
+  if (authStorageUnavailable()) return html('<form><h1>A belépés átmenetileg nem elérhető</h1><p>A fiókok tárolója nem olvasható. Ellenőrizd a NAS data mappáját.</p></form>', 503);
+  if (post && path.startsWith("/__")) {
+    const origin = request.headers.get("origin");
+    const expected = `${https(request) ? "https" : "http"}://${request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host}`;
+    if (origin && origin !== expected) return new Response("Nem engedélyezett kérés.", { status: 403 });
+  }
   const legacy = process.env["APP_PASSWORD"];
   const hasDb = db() !== null; const accounts = hasDb ? userCount() : 0;
 

@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { getCookie } from "@tanstack/react-start/server";
 export const Route = createFileRoute("/api/plex-thumb")({
   server: { handlers: { GET: async ({ request }) => {
-    const { readStoredCookie } = await import("@/lib/shared-store.server");
+    const { storeGet } = await import("@/lib/shared-store.server");
     let cfg: Record<string, string> = {};
-    const saved = readStoredCookie("nas-cfg", getCookie);
+    const saved = storeGet("nas-cfg");
     try { cfg = JSON.parse(saved || "{}"); } catch { /* ignore invalid JSON */ }
     const path = new URL(request.url).searchParams.get("path") || "";
     let base = (cfg["PLEX_URL"] || process.env["PLEX_URL"] || "").trim().replace(/\/+$/, "");
