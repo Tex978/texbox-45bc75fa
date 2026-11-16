@@ -407,7 +407,12 @@ export function decideRedemption(
         .prepare("UPDATE rewards SET stock=stock+1 WHERE id=? AND stock IS NOT NULL")
         .run(r.reward_id);
     event(u, r.id, next, reason);
-    notifyRedemption(u, { id: r.id, rewardName: r.reward_name, personKey: r.person_key }, next, reason);
+    notifyRedemption(
+      u,
+      { id: r.id, rewardName: r.reward_name, personKey: r.person_key },
+      next,
+      reason,
+    );
     return { status: next };
   });
 }

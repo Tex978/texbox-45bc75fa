@@ -2,7 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createUser, createChildProfile, createSession, resetAuthDb, db, updateUser, type User } from "@/lib/auth.server";
+import {
+  createUser,
+  createChildProfile,
+  createSession,
+  resetAuthDb,
+  db,
+  updateUser,
+  type User,
+} from "@/lib/auth.server";
 import { saveTask, listTasks, actOnTask } from "@/lib/tasks.server";
 import { adjustPoints, saveReward, redeem, decideRedemption } from "@/lib/points.server";
 import { saveEvent } from "@/lib/calendar.server";
@@ -46,7 +54,8 @@ const task = (p: Partial<TaskInput> = {}): TaskInput => ({
   dates: [],
   ...p,
 });
-const occ = (u: User, id: string) => listTasks(u, now).occurrences.find((v) => v.templateId === id)!;
+const occ = (u: User, id: string) =>
+  listTasks(u, now).occurrences.find((v) => v.templateId === id)!;
 const titles = (u: User) => inbox(u).items.map((i) => i.title);
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "texbox-notif-"));
@@ -77,7 +86,9 @@ describe("7a notification centre", () => {
     o = occ(mom, t);
     actOnTask(dad, { id: o.id, version: o.version, action: "approve" });
     // The other parent's stale parallel decision fails and creates nothing.
-    expect(() => actOnTask(mom, { id: o.id, version: o.version, action: "reject", reason: "x" })).toThrow();
+    expect(() =>
+      actOnTask(mom, { id: o.id, version: o.version, action: "reject", reason: "x" }),
+    ).toThrow();
     expect(titles(kid)).toEqual(["Mosogatás: jóváhagyva"]);
     resetAuthDb();
     expect(inbox(dad).items).toHaveLength(1);
@@ -102,8 +113,23 @@ describe("7a notification centre", () => {
     expect(inbox(dad).items).toEqual([]);
   });
   it("child reward request notifies parents; rejection notifies the child", () => {
-    adjustPoints(dad, { person: `user:${kid.id}`, delta: 50, reason: "Kezdő pont", requestId: "a" });
-    const r = saveReward(dad, { name: "Mozi", description: "", category: "", price: 20, stock: null, eligible: [], image: "", active: true, archived: false });
+    adjustPoints(dad, {
+      person: `user:${kid.id}`,
+      delta: 50,
+      reason: "Kezdő pont",
+      requestId: "a",
+    });
+    const r = saveReward(dad, {
+      name: "Mozi",
+      description: "",
+      category: "",
+      price: 20,
+      stock: null,
+      eligible: [],
+      image: "",
+      active: true,
+      archived: false,
+    });
     const red = redeem(kid, { rewardId: r, requestId: "q1", expectedPrice: 20 });
     expect(titles(mom)).toEqual(["Bence jutalmat kér: Mozi"]);
     expect(titles(dad)).toEqual(["Bence jutalmat kér: Mozi"]);
@@ -135,7 +161,13 @@ describe("7a notification centre", () => {
     expect(db()!.prepare("SELECT count(*) c FROM notifications").get()).toEqual({ c: 0 });
   });
   it("calendar reminders fire once in the window, never late, Budapest time", async () => {
-    saveEvent(mom, { title: "Fogorvos", date: "2026-11-17", start: "10:00", end: "11:00", remind: true });
+    saveEvent(mom, {
+      title: "Fogorvos",
+      date: "2026-11-17",
+      start: "10:00",
+      end: "11:00",
+      remind: true,
+    });
     saveEvent(mom, { title: "Csendes", date: "2026-11-17", start: "10:00", end: "11:00" });
     // 10:00 Budapest = 09:00Z; 1h lead → 08:00Z
     expect(await reminderTick(Date.UTC(2026, 10, 17, 7, 59))).toBe(0);
@@ -144,15 +176,30 @@ describe("7a notification centre", () => {
     resetAuthDb();
     expect(await reminderTick(Date.UTC(2026, 10, 17, 8, 2))).toBe(0);
     expect(titles(mom)).toEqual(["Közelgő: Fogorvos"]);
-    saveEvent(mom, { title: "Késő", date: "2026-11-18", start: "10:00", end: "11:00", remind: true });
+    saveEvent(mom, {
+      title: "Késő",
+      date: "2026-11-18",
+      start: "10:00",
+      end: "11:00",
+      remind: true,
+    });
     expect(await reminderTick(Date.UTC(2026, 10, 18, 8, 30))).toBe(0);
   });
   it("DST: summer reminder uses CEST offset", async () => {
-    saveEvent(mom, { title: "Nyári", date: "2026-03-29", start: "03:30", end: "04:00", remind: true });
+    saveEvent(mom, {
+      title: "Nyári",
+      date: "2026-03-29",
+      start: "03:30",
+      end: "04:00",
+      remind: true,
+    });
     expect(await reminderTick(Date.UTC(2026, 2, 29, 0, 31))).toBeGreaterThan(0);
   });
   it("task reminders only for the assignee with reminder on", async () => {
-    saveTask(mom, task({ assignee: `user:${kid.id}`, reminder: true, start: "2026-11-17", time: "18:00" }));
+    saveTask(
+      mom,
+      task({ assignee: `user:${kid.id}`, reminder: true, start: "2026-11-17", time: "18:00" }),
+    );
     saveTask(mom, task({ assignee: `user:${kid.id}`, start: "2026-11-17", title: "Nincs" }));
     await reminderTick(Date.UTC(2026, 10, 17, 16, 1));
     expect(titles(kid)).toEqual(["Határidő közeleg: Mosogatás"]);

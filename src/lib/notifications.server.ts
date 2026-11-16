@@ -14,7 +14,9 @@ export const REMINDER_GRACE_MS = 10 * 60_000;
 const store = () => {
   const d = db();
   if (!d)
-    throw new Error("Az értesítések csak a saját NAS-on tárolódnak; az előnézet nem mutat értesítést.");
+    throw new Error(
+      "Az értesítések csak a saját NAS-on tárolódnak; az előnézet nem mutat értesítést.",
+    );
   return d;
 };
 const active = (user: User) => {
@@ -35,7 +37,14 @@ export const parents = () =>
 /** Never throws: a notification failure must not roll back the business transaction it rides in. */
 export function emit(
   recipientId: string,
-  n: { kind: NotificationKind; source: string; event: string; title: string; body?: string; link: (typeof LINKS)[number] },
+  n: {
+    kind: NotificationKind;
+    source: string;
+    event: string;
+    title: string;
+    body?: string;
+    link: (typeof LINKS)[number];
+  },
   now = Date.now(),
 ) {
   try {
@@ -46,8 +55,16 @@ export function emit(
         .prepare(
           "INSERT OR IGNORE INTO notifications(recipient,kind,source,event,title,body,link,created_at) VALUES(?,?,?,?,?,?,?,?)",
         )
-        .run(u.id, n.kind, n.source, n.event, n.title.slice(0, 120), (n.body ?? "").slice(0, 300), n.link, now)
-        .changes === 1
+        .run(
+          u.id,
+          n.kind,
+          n.source,
+          n.event,
+          n.title.slice(0, 120),
+          (n.body ?? "").slice(0, 300),
+          n.link,
+          now,
+        ).changes === 1
     );
   } catch (e) {
     console.error("notification emit failed", (e as Error).message);
@@ -56,9 +73,9 @@ export function emit(
 }
 const nameOf = (key: string) => {
   if (key.startsWith("user:")) return getUser(key.slice(5))?.displayName ?? "Családtag";
-  const r = db()?.prepare("SELECT display_name FROM child_profiles WHERE id=?").get(key.slice(8)) as
-    | { display_name: string }
-    | undefined;
+  const r = db()
+    ?.prepare("SELECT display_name FROM child_profiles WHERE id=?")
+    .get(key.slice(8)) as { display_name: string } | undefined;
   return r?.display_name ?? "Gyermek";
 };
 /** Notify the decision subject: the login account itself, or for managed profiles the other parents. */
@@ -86,14 +103,20 @@ export function notifyTask(
           body: o.points ? `${o.points} pont jóváhagyásra vár.` : "Jóváhagyásra vár.",
           link: "/tasks",
         });
-  const labels: Record<string, string> = { approved: "jóváhagyva", returned: "visszaküldve", rejected: "elutasítva" };
+  const labels: Record<string, string> = {
+    approved: "jóváhagyva",
+    returned: "visszaküldve",
+    rejected: "elutasítva",
+  };
   if (labels[status])
     toSubject(o.assignee, actor.id, {
       kind: "task",
       source: `task:${o.id}`,
       event: `${status}:${o.version}`,
       title: `${o.title}: ${labels[status]}`,
-      body: o.assignee.startsWith("profile:") ? `${who} feladata.${reason ? ` ${reason}` : ""}` : reason,
+      body: o.assignee.startsWith("profile:")
+        ? `${who} feladata.${reason ? ` ${reason}` : ""}`
+        : reason,
       link: "/tasks",
     });
 }
@@ -115,14 +138,20 @@ export function notifyRedemption(
           body: "A pontok lefoglalva, döntésre vár.",
           link: "/rewards",
         });
-  const labels: Record<string, string> = { awaiting: "jóváhagyva", rejected: "elutasítva", handed: "átadva" };
+  const labels: Record<string, string> = {
+    awaiting: "jóváhagyva",
+    rejected: "elutasítva",
+    handed: "átadva",
+  };
   if (labels[status])
     toSubject(r.personKey, actor.id, {
       kind: "reward",
       source: `redeem:${r.id}`,
       event: status,
       title: `${r.rewardName}: ${labels[status]}`,
-      body: r.personKey.startsWith("profile:") ? `${who} kérése.${reason ? ` ${reason}` : ""}` : reason,
+      body: r.personKey.startsWith("profile:")
+        ? `${who} kérése.${reason ? ` ${reason}` : ""}`
+        : reason,
       link: "/rewards",
     });
 }
@@ -138,40 +167,63 @@ export function inbox(user: User, filter: InboxFilter = "all") {
     .prepare(
       `SELECT id,kind,title,body,link,created_at createdAt,read_at readAt FROM notifications WHERE recipient=?${where} ORDER BY id DESC LIMIT 100`,
     )
-    .all(...args) as { id: number; kind: NotificationKind; title: string; body: string; link: string; createdAt: number; readAt: number | null }[];
+    .all(...args) as {
+    id: number;
+    kind: NotificationKind;
+    title: string;
+    body: string;
+    link: string;
+    createdAt: number;
+    readAt: number | null;
+  }[];
   const unread = (
-    d.prepare("SELECT count(*) c FROM notifications WHERE recipient=? AND read_at IS NULL").get(u.id) as { c: number }
+    d
+      .prepare("SELECT count(*) c FROM notifications WHERE recipient=? AND read_at IS NULL")
+      .get(u.id) as { c: number }
   ).c;
   return { items, unread };
 }
 export function unreadCount(user: User) {
   const u = active(user);
   return (
-    store().prepare("SELECT count(*) c FROM notifications WHERE recipient=? AND read_at IS NULL").get(u.id) as {
+    store()
+      .prepare("SELECT count(*) c FROM notifications WHERE recipient=? AND read_at IS NULL")
+      .get(u.id) as {
       c: number;
     }
   ).c;
 }
 /** Only the recipient's own rows are touched; foreign IDs are silently not matched (count tells). */
-export function markRead(user: User, input: { ids?: number[] | undefined; all?: boolean | undefined; read?: boolean | undefined }) {
+export function markRead(
+  user: User,
+  input: { ids?: number[] | undefined; all?: boolean | undefined; read?: boolean | undefined },
+) {
   const u = active(user),
     d = store(),
     at = input.read === false ? null : Date.now();
   if (input.all)
-    return d.prepare("UPDATE notifications SET read_at=? WHERE recipient=? AND read_at IS NULL").run(at, u.id).changes;
+    return d
+      .prepare("UPDATE notifications SET read_at=? WHERE recipient=? AND read_at IS NULL")
+      .run(at, u.id).changes;
   let n = 0;
   for (const id of input.ids ?? [])
-    n += d.prepare("UPDATE notifications SET read_at=? WHERE id=? AND recipient=?").run(at, id, u.id).changes;
+    n += d
+      .prepare("UPDATE notifications SET read_at=? WHERE id=? AND recipient=?")
+      .run(at, id, u.id).changes;
   return n;
 }
-export function saveSettings(user: User, input: { version: number; settings: NotificationSettings }) {
+export function saveSettings(
+  user: User,
+  input: { version: number; settings: NotificationSettings },
+) {
   const u = active(user),
     s = settingsSchema.parse(input.settings),
     d = store();
   d.exec("BEGIN IMMEDIATE");
   try {
     const cur = settingsOf(u.id).version;
-    if (cur !== input.version) throw new Error("A beállítást közben máshol módosították. Töltsd újra.");
+    if (cur !== input.version)
+      throw new Error("A beállítást közben máshol módosították. Töltsd újra.");
     d.prepare(
       "INSERT INTO notification_settings(user_id,body,version,updated_at) VALUES(?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET body=excluded.body,version=excluded.version,updated_at=excluded.updated_at",
     ).run(u.id, JSON.stringify(s), cur + 1, Date.now());
@@ -202,7 +254,11 @@ export async function reminderTick(now = Date.now()) {
       try {
         const me = `user:${u.id}`;
         for (const o of calendarRange(u, { from: today, to: addDaysStr(today, 2) }).occurrences)
-          if (o.remind && (o.people.length === 0 || o.people.includes(me)) && due(o.date, o.allDay ? "00:00" : o.start))
+          if (
+            o.remind &&
+            (o.people.length === 0 || o.people.includes(me)) &&
+            due(o.date, o.allDay ? "00:00" : o.start)
+          )
             sent += +emit(u.id, {
               kind: "calendar",
               source: `cal:${o.key}`,

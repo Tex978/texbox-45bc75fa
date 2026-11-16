@@ -127,7 +127,9 @@ export function Notifications() {
                     <Link
                       to={n.link as "/tasks"}
                       className="dash-link"
-                      onClick={() => !n.readAt && void mark({ data: { ids: [n.id] } }).then(refresh)}
+                      onClick={() =>
+                        !n.readAt && void mark({ data: { ids: [n.id] } }).then(refresh)
+                      }
                     >
                       Megnyitás →
                     </Link>
@@ -136,7 +138,9 @@ export function Notifications() {
                       variant="ghost"
                       disabled={busy}
                       onClick={() =>
-                        void act(() => mark({ data: { ids: [n.id], read: !!n.readAt ? false : true } }))
+                        void act(() =>
+                          mark({ data: { ids: [n.id], read: n.readAt ? false : true } }),
+                        )
                       }
                     >
                       {n.readAt ? "Olvasatlan" : "Olvasott"}
@@ -195,7 +199,8 @@ export function Notifications() {
                 disabled={busy}
                 onClick={() =>
                   void act(
-                    () => saveSettings({ data: { version: q.data.settings.version, settings: draft } }),
+                    () =>
+                      saveSettings({ data: { version: q.data.settings.version, settings: draft } }),
                     "Beállítások mentve.",
                   )
                 }

@@ -301,7 +301,13 @@ export function actOnTask(
     event(u, o.id, status, reason);
     notifyTask(
       u,
-      { id: o.id, title: o.body.title, assignee, version: input.version + 1, points: o.body.points },
+      {
+        id: o.id,
+        title: o.body.title,
+        assignee,
+        version: input.version + 1,
+        points: o.body.points,
+      },
       status,
       reason,
     );
