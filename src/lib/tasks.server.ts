@@ -79,7 +79,10 @@ function templates(): TaskTemplate[] {
 const visible = (u: User, t: TaskTemplate, assignee = t.assignee) =>
   t.owner === u.id ||
   assignee === personKey(u.id) ||
-  (isParent(u) && !!assignee && (assignee.startsWith("profile:") || (assignee.startsWith("user:") && getUser(assignee.slice(5))?.role === "child"))) ||
+  (isParent(u) &&
+    !!assignee &&
+    (assignee.startsWith("profile:") ||
+      (assignee.startsWith("user:") && getUser(assignee.slice(5))?.role === "child"))) ||
   (t.visibility === "family" && (isParent(u) || !assignee));
 const editable = (u: User, t: TaskTemplate) =>
   isParent(u) && (t.owner === u.id || t.visibility === "family");
@@ -242,7 +245,8 @@ export function actOnTask(
       o = occurrence(input.id),
       t = templates().find((v) => v.id === o.templateId),
       parent = isParent(u);
-    if (!t || !visible(u, { ...t, ...o.body }, o.assignee)) throw new Error("Nem láthatod ezt a feladatot.");
+    if (!t || !visible(u, { ...t, ...o.body }, o.assignee))
+      throw new Error("Nem láthatod ezt a feladatot.");
     let status: TaskStatus,
       assignee = o.assignee;
     const target = input.person ?? personKey(u.id);

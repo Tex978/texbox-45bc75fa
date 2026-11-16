@@ -541,7 +541,17 @@ export function Tasks() {
             .map((t) => (
               <article className="task-row" key={t.id}>
                 <span className="task-category">
-                  {t.visibility === "personal" ? "Személyes" : "Családi"} · {({ once: "Egyszeri", daily: "Naponta", weekly: "Hetente", biweekly: "Kéthetente", monthly: "Havonta", dates: "Kiválasztott napokon" })[t.recurrence]}
+                  {t.visibility === "personal" ? "Személyes" : "Családi"} ·{" "}
+                  {
+                    {
+                      once: "Egyszeri",
+                      daily: "Naponta",
+                      weekly: "Hetente",
+                      biweekly: "Kéthetente",
+                      monthly: "Havonta",
+                      dates: "Kiválasztott napokon",
+                    }[t.recurrence]
+                  }
                 </span>
                 <h2>{t.title}</h2>
                 <p className="task-meta">

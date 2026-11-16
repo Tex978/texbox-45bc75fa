@@ -1,6 +1,6 @@
 # TEXBOX – egyeztetett családi központ
 
-Állapot: 2026-11-16. Meglévő projekt, magyar felület; az első fázis megvalósítása folyamatban. Ez a dokumentum az elfogadott teljes célt és a későbbi körök elfogadási feltételeit őrzi. Nem egy új projekt terve.
+Állapot: 2026-11-16. Meglévő projekt, magyar felület; 1., 2a és 3. fázis implementálva, élő Synology-elfogadás még nyitott. Ez a dokumentum az elfogadott teljes célt és a későbbi körök elfogadási feltételeit őrzi. Nem egy új projekt terve.
 
 ## Változatlan alap és minden fázis kapuja
 
@@ -88,6 +88,21 @@ Időzítés, hét napjai, érzékelőesemények, tartós NAS scheduler, DST/kies
 Javasolt táblák: scenes, scene_actions, scene_acl, device_acl, scene_runs, scene_action_results; automation_rules/runs csak 2b. Modulok: scenes.server/functions, capability adapter, SceneEditor/SceneRun, home/index. Elfogadás: UI mentés és új eszközről visszaolvasás; több eszköz valódi futtatása NAS-on; jogosulatlan kézi RPC tiltva; egy hibás eszköz eredménye látszik; dupla indítás védett; scheduler újraindítás teszt. Éles zár/redőny/klímaparancs előtt tulajdonosi próbajóváhagyás.
 
 ## 3. fázis – feladatok
+
+### Megvalósított állapot
+
+- [x] `/tasks` Feladatok, desktop főmenü/mobil Több; Ma, Heti, Közös, szülői Kezelés. Személy/saját/jóváhagyásra váró szűrő, gyermek nevében vállalás és teljesítés. Áttekintőn kompakt kattintható Mai teendők, a régi tartalom megmaradt.
+- [x] Valódi NAS SQLite sablon CRUD: cím/leírás/kategória, nem negatív egész pontérték, személyes/családi láthatóság, user vagy kezelt gyermekprofil vagy közös felelős, dátum/helyi határidő, prioritás. Sablon törlése archivál; lezárt teljesítések és naplók megmaradnak.
+- [x] Egyszeri/napi/heti napok/kétheti/havi/kiválasztott dátum ismétlés. Budapest civil dátum, havi 29–31 rövid hónap utolsó napjára esik, később visszatér az eredeti napra; kétheti ritmus kezdés hetéhez kötve. Nincs időzített értesítés/scheduler. Határidő helyi HH:MM adat, DST-nél nincs fizikai időzített futás.
+- [x] Előfordulás automatikusan olvasáskor/60 másodperces UI-frissítéskor, legfeljebb ma+7 napig. Egyedi sablon+dátum kulcs. Régi esedékességek megőrzése, sablononként legfeljebb 366 nap feldolgozása kérésenként; hosszú kiesésnél jelzett folytatás. Az alkalmazás megnyitásakor magától megjelenik a következő napi feladat, nem kell újralétrehozni.
+- [x] Tranzakciós nyitott/vállalt/pending/approved/returned/rejected/cancelled életciklus, verzióellenőrzés; felnőtt automatikus elfogadás, gyermek csak egyik szülő döntésével, indokos visszaküldés/elutasítás és új teljesítés. Legacy child-login nem azonos a gyermekprofillal.
+- [x] Minden RPC belépést ellenőriz; szerver oldalon minden olvasás és módosítás újraellenőrzi az aktív személyt és jogokat. Mindkét family-jogosult felnőtt kezel családi sablont és gyermekjóváhagyást. Személyes felnőttfeladat más számára nem látható. Gyermek sablon/pont/jóváhagyás módosítása tiltva.
+- [x] `task_templates`, `task_occurrences`, `task_events`, `task_approvals`; additív egytranzakciós séma, kötelező `backups/pre-tasks-phase3.db` snapshot az új táblák előtt. Meglévő fiók, session, jelenet és JSON/titok nincs átírva. Az egyszeri approval snapshot személyhez kötött, későbbi ledger forrás; nem pontegyenleg és nem jóváírás.
+- [x] Izolált valódi SQLite/UI/RPC tesztek: CRUD, restart, backup, személyes ACL, ismeretlen személy, gyermek override, napi/heti/havi/kétheti/DST, dupla claim/approval, indokos visszaküldés/elutasítás, UI gyermekfeladat mentés/újranyitás/teljesítés/jóváhagyás; korábbi fiók/jelenet regressziók.
+- [ ] Élő NAS elfogadás: data-mentés + Docker-frissítés, meglévő admin/session/kapcsolatok/jelenetek megőrzése, két telefonos mentés/claim/jóváhagyás, másnapi ismétlődés és lejárt session közvetlen RPC tiltása. Innen a NAS nem elérhető; új kulcs/fiók nem szükséges.
+- [ ] Következő bővítés: explicit értesítési csatorna/kiküldés és forgó kiosztás. Prioritás/helyi határidő és reminder mező előkészített, működő értesítést nem állítunk. Régi lezárt előfordulások teljes kereshető archívuma külön bővítés (SQLite-ban és naplóban megmarad; UI elmúlt 7 nap lezárt + minden nyitott elmaradás).
+
+Sablonszerkesztés a jövőbeli, még érintetlen nyitott előfordulásokat generálja újra; a mai/elmúlt/vállalt/elkészült adatok megőrzött snapshotok. Pontkönyvelés és jutalombolt csak 4., automatizálás csak 2b, teljes kiegyensúlyozott főoldal csak 6. fázis. A történeti tervezési célok alább nem kész pontfunkciók.
 
 - Közös/személyes, vállalható/kijelölt/forgó, kategória, pont, felelős, határidő. Appon belüli sablon és szerkesztő.
 - Napi/heti/havi/egyedi nap/kétheti/egyszeri ismétlődés; NAS szerver generál konkrét előfordulásokat, egyedi template+date kulcs, Europe/Budapest.

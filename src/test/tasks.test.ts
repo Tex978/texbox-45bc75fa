@@ -171,6 +171,22 @@ describe("family tasks on real isolated SQLite", () => {
   });
 });
 describe("Budapest civil recurrence", () => {
+  it("SQLite generates weekly and monthly occurrences exactly once after reopening", () => {
+    const weekly = saveTask(dad, input({ start: "2026-02-01", recurrence: "weekly", weekdays: [1] }));
+    const monthly = saveTask(dad, input({ start: "2026-01-31", recurrence: "monthly" }));
+    listTasks(dad, new Date("2026-03-01T12:00Z"));
+    resetAuthDb();
+    const result = listTasks(dad, new Date("2026-03-01T12:00Z"));
+    expect(result.occurrences.filter((o) => o.templateId === monthly && o.date === "2026-02-28")).toHaveLength(1);
+    expect(result.occurrences.filter((o) => o.templateId === weekly && o.date === "2026-03-02")).toHaveLength(1);
+    expect(result.occurrences.filter((o) => o.templateId === weekly && o.date === "2026-03-03")).toHaveLength(0);
+  });
+  it("either parent sees and approves a personal task assigned to a managed child", () => {
+    saveTask(dad, input({ visibility: "personal", assignee: `profile:${profile}` }));
+    const o = first(listTasks(mom, now).occurrences);
+    const pending = actOnTask(mom, { id: o.id, version: o.version, action: "complete" });
+    expect(actOnTask(dad, { id: o.id, version: pending.version, action: "approve" }).status).toBe("approved");
+  });
   it("weekly only selected weekdays", () => {
     const t = input({ recurrence: "weekly", weekdays: [1] });
     expect(occursOn(t, "2026-03-30")).toBe(true);
