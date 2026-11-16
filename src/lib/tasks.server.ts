@@ -1,4 +1,5 @@
 import { db, getUser, listUsers, listChildProfiles, userCan, type User } from "./auth.server";
+import { creditTask } from "./points.server";
 import {
   addDays,
   budapestToday,
@@ -295,6 +296,7 @@ export function actOnTask(
           "INSERT INTO task_approvals(occurrence_id,person_key,points,approved_by,approved_at) VALUES(?,?,?,?,?)",
         )
         .run(o.id, assignee, o.body.points, u.id, Date.now());
+    if (status === "approved" && assignee) creditTask(o.id);
     event(u, o.id, status, reason);
     return occurrence(o.id);
   });
