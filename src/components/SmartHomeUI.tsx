@@ -27,7 +27,7 @@ export function IconButton({ icon: Icon, label, ...props }: ButtonProps & { icon
 }
 
 export function SensorDetails({ humidity, battery, online }: { humidity?: number | null; battery?: number | null; online: boolean }) {
-  return <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+  return <div className="sensor-details mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
     {humidity != null && <span className="inline-flex items-center gap-1.5"><Droplets size={14} className="text-home-water" />{humidity}%</span>}
     {battery != null && <span className="inline-flex items-center gap-1.5"><Battery size={15} />{battery}%</span>}
     <span className="ml-auto inline-flex items-center gap-1.5"><span className={`status-dot ${online ? "bg-home-success" : "bg-muted-foreground"}`} />{online ? "Elérhető" : "Offline"}</span>

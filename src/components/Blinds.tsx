@@ -48,8 +48,8 @@ export function Blinds() {
 
   return (
     <Card title="Redőnyök" className="mt-4">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Összes ({data.blinds.length})</span>
+      <div className="blind-toolbar mb-4 grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2">
+        <span className="blind-total text-sm text-muted-foreground">Összes ({data.blinds.length})</span>
         <Button variant="outline" className={btn} onClick={() => group(inc(data.blinds), "open")}><ArrowUp />Mind fel</Button>
         <Button variant="outline" className={btn} onClick={() => group(inc(data.blinds), "stop")} aria-label="Mind állj"><Square size={14} /></Button>
         <Button variant="outline" className={btn} onClick={() => group(inc(data.blinds), "close")}><ArrowDown />Mind le</Button>
@@ -62,9 +62,9 @@ export function Blinds() {
             const isOpen = open[room] ?? false;
             return (
               <div key={room} className="smart-device p-4">
-                <div className="flex items-center gap-2">
+                <div className="blind-room-controls grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2">
                   <Button variant="ghost" className="h-auto min-w-0 flex-1 flex-col items-start gap-1 px-0 text-left" onClick={() => setOpen({ ...open, [room]: !isOpen })}>
-                    <div className="flex items-center gap-2 truncate font-medium">{isOpen ? <ChevronDown size={17} /> : <ChevronRight size={17} />} {room}</div>
+                    <div className="flex w-full min-w-0 items-center gap-2 font-medium">{isOpen ? <ChevronDown size={17} /> : <ChevronRight size={17} />} <span className="truncate">{room}</span></div>
                     <div className="text-xs text-muted-foreground">{list.length} redőny · {posLabel(avg)}</div>
                   </Button>
                   <Button variant="outline" className={btn} onClick={() => group(inc(list), "open")} aria-label={`${room} fel`}><ArrowUp /></Button>
