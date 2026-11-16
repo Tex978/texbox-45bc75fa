@@ -46,8 +46,8 @@ export const scenesDevices = createServerFn({ method: "GET" }).handler(async () 
   const u = actor();
   const result = await sceneDevices();
   if (u.role === "child") {
-    const granted = new Set(listScenes(u).flatMap(s => s.steps.map(step => step.device)));
-    result.devices = result.devices.filter(d => granted.has(d.key));
+    const granted = new Set(listScenes(u).flatMap((s) => s.steps.map((step) => step.device)));
+    result.devices = result.devices.filter((d) => granted.has(d.key));
   }
   return result;
 });
