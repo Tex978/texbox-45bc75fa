@@ -1182,6 +1182,10 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .chat-reactions button[aria-pressed="true"] { background: var(--accent); outline: 1px solid var(--primary); }
 .chat-reactions span { font-size: 19px; }
 .chat-reactions small { font-size: 11px; }
+.chat-reactions .chat-reaction-trigger { width: 44px; min-width: 44px; height: 44px; color: var(--muted-foreground); }
+.chat-reaction-picker { width: max-content; max-width: calc(100vw - 24px); display: grid; grid-template-columns: repeat(7, 36px); gap: 2px; padding: 6px; }
+.chat-reaction-picker button { width: 36px; height: 44px; font-size: 21px; }
+.chat-reaction-picker button[aria-pressed="true"] { background: var(--accent); outline: 1px solid var(--primary); }
 .chat-emoji-picker { grid-column: 1/-1; display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
 .chat-emoji-picker button { width: 100%; font-size: 23px; }
 .chat-empty { margin: auto; text-align: center; color: var(--muted-foreground); font-size: 14px; }
