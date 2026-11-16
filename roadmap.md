@@ -1,4 +1,5 @@
 # TexBox átfogó fejlesztés (jóváhagyott terv)
+- [x] Belépési hiba: a hosted előnézet virtuális tárolójának elkülönítése a NAS-tól; valódi NAS tárolási hibánál a védelem megmarad, családi fiókoknál egyértelmű korlátjelzés.
 - [x] Aktuális kör: Streaming a Keresésben, régi URL átirányítva; személyes NAS-szűrők; jogosultság/titokkezelés, energiahiány, műveleti visszajelzések és mobil használat javítva; automatikus build OK, 390/1440 px ellenőrizve. Teljes lintben korábbi formázási és any-típus hibák maradtak; NAS családi/hardveres ellenőrzés frissítést igényel.
 - [x] M1 Biztonsági alap: családi fiókok a NAS-on, belépés/kijelentkezés, első admin (/__setup), jogosultság minden módosító műveleten, titkosított kapcsolati adatok, napi adatbázis-mentés, telepítési leírás.
 - [x] M3 (alap) Család oldal: meghívó és jelszó link, szerepkörök, egyedi jogosultságok, letiltás, profilmenü.

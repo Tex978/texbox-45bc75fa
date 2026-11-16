@@ -11,6 +11,10 @@ const mod = <T>(name: string): T | null => {
 };
 const crypto = () => mod<Crypto>("node:crypto")!;
 export const SESSION_COOKIE = "texbox-session";
+// Hosted Workers have a virtual filesystem, not the NAS's persistent account database.
+export function isHostedAccountPreview() {
+  return globalThis.navigator?.userAgent === "Cloudflare-Workers";
+}
 const dataDir = () =>
   ((globalThis as any).process?.env?.DATA_DIR as string) ||
   (((globalThis as any).process?.env?.DATA_FILE as string) || "/data/nas-state.json").replace(
@@ -29,6 +33,7 @@ export function resetAuthDb() {
   attempts.clear();
 }
 export function db() {
+  if (isHostedAccountPreview()) return null;
   if (conn !== undefined) return conn;
   const sqlite = mod<Sqlite>("node:sqlite");
   const fs = mod<typeof import("node:fs")>("node:fs");
@@ -98,7 +103,7 @@ function rowToUser(r: any): User {
   };
 }
 export const authStorageUnavailable = () =>
-  db() === null && mod<typeof import("node:fs")>("node:fs") !== null;
+  !isHostedAccountPreview() && db() === null && mod<typeof import("node:fs")>("node:fs") !== null;
 export function userCount(): number {
   const d = db();
   return d ? Number((d.prepare("SELECT count(*) c FROM users").get() as any).c) : 0;

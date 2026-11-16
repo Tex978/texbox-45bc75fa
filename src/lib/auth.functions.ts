@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequest } from "@tanstack/react-start/server";
-import { audit, createInviteToken, createUser, db, deleteUser, getUser, listUsers, requirePermission, SESSION_COOKIE, sessionUser, updateUser, userCount, userCan } from "./auth.server";
+import { audit, createInviteToken, createUser, db, deleteUser, getUser, isHostedAccountPreview, listUsers, requirePermission, SESSION_COOKIE, sessionUser, updateUser, userCount, userCan } from "./auth.server";
 import { PERMISSIONS, ROLES, type Permission, type Role } from "./permissions";
 
 export type Me = { mode: "accounts" | "open"; user: null | { id: string; username: string; displayName: string; role: Role; can: Record<Permission, boolean> } };
@@ -13,6 +13,7 @@ export const getMe = createServerFn({ method: "GET" }).handler(async (): Promise
 });
 
 const admin = () => {
+  if (isHostedAccountPreview()) throw new Error("A családi fiókok a Synology NAS-on kezelhetők; az előnézet nem éri el a NAS felhasználóit. Nyisd meg a TexBoxot a saját NAS-címeden.");
   const u = requirePermission(getCookie(SESSION_COOKIE), "users");
   if (!u) throw new Error("A családi fiókokhoz előbb hozd létre az admin fiókot (APP_PASSWORD + /__setup).");
   return u;
