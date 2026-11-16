@@ -17,6 +17,14 @@ vi.mock("@/lib/tasks.functions", () => ({
     archiveTask(parent, data.id, data.version),
   tasksAct: async ({ data }: { data: Parameters<typeof actOnTask>[1] }) => actOnTask(parent, data),
 }));
+vi.mock("@tanstack/react-router", async (orig) => ({
+  ...(await orig<object>()),
+  Link: (p: { children: unknown }) => p.children,
+}));
+vi.mock("@/lib/points.functions", async () => {
+  const s = await import("@/lib/points.server");
+  return { pointsList: async () => s.pointsOverview(parent), pointsAdjust: vi.fn(), rewardSave: vi.fn(), rewardRedeem: vi.fn(), redemptionDecide: vi.fn(), rewardWish: vi.fn() };
+});
 import { Tasks } from "@/components/Tasks";
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "task-ui-"));

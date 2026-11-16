@@ -93,6 +93,24 @@ export function db() {
         CREATE TABLE IF NOT EXISTS task_approvals(occurrence_id TEXT PRIMARY KEY REFERENCES task_occurrences(id), person_key TEXT NOT NULL, points INTEGER NOT NULL CHECK(points>=0), approved_by TEXT NOT NULL, approved_at INTEGER NOT NULL);
         COMMIT;`);
     }
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='point_ledger'").get()) {
+      const pointsBackup = `${dataDir()}/backups/pre-points-phase4.db`;
+      if (!fs.existsSync(pointsBackup)) d.exec(`VACUUM INTO '${pointsBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS point_ledger(id INTEGER PRIMARY KEY AUTOINCREMENT, person_key TEXT NOT NULL, delta INTEGER NOT NULL CHECK(delta BETWEEN -1000000 AND 1000000), kind TEXT NOT NULL CHECK(kind IN ('task','adjust','redeem')), source TEXT UNIQUE, reason TEXT NOT NULL, actor TEXT NOT NULL, at INTEGER NOT NULL);
+        CREATE INDEX IF NOT EXISTS point_person ON point_ledger(person_key,id);
+        CREATE TABLE IF NOT EXISTS rewards(id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL, category TEXT NOT NULL, price INTEGER NOT NULL CHECK(price BETWEEN 0 AND 100000), stock INTEGER CHECK(stock IS NULL OR stock>=0), eligible TEXT NOT NULL, image TEXT NOT NULL DEFAULT '', active INTEGER NOT NULL DEFAULT 1, archived INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL, created_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS redemptions(id TEXT PRIMARY KEY, request_id TEXT NOT NULL UNIQUE, reward_id TEXT NOT NULL REFERENCES rewards(id), reward_name TEXT NOT NULL, person_key TEXT NOT NULL, price INTEGER NOT NULL CHECK(price>=0), status TEXT NOT NULL CHECK(status IN ('reserved','awaiting','handed','rejected','cancelled')), requested_by TEXT NOT NULL, decided_by TEXT, reason TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE INDEX IF NOT EXISTS redemption_person ON redemptions(person_key,status);
+        CREATE TABLE IF NOT EXISTS reward_events(id INTEGER PRIMARY KEY AUTOINCREMENT, redemption_id TEXT NOT NULL REFERENCES redemptions(id), actor TEXT NOT NULL, action TEXT NOT NULL, reason TEXT NOT NULL, at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS reward_wishes(person_key TEXT NOT NULL, reward_id TEXT NOT NULL REFERENCES rewards(id), goal INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(person_key,reward_id));
+        CREATE UNIQUE INDEX IF NOT EXISTS reward_one_goal ON reward_wishes(person_key) WHERE goal=1;
+        COMMIT;`);
+    }
+    // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
+    d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
+      SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at
+      FROM task_approvals WHERE points>0`);
     conn = d;
     return d;
   } catch (e) {

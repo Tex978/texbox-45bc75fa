@@ -24,6 +24,7 @@ import {
   UserRound,
   RefreshCw,
   AlertCircle,
+  Gift,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ const allNav = [
   { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/home", label: "Okosotthon", icon: House },
   { to: "/tasks", label: "Feladatok", icon: ClipboardList },
+  { to: "/rewards", label: "Ajándékbolt", icon: Gift },
   { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
 const primaryTabs: string[] = ["/", "/search", "/downloads", "/home"];
@@ -159,6 +161,12 @@ export function ProfileMenu() {
             </Link>
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem asChild>
+          <Link to="/rewards" className="min-h-11">
+            <Gift />
+            Pontjaim és ajándékbolt
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <a href="/__logout" className="min-h-11">
             <LogOut />

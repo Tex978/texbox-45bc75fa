@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "./ui/button";
+import { PointsCard } from "./Rewards";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 import { tasksList, tasksSave, tasksArchive, tasksAct } from "@/lib/tasks.functions";
 import {
@@ -459,6 +460,7 @@ export function Tasks() {
   };
   return (
     <div className="tasks-area">
+      <PointsCard />
       <div className="task-toolbar">
         <div className="task-tabs" role="tablist" aria-label="Feladatnézet">
           {["Ma", "Heti", "Közös", ...(data.parent ? ["Kezelés"] : [])].map((name) => (

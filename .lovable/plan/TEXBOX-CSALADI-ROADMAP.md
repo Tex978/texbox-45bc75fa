@@ -125,6 +125,8 @@ Táblák: task_templates, task_occurrences, task_claims, task_submissions, task_
 
 ## 4. fázis – személyes pontok és jutalombolt
 
+Állapot (2026-11-16): kód és izolált tesztek kész (point_ledger, rewards, redemptions, reward_events, reward_wishes); élő Synology-ellenőrzés nyitott.
+
 - Minden családtagnak – felnőtteknek is – kizárólag saját pontszámla. NINCS közös családi egyenleg vagy közös feladatpont.
 - Append-only személyes ledger, egyedi forráskulcs, tranzakciós jóváírás/visszavonás/okkal admin korrekció; saját történet és cél.
 - Admin/szülő által appon belül szerkeszthető jutalom képpel/címmel/pontárral/kategóriával/joggal/készlettel/korláttal, kívánságlista, beváltási történet és állapot.
