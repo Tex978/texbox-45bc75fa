@@ -53,4 +53,5 @@ use the editor.
 - Family accounts live in SQLite (node:sqlite) at <data>/texbox.db via src/lib/auth.server.ts: scrypt hashes, hashed session tokens, one-time invite/reset links, daily VACUUM INTO snapshots; roles/permissions in client-safe src/lib/permissions.ts. The gate requires a session once any account exists, APP_PASSWORD only unlocks /__setup, and with no accounts and no APP_PASSWORD (preview) the app stays open. Mutating server fns call guard(permission) so UI hiding is never the security boundary.
 - Shared-store values are AES-GCM encrypted at rest when TEXBOX_SECRET_KEY is set (plaintext migrated on first load); never return secret values to clients.
 - Household UI preferences (favorites, theme, rooms, hidden devices) go through useSharedPref and the whitelisted PREF_KEYS in shared-prefs.ts, stored in the shared NAS store with per-key permissions; localStorage is only a one-time migration source, so all devices stay in sync.
+- Non-smart-home pages use Shell with a phone bottom tab bar (four primary routes plus a Több menu) and shared PageHeader/EmptyState; smart-home keeps its own tabs, so Shell skips the tab bar there.
 <!-- AGENT-MEMORY:END -->
