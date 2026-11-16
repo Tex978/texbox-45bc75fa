@@ -1,6 +1,6 @@
 import { useSharedPref } from "@/lib/use-shared-pref";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SmartSection as Card } from "@/components/SmartHomeUI";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Square, Settings2, Check, X, ChevronDown, ChevronRight, Power, Play, Lightbulb, WashingMachine, Droplets, Battery, Minus, Plus, LogOut, QrCode } from "lucide-react";

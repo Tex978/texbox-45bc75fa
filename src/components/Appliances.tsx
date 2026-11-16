@@ -1,6 +1,6 @@
 import { useSharedPref } from "@/lib/use-shared-pref";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SmartSection as Card } from "@/components/SmartHomeUI";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Square, Settings2, Check, X, ChevronDown, ChevronRight, Power, Play, Lightbulb, WashingMachine, Droplets, Battery, Minus, Plus, LogOut, QrCode } from "lucide-react";
@@ -10,7 +10,6 @@ export const appliancesQuery = queryOptions({ queryKey: ["hc"], queryFn: () => g
 const STATE: Record<string, string> = { Inactive: "kikapcsolva", Ready: "készenlét", DelayedStart: "késleltetett indítás", Run: "fut", Pause: "szünetel", ActionRequired: "beavatkozás kell", Finished: "kész", Error: "hiba", Aborting: "leáll" };
 const TYPE: Record<string, string> = { Washer: "Mosógép", Dryer: "Szárító", WasherDryer: "Mosó-szárító", Dishwasher: "Mosogatógép", Oven: "Sütő", FridgeFreezer: "Hűtő", Refrigerator: "Hűtő", Freezer: "Fagyasztó", CoffeeMaker: "Kávéfőző", Hob: "Főzőlap", Hood: "Páraelszívó" };
 type Meta = Record<string, { name?: string; hidden?: boolean }>;
-const KEY = "hc-meta";
 
 function Device({ a, label }: { a: Appliance; label: string }) {
   const qc = useQueryClient();
