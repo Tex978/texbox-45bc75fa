@@ -56,6 +56,10 @@ it("adds an item in one step and ticks it with one tap, persisted in SQLite", as
     </QueryClientProvider>,
   );
   fireEvent.change(await screen.findByLabelText("Új termék"), { target: { value: "Kenyér" } });
+  fireEvent.click(screen.getByRole("button", { name: "Termék részletei" }));
+  fireEvent.change(screen.getByLabelText("Mennyiség"), { target: { value: "2" } });
+  fireEvent.change(screen.getByLabelText("Egység"), { target: { value: "db" } });
+  fireEvent.change(screen.getByLabelText("Bolt"), { target: { value: "Pékség" } });
   fireEvent.click(screen.getByRole("button", { name: "Hozzáadás" }));
   fireEvent.click(await screen.findByRole("button", { name: "Kenyér kipipálása" }));
   await screen.findByRole("button", { name: "Kenyér visszavonása" });
@@ -65,6 +69,9 @@ it("adds an item in one step and ticks it with one tap, persisted in SQLite", as
       name: "Kenyér",
       checked: true,
       checkedBy: "Anya",
+      qty: 2,
+      unit: "db",
+      store: "Pékség",
     }),
   );
 });

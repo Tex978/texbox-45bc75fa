@@ -11,7 +11,7 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 
 ## TEXBOX 1.0 felületi QA – aktuális kör
 - [x] Közös Shell öt fő területtel az Otthonon is; belső Otthon/Szervező fülek, kompakt Főoldal, meglévő személyes beállítások megtartva.
-- [ ] Teljes regresszió és 360/390/768/1280 képernyőellenőrzés folyamatban.
+- [x] 244/244 Vitest / 54 fájl; célzott lint: 0 hiba, 5 meglévő export/fast-refresh figyelmeztetés; automatikus típus/fordítás `build OK`. 14 URL × 360/390/768/1280: nincs kilógás vagy pageerror; Otthonon is pontosan 5 közös főtab, saját tabjai nem fixek, Szervező tabjai nyilakkal is válthatók. Izolált SQLite UI: személyes elrendezés mentése és bevásárláspipa megmarad.
 - [ ] Bejelentkezett éles NAS ellenőrzése: innen nem elérhető.
 
 ## Korábbi fázisok részletes, történeti ellenőrzési naplója

@@ -24,6 +24,26 @@ Mindkettő előbb elbukó, majd sikeres izolált regressziós teszttel igazolt. 
 - Render/UI/navigáció nem lett újratervezve. `/data`, DATA_DIR/DATA_FILE, instance ID, titkok, 3b guard, Compose, Dockerfile, Watchtower, port és Actions érintetlen. Nem publikáltam és nem indítottam NAS-frissítést.
 
 ## Maradék kockázatok
+
+## Végleges 1.0 felületi átdolgozás – 2026-11-16
+- **Shell:** az Otthonon is ugyanaz az öt fő tab; a régi hatos alsó menü helyett belső, görgethető fülek. Desktopon egy fő felső menü. Profil és harang megmaradt, Több nem ismétli a fő céloldalakat.
+- **Főoldal:** rövid köszöntő/dátum és kis szerkesztőikon; három aktuális feladat részletes oldalra mutató gombbal, egy következő program, kompakt kártyarács. A személyes sorrend, elrejtés és jelenetkedvencek nem íródtak felül. Hőmérséklet/pára/napelem csak meglévő, nem-demo és hibamentes adatból jelenik meg. Hiba részlete kinyitható, nem sikernek látszik.
+- **Otthon:** 30–32px hőmérséklet, kisebb állapotösszefoglaló és gyorselérések; visszafogott online/offline számok. Minden gyártói panel és Energia/Jelenetek megmaradt.
+- **Szervező:** egy soros Bevásárlás/Receptek/Menü/Naptár/Jegyzetek fülek, kisebb fejléc, listaváltó + újlista-gomb, termékbevitel + kinyitható részletek. Frissítési információ ikon mögött, frissítési hibánál célzott figyelmeztetés. Állandó NAS-disclaimer helyett a valódi előnézeti/mentési hibák maradnak láthatók.
+- **Ellenőrzés:** 244/244 Vitest, 54 fájl; teljes korábbi auth/guard/scenes/task/points/organizer regresszió. Célzott lint 0 hiba és 5 meglévő fast-refresh exportfigyelmeztetés. Automatikus típus/fordítás napló `build OK`; külön Node22 production Docker-image build nem igazolt és nem futtattam manuálisan.
+- **Böngésző:** 14 URL × 360/390/768/1280, nincs vízszintes kilógás vagy pageerror; minden mobil tartalmi oldalon pontosan öt közös főtab, nincs fix Otthon-almenü; Szervező/Otthon fülek kattintása és nyílbillentyűs váltás működik. Sötét közös és világos Otthon megtekintve. Az előnézetben nincs bejelentkezett NAS-család: valódi családi adatos képernyő és többtelefonos átvétel **nyitott**. Izolált SQLite UI-mentés és visszaolvasás sikeres, nem élő NAS-teszt.
+- **Nem változott:** szervermodulok, üzleti szabályok, DB/séma, adattár/guard, titkok, sessionök, Compose/Docker/Actions/Watchtower. Nem publikáltam, nem frissítettem NAS-t és nem küldtem eszközparancsot.
+
+### Öt fő pont kézi NAS-ellenőrzése
+1. Főoldal: saját kártyasorrend/elrejtés és kedvenc jelenetek megmaradnak, valós mérés és saját feladat/pont látható.
+2. Otthon: az ötös közös alsó menü végig elérhető; Szobák/Eszközök/Jelenetek/Energia belső fül, meglévő gyártói panelek nyithatók.
+3. Feladatok: korábbi felelősök/státuszok/pontok, szülői jóváhagyás és saját feladat megnyitása változatlan.
+4. Család: bevásárlástétel és mennyiség/bolt megmarad, öt alfül, profilok és Ajándékbolt a Több/profil menüből elérhető.
+5. Média: Keresés/Streaming, Plex, Letöltések/Tárhely működik; profil és harang oldalváltás után is elérhető.
+
+**Felületi kör fájljai:** `src/components/Shell.tsx`, `Dashboard.tsx`, `Organizer.tsx`, `src/routes/home.tsx`, `src/routes/organizer.tsx`, `src/styles.css`, `src/test/dashboard-ui.test.tsx`, `navigation.test.tsx`, `organizer-ui.test.tsx`, `AGENTS.md`, `roadmap.md`, `.lovable/plan/TEXBOX-CSALADI-ROADMAP.md`, `TEXBOX-1.0-ATADAS.md`.
+
+## Korábbi QA maradék kockázatai
 - **P0:** új reprodukált, nyitott adatvesztési hiba ebben a körben nem került elő; ez nem általános adatvesztés-mentességi garancia. A korábbi NAS-incidens élő oka és restart/frissítés utáni megőrzés továbbra sem igazolt.
 - **P1 átvételi kapu:** éles adatmount, image-fordítás, belépés és ütemező/hardver viselkedése külön ellenőrzendő. A scheduler single Node processre készült; hosszú gyártói hívás/folyamatcsere lease-viselkedését a tesztek nem igazolják minden éles körülményre.
 - **P2/korlát:** külső gyártói API-k rendelkezésre állása nem garantált; ACK nem fizikai állapot. A meghívó/reset 8 karakteres és a saját jelszócsere 10 karakteres meglévő szabálya eltér. A folyamatmemóriás próbálkozási zár restartkor alaphelyzetbe kerül. Privát értesítések címzettszűrése tesztelt, későbbi jogosultságváltozás korábbi inbox-bejegyzéseit nem törli automatikusan.
