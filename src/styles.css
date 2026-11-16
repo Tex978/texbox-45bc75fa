@@ -917,3 +917,30 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .scene-history { border-top: 1px solid var(--border); padding-top: 16px; }
 .scene-centre button, .scene-editor button { min-height: 44px; }
 @media (max-width: 1023px) { .hd-nav { grid-template-columns: repeat(6,minmax(0,1fr)); padding-left: 2px; padding-right: 2px; } }
+
+/* Phase 4: personal points and reward shop (uses shared semantic tokens) */
+.points-card { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); color: var(--foreground); min-height: 48px; }
+.points-card svg { color: var(--primary); flex: none; }
+.points-card small { color: var(--muted-foreground); }
+.points-card-link { margin-left: auto; color: var(--primary); font-weight: 600; white-space: nowrap; }
+.rewards-who { display: grid; gap: 6px; max-width: 320px; margin-bottom: 14px; font-size: 14px; }
+.rewards-area select, .rewards-area input, .rewards-area textarea { min-height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--foreground); padding: 0 10px; }
+.points-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.points-summary > div { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: var(--card); }
+.points-summary span { display: block; font-size: 12px; color: var(--muted-foreground); }
+.points-summary strong { font-size: 22px; }
+.points-goal { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
+.points-goal progress { width: 100%; height: 8px; accent-color: var(--primary); }
+.reward-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 14px; }
+.reward-card { border: 1px solid var(--border); border-radius: 16px; padding: 14px; background: var(--card); display: grid; gap: 8px; align-content: start; min-width: 0; }
+.reward-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 10px; }
+.reward-card h3 { margin: 0; font-size: 17px; }
+.reward-meta { color: var(--muted-foreground); font-size: 13px; margin: 0; }
+.reward-missing { color: var(--muted-foreground); font-size: 13px; margin: 0; }
+.points-history { list-style: none; padding: 0; display: grid; gap: 8px; margin: 8px 0 20px; }
+.points-history li { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-bottom: 1px solid var(--border); padding: 8px 0; }
+.points-history .pos { color: var(--primary); }
+.points-history .neg { color: var(--destructive); }
+.points-history small { color: var(--muted-foreground); margin-left: auto; }
+.reward-form { margin: 14px 0; }
+.reward-form fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; }

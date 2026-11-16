@@ -162,6 +162,12 @@ export function ProfileMenu() {
           </DropdownMenuItem>
         )}
         <DropdownMenuItem asChild>
+          <Link to="/rewards" className="min-h-11">
+            <Gift />
+            Pontjaim és ajándékbolt
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <a href="/__logout" className="min-h-11">
             <LogOut />
             Kijelentkezés / fiókváltás
