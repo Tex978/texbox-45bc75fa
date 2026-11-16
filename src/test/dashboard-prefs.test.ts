@@ -57,7 +57,10 @@ describe("6b personal dashboard", () => {
   });
   it("keeps user A and B independent and persists across restart", () => {
     saveDashboard(mom, { version: 0, prefs: { order, hidden: ["media"], scenes: [] } });
-    saveDashboard(dad, { version: 0, prefs: { order: ["media"], hidden: ["shopping"], scenes: [] } });
+    saveDashboard(dad, {
+      version: 0,
+      prefs: { order: ["media"], hidden: ["shopping"], scenes: [] },
+    });
     resetAuthDb();
     const a = getDashboard(mom),
       b = getDashboard(dad);
@@ -92,17 +95,22 @@ describe("6b personal dashboard", () => {
     expect(getDashboard(mom, key).allowed).not.toContain("media");
     expect(() => getDashboard(kid, key)).toThrow("jogosultság");
     expect(() => getDashboard(mom, `user:${dad.id}`)).toThrow("jogosultság");
-    expect(() =>
-      saveDashboard(kid, { person: `user:${mom.id}`, version: 0, prefs: null }),
-    ).toThrow("jogosultság");
+    expect(() => saveDashboard(kid, { person: `user:${mom.id}`, version: 0, prefs: null })).toThrow(
+      "jogosultság",
+    );
   });
   it("child login without media permission cannot enable the media card", () => {
-    saveDashboard(kid, { version: 0, prefs: { order: ["media", "tasks"], hidden: [], scenes: [] } });
+    saveDashboard(kid, {
+      version: 0,
+      prefs: { order: ["media", "tasks"], hidden: [], scenes: [] },
+    });
     expect(getDashboard(kid).prefs.order).not.toContain("media");
   });
   it("reset restores defaults with a new version and keeps shared household prefs", async () => {
     const state = () =>
-      existsSync(join(dir, "nas-state.json")) ? readFileSync(join(dir, "nas-state.json"), "utf8") : null;
+      existsSync(join(dir, "nas-state.json"))
+        ? readFileSync(join(dir, "nas-state.json"), "utf8")
+        : null;
     const before = state();
     saveDashboard(mom, { version: 0, prefs: { order, hidden: ["tasks"], scenes: [] } });
     const r = saveDashboard(mom, { version: 1, prefs: null, reset: true });
@@ -110,7 +118,11 @@ describe("6b personal dashboard", () => {
     expect(r.prefs.hidden).toEqual([]);
     expect(state()).toBe(before);
     expect(
-      (db()!.prepare("SELECT count(*) c FROM audit_log WHERE action LIKE 'dashboard.%'").get() as { c: number }).c,
+      (
+        db()!.prepare("SELECT count(*) c FROM audit_log WHERE action LIKE 'dashboard.%'").get() as {
+          c: number;
+        }
+      ).c,
     ).toBe(2);
   });
   it("RPC rejects signed-out calls and works for a session", async () => {

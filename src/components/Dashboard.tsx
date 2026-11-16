@@ -564,14 +564,17 @@ export function Dashboard() {
   }, [editing]);
   async function persist(reset: boolean) {
     if (!dash.data || !draft) return;
-    if (reset && !window.confirm("Visszaállítod a főoldalt az alapértelmezett elrendezésre?")) return;
+    if (reset && !window.confirm("Visszaállítod a főoldalt az alapértelmezett elrendezésre?"))
+      return;
     setBusy(true);
     setMsg(null);
     try {
       await save({ data: { version: dash.data.version, prefs: reset ? null : draft, reset } });
       await qc.invalidateQueries({ queryKey: dashboardQuery.queryKey });
       setEditing(false);
-      setMsg({ text: reset ? "Alapértelmezett elrendezés visszaállítva." : "Főoldal mentve a NAS-on." });
+      setMsg({
+        text: reset ? "Alapértelmezett elrendezés visszaállítva." : "Főoldal mentve a NAS-on.",
+      });
     } catch (e) {
       setMsg({ text: e instanceof Error ? e.message : "A mentés nem sikerült.", bad: true });
       if (e instanceof Error && e.message.includes("másik eszközön"))
@@ -651,7 +654,9 @@ export function Dashboard() {
         {visible.length ? (
           visible.map((c) => cards[c])
         ) : (
-          <p className="dash-empty">Minden kártya el van rejtve. A szerkesztőben visszahozhatod őket.</p>
+          <p className="dash-empty">
+            Minden kártya el van rejtve. A szerkesztőben visszahozhatod őket.
+          </p>
         )}
       </div>
     </div>

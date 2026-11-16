@@ -30,7 +30,12 @@ function targets(u: User): Target[] {
     self,
     ...listChildProfiles()
       .filter((p) => !p.disabled)
-      .map((p) => ({ key: `profile:${p.id}`, name: p.displayName, kind: "child" as const, user: null })),
+      .map((p) => ({
+        key: `profile:${p.id}`,
+        name: p.displayName,
+        kind: "child" as const,
+        user: null,
+      })),
   ];
 }
 function target(u: User, key?: string) {
@@ -78,13 +83,17 @@ export function saveDashboard(
 ) {
   const u = current(user);
   const t = target(u, input.person);
-  const prefs = normalizePrefs(input.reset ? null : input.prefs, t.kind, allowedCards(t), sceneIds(t));
+  const prefs = normalizePrefs(
+    input.reset ? null : input.prefs,
+    t.kind,
+    allowedCards(t),
+    sceneIds(t),
+  );
   const d = store();
   d.exec("BEGIN IMMEDIATE");
   try {
-    const row = d
-      .prepare("SELECT version FROM dashboard_prefs WHERE person_key=?")
-      .get(t.key) as { version: number } | undefined;
+    const row = d.prepare("SELECT version FROM dashboard_prefs WHERE person_key=?").get(t.key) as
+      { version: number } | undefined;
     if ((row?.version ?? 0) !== input.version)
       throw new Error(
         "A főoldalt közben egy másik eszközön módosították. Töltsd újra, és próbáld meg ismét.",

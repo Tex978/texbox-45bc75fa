@@ -12,7 +12,10 @@ export const CARD_LABELS: Record<CardId, string> = {
 };
 export type DashboardPrefs = { order: CardId[]; hidden: CardId[]; scenes: string[] };
 export type DashKind = "adult" | "child";
-export function defaultPrefs(kind: DashKind, allowed: readonly CardId[] = CARD_IDS): DashboardPrefs {
+export function defaultPrefs(
+  kind: DashKind,
+  allowed: readonly CardId[] = CARD_IDS,
+): DashboardPrefs {
   const order =
     kind === "child"
       ? (["tasks", "points", "event", "menu", "home", "shopping", "media"] as CardId[])
@@ -40,7 +43,9 @@ export function normalizePrefs(
   const scenes = [
     ...new Set(
       Array.isArray(r["scenes"])
-        ? r["scenes"].filter((s): s is string => typeof s === "string" && s.length > 0 && s.length <= 100)
+        ? r["scenes"].filter(
+            (s): s is string => typeof s === "string" && s.length > 0 && s.length <= 100,
+          )
         : [],
     ),
   ]
