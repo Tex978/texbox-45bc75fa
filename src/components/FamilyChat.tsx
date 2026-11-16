@@ -85,7 +85,8 @@ function ChatConversation({ userId }: { userId: string }) {
     retry: false,
   });
   useEffect(() => () => uploadController.current?.abort(), []);
-  const allDrafts = [...(drafts.data ?? []), ...uploads].filter(
+  // A completed upload is newer than a draft snapshot read while bytes were still arriving.
+  const allDrafts = [...uploads, ...(drafts.data ?? [])].filter(
     (f, i, a) => a.findIndex((x) => x.id === f.id) === i,
   );
   const uploadFiles = async (files: File[]) => {
@@ -115,6 +116,11 @@ function ChatConversation({ userId }: { userId: string }) {
         finished.push(result);
       }
       setUploads((v) => [...v, ...finished]);
+      qc.setQueryData<ChatFile[]>(["chat-drafts", userId], (previous = []) => [
+        ...previous.filter((f) => !finished.some((ready) => ready.id === f.id)),
+        ...finished,
+      ]);
+      void qc.invalidateQueries({ queryKey: ["chat-drafts", userId] });
     } catch (e) {
       for (const f of finished)
         await fetch(`/api/chat/file/${f.id}`, { method: "DELETE" }).catch(() => undefined);
@@ -173,10 +179,13 @@ function ChatConversation({ userId }: { userId: string }) {
   }, [latest, q.dataUpdatedAt, q.isError, qc, userId, readFn]);
   const send = useMutation({
     mutationFn: (data: ChatSend) => sendFn({ data }),
-    onSuccess: () => {
+    onSuccess: (_, sent) => {
       request.current = null;
       setText("");
       setUploads([]);
+      qc.setQueryData<ChatFile[]>(["chat-drafts", userId], (previous = []) =>
+        previous.filter((f) => !sent.attachmentIds?.includes(f.id)),
+      );
       void qc.invalidateQueries({ queryKey: ["chat-drafts", userId] });
       setCursor(undefined);
       void qc.invalidateQueries({ queryKey: ["chat-messages", userId] });
@@ -435,6 +444,11 @@ function ChatConversation({ userId }: { userId: string }) {
         {uploadError && (
           <p className="chat-error" role="alert">
             {uploadError}
+          </p>
+        )}
+        {drafts.isError && (
+          <p className="chat-error" role="alert">
+            A korábbi csatolmányok nem tölthetők be: {drafts.error.message}
           </p>
         )}
         {uploading && (
