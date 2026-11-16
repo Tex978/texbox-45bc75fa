@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/lib/auth.functions";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { LayoutDashboard, Clapperboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, Menu, Users, LogOut, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Clapperboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, Menu, Users, LogOut, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 const allNav = [
@@ -11,6 +11,7 @@ const allNav = [
   { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/home", label: "Okosotthon", icon: House }, { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
+const primaryTabs: string[] = ["/", "/search", "/streaming", "/home"];
 export const meQuery = { queryKey: ["me"], queryFn: () => getMe(), staleTime: 60_000 } as const;
 function ProfileMenu() {
   const { data } = useQuery(meQuery);
@@ -33,6 +34,12 @@ export function Shell({ children, demo, className = "" }: { children: ReactNode;
       <nav className="app-nav" aria-label="Főmenü">{nav.map(({to, label, icon: Icon}) => <Link key={to} to={to} activeOptions={{exact: true}}><Icon size={17} strokeWidth={1.7} />{label}</Link>)}</nav>
     </div></header>
     <main className="app-main">{children}</main>
+    {!className.includes("smart-home") && <nav className="app-tabbar" aria-label="Gyors menü">
+      {nav.filter((n) => primaryTabs.includes(n.to)).map(({ to, label, icon: Icon }) => <Link key={to} to={to} activeOptions={{ exact: true }}><Icon size={22} strokeWidth={1.8} /><span>{label}</span></Link>)}
+      <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="További oldalak"><MoreHorizontal size={22} strokeWidth={1.8} /><span>Több</span></button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="top" className="min-w-56">{nav.filter((n) => !primaryTabs.includes(n.to)).map(({ to, label, icon: Icon }) => <DropdownMenuItem key={to} asChild><Link to={to} className="min-h-12"><Icon />{label}</Link></DropdownMenuItem>)}
+          {me?.user?.can.users && <DropdownMenuItem asChild><Link to="/family" className="min-h-12"><Users />Család</Link></DropdownMenuItem>}</DropdownMenuContent></DropdownMenu>
+    </nav>}
   </div>;
 }
 const titleIcons: Record<string, LucideIcon> = { "Tárhely": HardDrive, "Nemrég nézett": History, "Legutóbb hozzáadva": Plus };
@@ -48,4 +55,11 @@ export function Bar({ value }: { value: number }) {
 export function Poster({ src, title }: { src?: string; title: string; hue?: number }) {
   return src ? <img src={src} alt={title} loading="lazy" className="aspect-[2/3] w-full rounded-lg bg-secondary object-cover" />
     : <div className="app-poster-placeholder aspect-[2/3] w-full rounded-lg p-2 text-xs"><Film size={24} strokeWidth={1.2} />{title && <span className="line-clamp-2">{title}</span>}</div>;
+}
+
+export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+  return <div className="page-header"><div className="min-w-0"><h1>{title}</h1>{subtitle && <p className="page-subtitle">{subtitle}</p>}</div>{actions && <div className="page-actions">{actions}</div>}</div>;
+}
+export function EmptyState({ icon: Icon = Film, title, children }: { icon?: LucideIcon; title: string; children?: ReactNode }) {
+  return <div className="empty-state"><span className="empty-state-icon"><Icon size={22} strokeWidth={1.6} /></span><p className="font-medium">{title}</p>{children && <div className="text-sm text-muted-foreground">{children}</div>}</div>;
 }

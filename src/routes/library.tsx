@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Shell, Card, Poster } from "@/components/Shell";
+import { Shell, Card, Poster, PageHeader } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { Trash2, X } from "lucide-react";
 import { getLibrary, deleteMedia } from "@/lib/nas.functions";
@@ -37,7 +37,7 @@ function Library() {
   const chip = (on: boolean) => `rounded-md px-3 py-1.5 text-sm ${on ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"}`;
   return (
     <Shell demo={data.demo}>
-      <h1 className="mb-2 font-display text-3xl font-bold">Tárhely</h1>
+      <PageHeader title="Tárhely" />
       <p className="mb-6 text-sm text-muted-foreground">{items.length} elem · összesen {gb(total)}</p>
       <div className="mb-4 flex flex-wrap items-center gap-1">
         {["Mind", "Film", "Sorozat"].map((t) => <Button variant="ghost" key={t} className={chip(type === t)} onClick={() => setType(t)}>{t}</Button>)}

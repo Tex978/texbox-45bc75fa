@@ -30,14 +30,13 @@ use the editor.
 <!-- LOVABLE:END -->
 
 <!-- AGENT-MEMORY:BEGIN -->
-- Plex poster requests use the same shared-store-first configuration and legacy cookie fallback as overview reads; send the Plex token in a server-side header so other browsers can load posters without exposing credentials.
+- Plex posters use the shared-store config and a server-side token header, so any browser loads them without exposing credentials.
 - Thermometer metadata shares the existing server store; retain all discovered sensors for restoration while applying one visibility filter to tiles and summaries, and migrate browser names without overwriting shared choices.
 - Shared settings migrate legacy cookies only for missing keys, commit disk writes atomically before updating cache, and surface filesystem failures instead of claiming browser-only saves are shared; this prevents silent cross-device loss.
 - Docker builds use native runners per architecture and slash-free matrix architecture labels for artifact names, because GitHub rejects platform strings containing `/` as artifact names.
-- Smart-home presentation uses cached vendor readings for compact summary tiles and category-switched panels, not one long vendor list; preserve polling and device command semantics during layout changes.
 - Home Connect reads preserve HTTP-specific sanitized errors, treat only missing active programs as normal, and allow relinking from the error state; request provider-supported English responses while keeping the UI Hungarian.
 - Media discovery uses TMDB for movie/TV categories and details and OMDb or explicitly named Arr IMDb fields for IMDb scores; never relabel TMDB scores as IMDb. Preserve TMDB movie and TVDB series request IDs, keep provider credentials in the existing self-hosted configuration, and label sample catalogs and non-personalized fallbacks honestly.
-- App icons share one photo cutout as resized public PNGs; manifest-only, no service worker, so live reads stay uncached.
+- App icons are resized public PNGs of one cutout; manifest-only, no service worker, so live reads stay uncached.
 - The overview heading reuses the bundled full-body photographic cutout in normal layout flow (not the smart-home header) so the photo never covers device controls.
 - Thermometer history is requested on demand from Xiaomi with bounded reads, decoded in thermo-history.ts, and never synthesized as real measurements; dashboard mobile CSS remains scoped to smart-home.
 - Xiaomi thermometer reads select service/property IDs per model; Monitor 3 has a distinct layout, so avoid applying legacy BLE IDs universally.
@@ -53,4 +52,5 @@ use the editor.
 - Family accounts live in SQLite (node:sqlite) at <data>/texbox.db via src/lib/auth.server.ts: scrypt hashes, hashed session tokens, one-time invite/reset links, daily VACUUM INTO snapshots; roles/permissions in client-safe src/lib/permissions.ts. The gate requires a session once any account exists, APP_PASSWORD only unlocks /__setup, and with no accounts and no APP_PASSWORD (preview) the app stays open. Mutating server fns call guard(permission) so UI hiding is never the security boundary.
 - Shared-store values are AES-GCM encrypted at rest when TEXBOX_SECRET_KEY is set (plaintext migrated on first load); never return secret values to clients.
 - Household UI preferences (favorites, theme, rooms, hidden devices) go through useSharedPref and the whitelisted PREF_KEYS in shared-prefs.ts, stored in the shared NAS store with per-key permissions; localStorage is only a one-time migration source, so all devices stay in sync.
+- Non-smart-home pages use Shell with a phone bottom tab bar (four primary routes plus a Több menu) and shared PageHeader/EmptyState; smart-home keeps its own tabs, so Shell skips the tab bar there.
 <!-- AGENT-MEMORY:END -->

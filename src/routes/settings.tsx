@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Shell, Card } from "@/components/Shell";
+import { Shell, Card, PageHeader } from "@/components/Shell";
 import { getStatus, getConfig, saveConfig, getConnectionStorage } from "@/lib/nas.functions";
 import { Button } from "@/components/ui/button";
 import { greeQuery } from "@/components/Gree";
@@ -53,7 +53,7 @@ function Settings() {
   };
   return (
     <Shell>
-      <h1 className="mb-2 font-display text-3xl font-bold">Kapcsolatok</h1>
+      <PageHeader title="Kapcsolatok" />
       <p className="mb-6 text-sm text-muted-foreground">{storage.shared ? storage.saved ? "Beállítások a Synologyra mentve · minden eszközön közösek" : "A Synologyn még nincsenek mentett beállítások" : "Csak ebben a böngészőben mentett beállítások · nem közösek a telefonnal"}</p>
       <div className="grid gap-4 md:grid-cols-2">{services.map((s) => {
         const st = s.key === "gree" || s.key === "media" ? undefined : status[s.key];

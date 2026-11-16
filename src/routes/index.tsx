@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { Shell, Card, Bar, Poster } from "@/components/Shell";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { Clapperboard, Download, HardDrive, History, House, Play, Plus, Search } from "lucide-react";
+import { Shell, Bar, Poster, EmptyState, meQuery } from "@/components/Shell";
 import { getOverview } from "@/lib/nas.functions";
 import childFullBody from "@/assets/child-full-body.png";
 const q = queryOptions({ queryKey: ["overview"], queryFn: () => getOverview(), refetchInterval: 10000 });
@@ -13,42 +14,58 @@ export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(q),
   component: Index,
 });
+const thumb = (t?: string) => (t ? `/api/plex-thumb?path=${encodeURIComponent(t)}` : "");
+const shortcuts = [
+  { to: "/search", label: "Keresés", icon: Search }, { to: "/streaming", label: "Streaming", icon: Clapperboard },
+  { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/home", label: "Okosotthon", icon: House },
+] as const;
+function greeting() {
+  const h = new Date().getHours();
+  return h < 10 ? "Jó reggelt" : h < 18 ? "Szia" : "Jó estét";
+}
 function Index() {
   const { data } = useSuspenseQuery(q);
+  const me = useQuery(meQuery).data?.user;
+  const total = data.volumes.reduce((a, v) => a + v.total, 0);
+  const used = data.volumes.reduce((a, v) => a + v.used, 0);
   return (
     <Shell demo={data.demo}>
-      <div className="overview-family-heading">
-        <h1 className="min-w-0 font-display text-3xl font-bold">Áttekintő</h1>
-        <img src={childFullBody} alt="A gyermek teljes alakos, körbevágott fotója" className="family-cutout" width={300} height={1024} />
+      <section className="ov-hero">
+        <div className="min-w-0">
+          <p className="ov-eyebrow" suppressHydrationWarning>{new Date().toLocaleDateString("hu-HU", { weekday: "long", month: "long", day: "numeric" })}</p>
+          <h1 suppressHydrationWarning>{greeting()}{me ? `, ${me.displayName.split(" ")[0]}` : ""}!</h1>
+          <p className="page-subtitle">{data.streams.length ? `${data.streams.length} lejátszás fut most a Plexen.` : "Most senki nem néz semmit a Plexen."}</p>
+        </div>
+        <img src={childFullBody} alt="" aria-hidden className="ov-hero-photo" width={300} height={1024} />
+      </section>
+
+      <div className="ov-stats">
+        <div className="ov-stat"><HardDrive size={18} /><span className="ov-stat-label">Szabad hely</span><b>{total ? `${(total - used).toFixed(1)} TB` : "–"}</b>{total > 0 && <Bar value={(used / total) * 100} />}</div>
+        <div className="ov-stat"><Play size={18} /><span className="ov-stat-label">Most nézik</span><b>{data.streams.length}</b></div>
+        <div className="ov-stat"><Plus size={18} /><span className="ov-stat-label">Friss a könyvtárban</span><b>{data.recent.length}</b></div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Tárhely">
-          <div className="space-y-4">{data.volumes.map((v) => (
-            <div key={v.name}><div className="mb-1 flex justify-between gap-2 text-sm"><span>{v.name}</span>
-              <span className="font-mono text-muted-foreground">{v.used} / {v.total} TB · {(v.total - v.used).toFixed(1)} TB szabad</span></div>
-              <Bar value={(v.used / v.total) * 100} /></div>))}
-            {data.volumes.length === 0 && <p className="text-sm text-muted-foreground">Nincs adat (Radarr szükséges).</p>}</div>
-        </Card>
-        <Card title={`Most nézik · ${data.streams.length} stream`}>
-          <div className="space-y-4">{data.streams.map((s, i) => (
-            <div key={i}><div className="flex justify-between gap-2 text-sm"><span className="font-medium">{s.title}</span><span className="font-mono text-xs text-primary">{s.mode}</span></div>
-              <div className="mb-1 text-xs text-muted-foreground">{s.user} · {s.device} · {s.quality}</div><Bar value={s.progress} /></div>))}
-            {data.streams.length === 0 && <p className="text-sm text-muted-foreground">Most senki nem néz semmit.</p>}</div>
-        </Card>
-        <Card title="Nemrég nézett" className="md:col-span-2">
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">{data.watched.map((r, i) => (
-            <div key={i}><Poster src={r.thumb ? `/api/plex-thumb?path=${encodeURIComponent(r.thumb)}` : ""} title={r.title} hue={r.hue} />
-              <div className="mt-1 truncate text-xs text-muted-foreground">{r.title}{r.who && ` · ${r.who}`}</div></div>))}
-            {data.watched.length === 0 && <p className="col-span-full text-sm text-muted-foreground">Nincs megtekintési előzmény (Plex szükséges).</p>}</div>
-        </Card>
-        <Card title="Legutóbb hozzáadva" className="md:col-span-2">
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">{data.recent.map((r, i) => (
-            <div key={i}>
-              {r.thumb ? <img src={`/api/plex-thumb?path=${encodeURIComponent(r.thumb)}`} alt={r.title} className="aspect-[2/3] w-full rounded-lg object-cover" loading="lazy" />
-                : <Poster title={r.title} />}
-              <div className="mt-1 truncate text-xs text-muted-foreground">{r.title} · {r.year}</div></div>))}</div>
-        </Card>
-      </div>
+
+      <nav className="ov-shortcuts" aria-label="Gyors elérés">{shortcuts.map(({ to, label, icon: Icon }) => <Link key={to} to={to} className="ov-shortcut"><span><Icon size={20} /></span>{label}</Link>)}</nav>
+
+      {data.streams.length > 0 && <section className="ov-block"><h2 className="ov-title"><Play size={18} />Most nézik</h2>
+        <div className="ov-streams">{data.streams.map((s, i) => <div key={i} className="ov-stream">
+          <div className="flex justify-between gap-2 text-sm"><span className="truncate font-medium">{s.title}</span><span className="shrink-0 font-mono text-xs text-primary">{s.mode}</span></div>
+          <div className="mb-2 text-xs text-muted-foreground">{s.user} · {s.device} · {s.quality}</div><Bar value={s.progress} /></div>)}</div>
+      </section>}
+
+      <section className="ov-block"><h2 className="ov-title"><History size={18} />Nemrég nézett</h2>
+        {data.watched.length ? <div className="poster-row">{data.watched.map((r, i) => <figure key={i}><Poster src={thumb(r.thumb)} title={r.title} /><figcaption>{r.title}{r.who && <span> · {r.who}</span>}</figcaption></figure>)}</div>
+          : <EmptyState icon={History} title="Nincs megtekintési előzmény">A Plex kapcsolat beállítása után itt jelennek meg.</EmptyState>}
+      </section>
+      <section className="ov-block"><h2 className="ov-title"><Plus size={18} />Legutóbb hozzáadva</h2>
+        {data.recent.length ? <div className="poster-row">{data.recent.map((r, i) => <figure key={i}><Poster src={thumb(r.thumb)} title={r.title} /><figcaption>{r.title}{r.year ? <span> · {r.year}</span> : null}</figcaption></figure>)}</div>
+          : <EmptyState icon={Plus} title="Még nincs friss tartalom" />}
+      </section>
+
+      <section className="ov-block"><h2 className="ov-title"><HardDrive size={18} />Kötetek</h2>
+        <div className="ov-volumes">{data.volumes.map((v) => <div key={v.name} className="ov-stream"><div className="mb-2 flex justify-between gap-2 text-sm"><span>{v.name}</span><span className="font-mono text-muted-foreground">{v.used} / {v.total} TB</span></div><Bar value={(v.used / v.total) * 100} /></div>)}
+          {data.volumes.length === 0 && <EmptyState icon={HardDrive} title="Nincs tárhelyadat">A Synology vagy Radarr kapcsolat szükséges.</EmptyState>}</div>
+      </section>
     </Shell>
   );
 }
