@@ -53,7 +53,7 @@ export function EnergyHistory() {
   const points = rows ? [] : mergePlants(r?.plants ?? []);
   const values = points.flatMap((p) => p.value == null ? [] : [p.value]);
   const tip = { contentStyle: { background: "var(--card)", borderColor: "var(--border)", color: "var(--foreground)", borderRadius: 12 }, labelFormatter: (l: unknown) => tick(span, String(l)), formatter: (v: unknown, n: unknown) => [`${f(Number(v))} ${unit}`, SERIES.find((s) => s.k === n)?.name ?? "Termelés"] as [string, string] };
-  const axes = <><CartesianGrid stroke="var(--border)" vertical={false} /><XAxis dataKey="label" tickFormatter={(l) => tick(span, String(l))} stroke="var(--muted-foreground)" fontSize={11} minTickGap={span === "day" ? 28 : 6} /><YAxis stroke="var(--muted-foreground)" fontSize={11} /></>;
+  const axes = [<CartesianGrid key="g" stroke="var(--border)" vertical={false} />, <XAxis key="x" dataKey="label" tickFormatter={(l) => tick(span, String(l))} stroke="var(--muted-foreground)" fontSize={11} minTickGap={span === "day" ? 28 : 6} />, <YAxis key="y" stroke="var(--muted-foreground)" fontSize={11} />];
 
   return <div className="en-card en-history">
     <div className="en-history-head"><h3>Energia-előzmények</h3>
