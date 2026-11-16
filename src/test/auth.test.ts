@@ -14,6 +14,8 @@ import {
   acceptInvite,
   updateUser,
   endSession,
+  db,
+  authStorageUnavailable,
 } from "@/lib/auth.server";
 import { can } from "@/lib/permissions";
 
@@ -23,6 +25,14 @@ beforeEach(() => {
 });
 
 describe("family accounts", () => {
+  it("does not mistake the hosted preview virtual filesystem for broken NAS storage", () => {
+    vi.stubGlobal("navigator", { userAgent: "Cloudflare-Workers" });
+    try {
+      expect(db()).toBeNull();
+      expect(authStorageUnavailable()).toBe(false);
+      expect(requirePermission(undefined, "home")).toBeNull();
+    } finally { vi.unstubAllGlobals(); }
+  });
   it("does not open permissions when NAS account storage is unavailable", () => {
     const old = process.env["DATA_DIR"];
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
