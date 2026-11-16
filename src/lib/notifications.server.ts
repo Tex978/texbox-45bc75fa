@@ -207,7 +207,7 @@ export function markRead(
       .run(at, u.id).changes;
   let n = 0;
   for (const id of input.ids ?? [])
-    n += d
+    n += Number(d
       .prepare("UPDATE notifications SET read_at=? WHERE id=? AND recipient=?")
       .run(at, id, u.id).changes;
   return n;
