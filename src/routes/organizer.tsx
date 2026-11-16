@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { Shell, PageHeader } from "@/components/Shell";
 import { Organizer } from "@/components/Organizer";
 
@@ -25,6 +26,9 @@ function OrganizerPage() {
   return (
     <Shell>
       <PageHeader title="Családi szervező" />
+      <Button asChild variant="outline" className="mb-4">
+        <Link to="/games">🐾 Gyerek játékok</Link>
+      </Button>
       <Organizer />
     </Shell>
   );

@@ -46,7 +46,7 @@ export const primaryNav = [
   { to: "/", label: "Főoldal", icon: LayoutDashboard, match: ["/"] },
   { to: "/home", label: "Otthon", icon: House, match: ["/home"] },
   { to: "/tasks", label: "Feladatok", icon: ClipboardList, match: ["/tasks"] },
-  { to: "/organizer", label: "Család", icon: Users, match: ["/organizer", "/rewards", "/family"] },
+  { to: "/organizer", label: "Család", icon: Users, match: ["/organizer", "/rewards", "/family", "/games"] },
   {
     to: "/media",
     label: "Média",
@@ -59,6 +59,7 @@ export const moreNav = [
   { to: "/downloads", label: "Letöltések", icon: Download },
   { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/rewards", label: "Pontjaim és ajándékbolt", icon: Gift },
+  { to: "/games", label: "Gyerek játékok", icon: Gift },
   { to: "/family", label: "Családi fiókok és jogosultságok", icon: UserRound },
   { to: "/settings", label: "Kapcsolatok és állapot", icon: Cable },
 ] as const;
