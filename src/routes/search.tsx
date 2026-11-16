@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 import { Shell, Poster } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { MediaDetail } from "@/components/MediaDetail";
-import { Plus, Check, Film, Tv, Sparkles, CalendarDays, Flame, TrendingUp, Star, Search as SearchIcon, ChevronLeft, ChevronRight, Cable } from "lucide-react";
+import { Plus, Check, Film, Tv, Sparkles, CalendarDays, Flame, TrendingUp, Star, Search as SearchIcon, ChevronLeft, ChevronRight, Cable, SlidersHorizontal, X } from "lucide-react";
 import { browseMedia, requestMedia } from "@/lib/nas.functions";
 import type { MediaType, MediaCategory, MediaItem } from "@/lib/media";
-const browseOptions = (type: MediaType, category: MediaCategory, q: string, page: number) => queryOptions({
-  queryKey: ["media-browse", type, category, q, page], queryFn: () => browseMedia({ data: { type, category, q, page } }), staleTime: 600000, retry: false,
+import { activeCount, DEFAULT_FILTERS, GENRES, normalizeFilters, type MediaFilters } from "@/lib/media-filters";
+const SAVED = "media-search-state";
+const browseOptions = (type: MediaType, category: MediaCategory, q: string, page: number, filters: MediaFilters = DEFAULT_FILTERS) => queryOptions({
+  queryKey: ["media-browse", type, category, q, page, filters], queryFn: () => browseMedia({ data: { type, category, q, page, filters } }), staleTime: 600000, retry: false,
 });
 const initial = browseOptions("Film", "recommended", "", 1);
 const categories = [
@@ -34,9 +36,31 @@ function Search() {
   const [selected, setSelected] = useState<MediaItem | null>(null);
   const [profile, setProfile] = useState("1080p");
   const [state, setState] = useState<Record<string, string>>({});
+  const [filters, setFiltersRaw] = useState<MediaFilters>(DEFAULT_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
+  const [restored, setRestored] = useState(false);
   const request = useServerFn(requestMedia);
+  // Search conditions are personal and kept per browser; restored after mount to avoid hydration mismatch.
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(SAVED) || "null");
+      if (v) {
+        const t: MediaType = v.type === "Sorozat" ? "Sorozat" : "Film";
+        setType(t);
+        if (categories.some((c) => c.id === v.category)) setCategory(v.category);
+        setFiltersRaw(normalizeFilters(v.filters, t));
+      }
+    } catch { /* ignore */ }
+    setRestored(true);
+  }, []);
+  useEffect(() => {
+    if (!restored) return;
+    try { localStorage.setItem(SAVED, JSON.stringify({ type, category, filters })); } catch { /* ignore */ }
+  }, [restored, type, category, filters]);
+  const setFilters = (next: Partial<MediaFilters>) => { setFiltersRaw((f) => normalizeFilters({ ...f, ...next }, type)); setPage(1); };
+  const count = activeCount(filters);
   useEffect(() => { const timer = setTimeout(() => { setDq(q); setPage(1); }, 400); return () => clearTimeout(timer); }, [q]);
-  const { data, isFetching, isError, refetch } = useQuery(browseOptions(type, category, dq, page));
+  const { data, isFetching, isError, refetch } = useQuery(browseOptions(type, category, dq, page, filters));
   const req = async (item: MediaItem) => {
     const key = item.type + item.id;
     setState((s) => ({ ...s, [key]: "busy" }));
@@ -46,13 +70,37 @@ function Search() {
   return <Shell demo={!!data?.demo}>
     <div className="flex flex-wrap justify-between items-end gap-4"><h1>Filmek és sorozatok</h1><span className="text-xs text-muted-foreground">{data?.items.length || 0} találat</span></div>
     <div className="media-toolbar">
-      <div className="media-segment" aria-label="Médiatípus">{(["Film", "Sorozat"] as const).map((value) => <Button key={value} variant={type === value ? "default" : "ghost"} aria-pressed={type === value} onClick={() => { setType(value); setPage(1); }}>{value === "Film" ? <Film size={17} /> : <Tv size={17} />}{value === "Film" ? "Filmek" : "Sorozatok"}</Button>)}</div>
+      <div className="media-segment" aria-label="Médiatípus">{(["Film", "Sorozat"] as const).map((value) => <Button key={value} variant={type === value ? "default" : "ghost"} aria-pressed={type === value} onClick={() => { setType(value); setFiltersRaw((f) => normalizeFilters(f, value)); setPage(1); }}>{value === "Film" ? <Film size={17} /> : <Tv size={17} />}{value === "Film" ? "Filmek" : "Sorozatok"}</Button>)}</div>
       <div className="media-search-inputs flex min-w-0 flex-1 sm:max-w-lg gap-2">
         <label className="relative min-w-0 flex-1"><SearchIcon size={17} className="absolute left-3 top-3 text-muted-foreground" /><input aria-label="Film vagy sorozat keresése" value={q} onChange={(e) => setQ(e.target.value)} placeholder={type === "Film" ? "Film keresése…" : "Sorozat keresése…"} className="w-full min-w-0 rounded-md border border-input bg-card pl-10 pr-3 py-2 outline-none focus:ring-2 focus:ring-ring" /></label>
         <select aria-label="Kért minőség" value={profile} onChange={(e) => setProfile(e.target.value)} className="rounded-md border border-input bg-card px-2 py-2"><option>720p</option><option>1080p</option><option>4K</option></select>
       </div>
     </div>
     <div className="media-category-nav" aria-label="Kínálat kategóriája">{categories.map(({ id, title, icon: Icon }) => <Button key={id} variant={category === id ? "secondary" : "ghost"} aria-pressed={category === id} onClick={() => { setCategory(id); setQ(""); setDq(""); setPage(1); }}><Icon size={16} />{title}</Button>)}</div>
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      <Button variant={count ? "default" : "outline"} aria-expanded={showFilters} aria-controls="media-filters" onClick={() => setShowFilters((v) => !v)}><SlidersHorizontal size={16} />Szűrők{count ? ` (${count})` : ""}</Button>
+      {filters.genre > 0 && <Button variant="secondary" size="sm" onClick={() => setFilters({ genre: 0 })}>{GENRES[type].find((g) => g.id === filters.genre)?.name}<X size={14} /></Button>}
+      {(filters.yearFrom > 0 || filters.yearTo > 0) && <Button variant="secondary" size="sm" onClick={() => setFilters({ yearFrom: 0, yearTo: 0 })}>{filters.yearFrom || "…"}–{filters.yearTo || "…"}<X size={14} /></Button>}
+      {filters.minRating > 0 && <Button variant="secondary" size="sm" onClick={() => setFilters({ minRating: 0 })}>{filters.minRating}+ pont<X size={14} /></Button>}
+      {count > 0 && <Button variant="ghost" size="sm" onClick={() => { setFiltersRaw(DEFAULT_FILTERS); setPage(1); }}>Összes törlése</Button>}
+    </div>
+    {showFilters && <div className="media-filter-backdrop" onClick={() => setShowFilters(false)} />}
+    {showFilters && <section id="media-filters" className="media-filter-panel" aria-label="Szűrők">
+      <div className="flex items-center justify-between gap-2"><h2 className="text-lg font-semibold">Szűrők</h2><Button variant="ghost" size="icon" aria-label="Szűrők bezárása" onClick={() => setShowFilters(false)}><X /></Button></div>
+      <fieldset><legend>Műfaj</legend><div className="media-chip-row">
+        <Button size="sm" variant={!filters.genre ? "default" : "outline"} aria-pressed={!filters.genre} onClick={() => setFilters({ genre: 0 })}>Mind</Button>
+        {GENRES[type].map((g) => <Button key={g.id} size="sm" variant={filters.genre === g.id ? "default" : "outline"} aria-pressed={filters.genre === g.id} onClick={() => setFilters({ genre: filters.genre === g.id ? 0 : g.id })}>{g.name}</Button>)}
+      </div></fieldset>
+      <div className="media-filter-grid">
+        <label>Évtől<input type="number" inputMode="numeric" min={1900} max={new Date().getFullYear()} placeholder="pl. 2010" value={filters.yearFrom || ""} onChange={(e) => setFilters({ yearFrom: Number(e.target.value) })} /></label>
+        <label>Évig<input type="number" inputMode="numeric" min={1900} max={new Date().getFullYear() + 2} placeholder="pl. 2025" value={filters.yearTo || ""} onChange={(e) => setFilters({ yearTo: Number(e.target.value) })} /></label>
+        <label>Minimum értékelés (TMDB)<select value={filters.minRating} onChange={(e) => setFilters({ minRating: Number(e.target.value) })}><option value={0}>Bármely</option>{[5, 6, 7, 8].map((r) => <option key={r} value={r}>{r}+</option>)}</select></label>
+        <label>Rendezés<select value={filters.sort} onChange={(e) => setFilters({ sort: e.target.value as MediaFilters["sort"] })}><option value="popularity">Népszerűség</option><option value="rating">Értékelés</option><option value="newest">Legújabb</option></select></label>
+        <label>Elérhetőség<select value={filters.availability} onChange={(e) => setFilters({ availability: e.target.value as MediaFilters["availability"] })}><option value="all">Mind</option><option value="library">Már megvan a NAS-on</option><option value="missing">Még nincs meg</option></select></label>
+      </div>
+      <p className="text-xs text-muted-foreground">Szűrés esetén a kategória helyett a TMDB teljes kínálatából keresünk. Kulcsszavas keresésnél a szűrők az aktuális találati oldalra vonatkoznak. A szűrők ebben a böngészőben megmaradnak.</p>
+      <Button className="w-full sm:hidden" onClick={() => setShowFilters(false)}>{data?.items.length ?? 0} találat mutatása</Button>
+    </section>}
     {data?.notice && <div className="mb-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground"><span>{data.notice}</span><Button asChild variant="outline" size="sm"><Link to="/settings"><Cable size={15} />Kapcsolatok</Link></Button></div>}
     {isFetching && <p role="status" className="mb-4 text-sm text-muted-foreground">Kínálat betöltése…</p>}
     {isError && <div role="alert" className="mb-4 flex flex-wrap items-center gap-3 text-destructive">A keresés nem sikerült.<Button variant="outline" onClick={() => void refetch()}>Újrapróbálás</Button></div>}
@@ -65,7 +113,7 @@ function Search() {
         {status === "error" && <p role="alert" className="mt-2 text-xs text-destructive">A kérés sikertelen.</p>}
       </article>;
     })}</div>
-    {!isFetching && !isError && data?.items.length === 0 && <p className="py-12 text-center text-muted-foreground">Nincs találat ebben a kategóriában.</p>}
+    {!isFetching && !isError && data?.items.length === 0 && <p className="py-12 text-center text-muted-foreground">{count ? "Nincs a szűrőknek megfelelő cím. Lazíts a feltételeken." : "Nincs találat ebben a kategóriában."}</p>}
     {(page > 1 || data?.hasMore) && <div className="flex justify-center items-center gap-4 mt-8"><Button variant="outline" size="icon" aria-label="Előző oldal" disabled={page === 1 || isFetching} onClick={() => setPage(page - 1)}><ChevronLeft /></Button><span className="text-sm">{page}. oldal</span><Button variant="outline" size="icon" aria-label="Következő oldal" disabled={!data?.hasMore || isFetching} onClick={() => setPage(page + 1)}><ChevronRight /></Button></div>}
     {selected && <MediaDetail key={selected.type + selected.id} item={selected} onClose={() => setSelected(null)} request={(item) => void req(item)} requestState={state[selected.type + selected.id]} />}
   </Shell>;

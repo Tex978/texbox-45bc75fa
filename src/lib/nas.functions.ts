@@ -251,7 +251,7 @@ export const browseMedia = createServerFn({ method: "GET" })
     const kind = data.type === "Film" ? "movie" : "tv";
     const f = data.filters;
     const discover = !data.q && needsDiscover(f);
-    const result = (all: MediaItem[], notice = "", demo = false, hasMore = false) => ({ items: all.filter((i) => matchesAvailability(i.inLibrary, f.availability)), notice, demo, hasMore, filtered: activeCount(f) > 0 });
+    const result = (all: MediaItem[], notice = "", demo = false, hasMore = false) => ({ notice: notice || (!has("TMDB_TOKEN") && needsDiscover(f) ? "Műfaj, év és értékelés szerinti szűréshez TMDB-kapcsolat szükséges." : ""), items: all.filter((i) => matchesAvailability(i.inLibrary, f.availability)), demo, hasMore, filtered: activeCount(f) > 0 });
     try {
       if (has("TMDB_TOKEN")) {
         let path = data.q ? `/search/${kind}` : discover ? `/discover/${kind}` : data.category === "trending" ? `/trending/${kind}/week` : data.category === "new" ? `/discover/${kind}` : `/${kind}/popular`;
