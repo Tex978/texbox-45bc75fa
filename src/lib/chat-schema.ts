@@ -1,14 +1,13 @@
 import { z } from "zod";
+import { fileIdsSchema } from "./chat-files";
 export const chatSendSchema = z
   .object({
     clientRequestId: z.string().uuid(),
-    text: z
-      .string()
-      .trim()
-      .min(1, "Az üzenet nem lehet üres.")
-      .max(1000, "Az üzenet legfeljebb 1000 karakter lehet."),
+    text: z.string().trim().max(1000, "Az üzenet legfeljebb 1000 karakter lehet."),
+    attachmentIds: fileIdsSchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => v.text.length > 0 || !!v.attachmentIds?.length, "Az üzenet nem lehet üres.");
 export type ChatSend = z.infer<typeof chatSendSchema>;
 export const chatPageSchema = z.object({ before: z.number().int().positive().optional() }).strict();
 export const CAT_EMOJIS = ["😺", "😸", "😻", "🙀", "😿", "😾", "🐾"] as const;
