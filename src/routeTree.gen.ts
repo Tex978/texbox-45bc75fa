@@ -14,6 +14,7 @@ import { Route as DownloadsRouteImport } from './routes/downloads'
 import { Route as FamilyRouteImport } from './routes/family'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StreamingRouteImport } from './routes/streaming'
@@ -43,6 +44,11 @@ const HomeRoute = HomeRouteImport.update({
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RewardsRoute = RewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/family': typeof FamilyRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/streaming': typeof StreamingRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/family': typeof FamilyRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/streaming': typeof StreamingRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/family': typeof FamilyRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/streaming': typeof StreamingRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/family'
     | '/home'
     | '/library'
+    | '/rewards'
     | '/search'
     | '/settings'
     | '/streaming'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/family'
     | '/home'
     | '/library'
+    | '/rewards'
     | '/search'
     | '/settings'
     | '/streaming'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/family'
     | '/home'
     | '/library'
+    | '/rewards'
     | '/search'
     | '/settings'
     | '/streaming'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   FamilyRoute: typeof FamilyRoute
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
+  RewardsRoute: typeof RewardsRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   StreamingRoute: typeof StreamingRoute
@@ -195,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/library'
       fullPath: '/library'
       preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rewards': {
+      id: '/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof RewardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   FamilyRoute: FamilyRoute,
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
+  RewardsRoute: RewardsRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   StreamingRoute: StreamingRoute,

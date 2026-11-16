@@ -169,7 +169,6 @@ export function Rewards() {
             {shop.map((r) => {
               const w = d.wishes.find((x) => x.person === sel.key && x.rewardId === r.id);
               const missing = r.price - sel.available;
-              const child = sel.key !== d.me || d.people.find((p) => p.key === sel.key)?.child;
               const isChild = sel.child;
               return (
                 <article key={r.id} className="reward-card">
@@ -180,7 +179,7 @@ export function Rewards() {
                   {missing > 0 && <p className="reward-missing">Még {fmt(missing)} pont kell</p>}
                   <div className="task-actions">
                     <Button
-                      disabled={busy || missing > 0 || r.stock === 0 || (!!child && !isChild && sel.key !== d.me)}
+                      disabled={busy || missing > 0 || r.stock === 0}
                       onClick={() =>
                         run(
                           () => redeemFn({ data: { rewardId: r.id, requestId: reqId(), expectedPrice: r.price, person: sel.key === d.me ? undefined : sel.key } }),
