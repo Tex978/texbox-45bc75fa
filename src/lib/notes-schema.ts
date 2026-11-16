@@ -1,7 +1,19 @@
 import { z } from "zod";
 // Client-safe family notes & matters (8a). Plain text only; links must be HTTPS.
-export const NOTE_CATEGORIES = ["Otthon", "Gyerekek", "Bevásárlási információ", "Fontos", "Karbantartás", "Ügyintézés", "Egyéb"] as const;
-export const MATTER_STATUS = { planned: "Tervezett", progress: "Folyamatban", done: "Kész" } as const;
+export const NOTE_CATEGORIES = [
+  "Otthon",
+  "Gyerekek",
+  "Bevásárlási információ",
+  "Fontos",
+  "Karbantartás",
+  "Ügyintézés",
+  "Egyéb",
+] as const;
+export const MATTER_STATUS = {
+  planned: "Tervezett",
+  progress: "Folyamatban",
+  done: "Kész",
+} as const;
 export const PRIORITY = { low: "Alacsony", normal: "Normál", high: "Magas" } as const;
 const text = (max: number) => z.string().trim().max(max).default("");
 export const httpsUrl = z
@@ -42,7 +54,11 @@ export const matterSchema = z.object({
   kind: z.literal("matter"),
   url: httpsUrl,
   assignee: z.string().max(100).nullable().default(null),
-  due: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().default(null),
+  due: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .default(null),
   status: z.enum(["planned", "progress", "done"]).default("planned"),
   priority: z.enum(["low", "normal", "high"]).default("normal"),
 });

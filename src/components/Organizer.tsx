@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BookOpen, CalendarDays, Check, NotebookPen, Plus, RefreshCw, ShoppingCart, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  Check,
+  NotebookPen,
+  Plus,
+  RefreshCw,
+  ShoppingCart,
+  Trash2,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Calendar } from "./Calendar";
 import { Notes } from "./Notes";

@@ -2,7 +2,17 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertCircle, Archive, History, ListTodo, Pencil, Pin, Plus, RefreshCw, RotateCcw } from "lucide-react";
+import {
+  AlertCircle,
+  Archive,
+  History,
+  ListTodo,
+  Pencil,
+  Pin,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { notesList, noteSave, noteArchive, noteHistory, matterTask } from "@/lib/notes.functions";
 import {
@@ -17,10 +27,39 @@ import { addDays } from "@/lib/task-schema";
 type Kind = "note" | "matter";
 const blank = (kind: Kind): FamilyItemInput =>
   kind === "note"
-    ? { kind, title: "", content: "", category: "Egyéb", visibility: "personal", childVisible: false, pinned: false, url: "", checklist: [] }
-    : { kind, title: "", content: "", category: "Ügyintézés", visibility: "family", childVisible: false, pinned: false, url: "", assignee: null, due: null, status: "planned", priority: "normal" };
+    ? {
+        kind,
+        title: "",
+        content: "",
+        category: "Egyéb",
+        visibility: "personal",
+        childVisible: false,
+        pinned: false,
+        url: "",
+        checklist: [],
+      }
+    : {
+        kind,
+        title: "",
+        content: "",
+        category: "Ügyintézés",
+        visibility: "family",
+        childVisible: false,
+        pinned: false,
+        url: "",
+        assignee: null,
+        due: null,
+        status: "planned",
+        priority: "normal",
+      };
 const when = (ms: number) =>
-  new Date(ms).toLocaleString("hu-HU", { timeZone: "Europe/Budapest", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  new Date(ms).toLocaleString("hu-HU", {
+    timeZone: "Europe/Budapest",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 function Editor({
   value,
@@ -57,17 +96,30 @@ function Editor({
       <h3>{f.id ? "Szerkesztés" : f.kind === "note" ? "Új jegyzet" : "Új ügy"}</h3>
       <label>
         Cím
-        <input required maxLength={120} value={f.title} onChange={(e) => set({ title: e.target.value })} />
+        <input
+          required
+          maxLength={120}
+          value={f.title}
+          onChange={(e) => set({ title: e.target.value })}
+        />
       </label>
       <label>
         Leírás
-        <textarea rows={5} maxLength={5000} value={f.content} onChange={(e) => set({ content: e.target.value })} />
+        <textarea
+          rows={5}
+          maxLength={5000}
+          value={f.content}
+          onChange={(e) => set({ content: e.target.value })}
+        />
       </label>
       <p className="dash-note">{SECRET_HINT}</p>
       <div className="scene-fields">
         <label>
           Kategória
-          <select value={f.category} onChange={(e) => set({ category: e.target.value as FamilyItemInput["category"] })}>
+          <select
+            value={f.category}
+            onChange={(e) => set({ category: e.target.value as FamilyItemInput["category"] })}
+          >
             {NOTE_CATEGORIES.map((c) => (
               <option key={c}>{c}</option>
             ))}
@@ -86,22 +138,39 @@ function Editor({
       </div>
       {f.visibility === "family" && (
         <label className="notif-toggle">
-          <input type="checkbox" checked={f.childVisible} onChange={(e) => set({ childVisible: e.target.checked })} />
+          <input
+            type="checkbox"
+            checked={f.childVisible}
+            onChange={(e) => set({ childVisible: e.target.checked })}
+          />
           Gyermekfiókok is láthatják
         </label>
       )}
       <label className="notif-toggle">
-        <input type="checkbox" checked={f.pinned} onChange={(e) => set({ pinned: e.target.checked })} /> Kitűzés
+        <input
+          type="checkbox"
+          checked={f.pinned}
+          onChange={(e) => set({ pinned: e.target.checked })}
+        />{" "}
+        Kitűzés
       </label>
       <label>
         Hivatkozás (https, nem kötelező)
-        <input type="url" value={f.url} onChange={(e) => set({ url: e.target.value })} placeholder="https://" />
+        <input
+          type="url"
+          value={f.url}
+          onChange={(e) => set({ url: e.target.value })}
+          placeholder="https://"
+        />
       </label>
       {f.kind === "matter" ? (
         <div className="scene-fields">
           <label>
             Felelős
-            <select value={f.assignee ?? ""} onChange={(e) => set({ assignee: e.target.value || null })}>
+            <select
+              value={f.assignee ?? ""}
+              onChange={(e) => set({ assignee: e.target.value || null })}
+            >
               <option value="">Nincs kijelölve</option>
               {people.map((p) => (
                 <option key={p.key} value={p.key}>
@@ -112,7 +181,11 @@ function Editor({
           </label>
           <label>
             Határidő
-            <input type="date" value={f.due ?? ""} onChange={(e) => set({ due: e.target.value || null })} />
+            <input
+              type="date"
+              value={f.due ?? ""}
+              onChange={(e) => set({ due: e.target.value || null })}
+            />
           </label>
           <label>
             Státusz
@@ -126,7 +199,10 @@ function Editor({
           </label>
           <label>
             Prioritás
-            <select value={f.priority} onChange={(e) => set({ priority: e.target.value as "normal" })}>
+            <select
+              value={f.priority}
+              onChange={(e) => set({ priority: e.target.value as "normal" })}
+            >
               {Object.entries(PRIORITY).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
@@ -144,18 +220,32 @@ function Editor({
                 type="checkbox"
                 checked={c.done}
                 onChange={(e) =>
-                  set({ checklist: f.checklist.map((x, j) => (j === i ? { ...x, done: e.target.checked } : x)) })
+                  set({
+                    checklist: f.checklist.map((x, j) =>
+                      j === i ? { ...x, done: e.target.checked } : x,
+                    ),
+                  })
                 }
               />
               {c.text}
-              <Button type="button" size="sm" variant="ghost" onClick={() => set({ checklist: f.checklist.filter((_, j) => j !== i) })}>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => set({ checklist: f.checklist.filter((_, j) => j !== i) })}
+              >
                 Törlés
               </Button>
             </label>
           ))}
           {f.checklist.length < 30 && (
             <div className="flex gap-2">
-              <input aria-label="Új listaelem" value={newItem} maxLength={200} onChange={(e) => setNewItem(e.target.value)} />
+              <input
+                aria-label="Új listaelem"
+                value={newItem}
+                maxLength={200}
+                onChange={(e) => setNewItem(e.target.value)}
+              />
               <Button
                 type="button"
                 size="sm"
@@ -172,7 +262,11 @@ function Editor({
           )}
         </fieldset>
       )}
-      {err && <p className="task-error" role="alert">{err}</p>}
+      {err && (
+        <p className="task-error" role="alert">
+          {err}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button disabled={busy}>{busy ? "Mentés…" : "Mentés"}</Button>
         <Button type="button" variant="outline" onClick={() => onDone()}>
@@ -221,7 +315,13 @@ export function Notes() {
       setMsg({ text: e instanceof Error ? e.message : "A művelet nem sikerült.", bad: true });
     }
   }
-  if (q.isPending) return <div className="dash-skeleton" aria-label="Betöltés"><span /><span /></div>;
+  if (q.isPending)
+    return (
+      <div className="dash-skeleton" aria-label="Betöltés">
+        <span />
+        <span />
+      </div>
+    );
   if (q.error)
     return (
       <div className="dash-error" role="status">
@@ -278,16 +378,31 @@ export function Notes() {
       )}
       <div className="task-tabs" role="tablist">
         {(["note", "matter"] as Kind[]).map((k) => (
-          <Button key={k} role="tab" aria-selected={kind === k} variant={kind === k ? "default" : "outline"} onClick={() => setKind(k)}>
+          <Button
+            key={k}
+            role="tab"
+            aria-selected={kind === k}
+            variant={kind === k ? "default" : "outline"}
+            onClick={() => setKind(k)}
+          >
             {k === "note" ? "Jegyzetek" : "Ügyek"}
           </Button>
         ))}
-        <Button variant={archived ? "default" : "ghost"} aria-pressed={archived} onClick={() => setArchivedView(!archived)}>
+        <Button
+          variant={archived ? "default" : "ghost"}
+          aria-pressed={archived}
+          onClick={() => setArchivedView(!archived)}
+        >
           <Archive size={15} /> Archívum
         </Button>
       </div>
       <div className="notes-filters">
-        <input aria-label="Keresés" placeholder="Keresés…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input
+          aria-label="Keresés"
+          placeholder="Keresés…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <select aria-label="Kategória szűrő" value={cat} onChange={(e) => setCat(e.target.value)}>
           <option value="">Minden kategória</option>
           {NOTE_CATEGORIES.map((c) => (
@@ -296,16 +411,24 @@ export function Notes() {
         </select>
         {kind === "matter" && (
           <>
-            <select aria-label="Státusz szűrő" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select
+              aria-label="Státusz szűrő"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
               <option value="">Minden státusz</option>
               {Object.entries(MATTER_STATUS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
+                <option key={k} value={k}>
+                  {v}
+                </option>
               ))}
             </select>
             <select aria-label="Felelős szűrő" value={who} onChange={(e) => setWho(e.target.value)}>
               <option value="">Minden felelős</option>
               {d.people.map((p) => (
-                <option key={p.key} value={p.key}>{p.name}</option>
+                <option key={p.key} value={p.key}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </>
@@ -316,7 +439,11 @@ export function Notes() {
           </Button>
         )}
       </div>
-      {msg && <p className={msg.bad ? "task-error" : "task-ok"} role="status">{msg.text}</p>}
+      {msg && (
+        <p className={msg.bad ? "task-error" : "task-ok"} role="status">
+          {msg.text}
+        </p>
+      )}
       {items.length ? (
         <ul className="notes-list">
           {items.map((i) => (
@@ -326,14 +453,21 @@ export function Notes() {
                   {i.pinned && <Pin size={14} aria-label="Kitűzve" />} {i.title}
                 </strong>
                 <small>
-                  {i.category} · {i.visibility === "personal" ? "csak én" : i.childVisible ? "család + gyerekek" : "felnőttek"}
+                  {i.category} ·{" "}
+                  {i.visibility === "personal"
+                    ? "csak én"
+                    : i.childVisible
+                      ? "család + gyerekek"
+                      : "felnőttek"}
                 </small>
               </div>
               {i.content && <p className="notes-content">{i.content}</p>}
               {i.kind === "note" && i.checklist.length > 0 && (
                 <ul className="notes-checklist">
                   {i.checklist.map((c, n) => (
-                    <li key={n} className={c.done ? "is-done" : ""}>{c.done ? "☑" : "☐"} {c.text}</li>
+                    <li key={n} className={c.done ? "is-done" : ""}>
+                      {c.done ? "☑" : "☐"} {c.text}
+                    </li>
                   ))}
                 </ul>
               )}
@@ -345,7 +479,12 @@ export function Notes() {
                 </p>
               )}
               {i.url && (
-                <a href={i.url} target="_blank" rel="noopener noreferrer nofollow" className="dash-link">
+                <a
+                  href={i.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="dash-link"
+                >
                   Hivatkozás megnyitása ↗
                 </a>
               )}
@@ -364,36 +503,61 @@ export function Notes() {
                     variant="ghost"
                     onClick={() =>
                       void act(
-                        () => archive({ data: { id: i.id, version: i.version, archived: !archived } }),
+                        () =>
+                          archive({ data: { id: i.id, version: i.version, archived: !archived } }),
                         archived ? "Visszaállítva." : "Archiválva.",
                       )
                     }
                   >
-                    {archived ? <RotateCcw size={14} /> : <Archive size={14} />} {archived ? "Visszaállítás" : "Archiválás"}
+                    {archived ? <RotateCcw size={14} /> : <Archive size={14} />}{" "}
+                    {archived ? "Visszaállítás" : "Archiválás"}
                   </Button>
                 )}
-                {i.kind === "matter" && i.editable && !archived && (
-                  i.taskId ? (
-                    <Link to="/tasks" className="dash-link">Kapcsolt feladat →</Link>
+                {i.kind === "matter" &&
+                  i.editable &&
+                  !archived &&
+                  (i.taskId ? (
+                    <Link to="/tasks" className="dash-link">
+                      Kapcsolt feladat →
+                    </Link>
                   ) : (
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => void act(() => toTask({ data: { id: i.id } }), "Feladat létrehozva (0 pont).")}
+                      onClick={() =>
+                        void act(
+                          () => toTask({ data: { id: i.id } }),
+                          "Feladat létrehozva (0 pont).",
+                        )
+                      }
                     >
                       <ListTodo size={14} /> Feladat létrehozása
                     </Button>
-                  )
-                )}
-                <Button size="sm" variant="ghost" onClick={() => setHist(hist === i.id ? null : i.id)}>
+                  ))}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setHist(hist === i.id ? null : i.id)}
+                >
                   <History size={14} /> Előzmények
                 </Button>
               </div>
               {hist === i.id && (
                 <ul className="dash-list">
-                  {h.isPending ? <li>Betöltés…</li> : h.error ? <li>{h.error.message}</li> : h.data?.map((e, n) => (
-                    <li key={n}><span>{e.actorName}: {e.action}</span><small>{when(e.at)}</small></li>
-                  ))}
+                  {h.isPending ? (
+                    <li>Betöltés…</li>
+                  ) : h.error ? (
+                    <li>{h.error.message}</li>
+                  ) : (
+                    h.data?.map((e, n) => (
+                      <li key={n}>
+                        <span>
+                          {e.actorName}: {e.action}
+                        </span>
+                        <small>{when(e.at)}</small>
+                      </li>
+                    ))
+                  )}
                 </ul>
               )}
             </li>
@@ -401,7 +565,11 @@ export function Notes() {
         </ul>
       ) : (
         <p className="dash-empty">
-          {archived ? "Az archívum üres." : kind === "note" ? "Még nincs jegyzet." : "Még nincs ügy."}
+          {archived
+            ? "Az archívum üres."
+            : kind === "note"
+              ? "Még nincs jegyzet."
+              : "Még nincs ügy."}
         </p>
       )}
     </section>

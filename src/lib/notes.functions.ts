@@ -20,7 +20,9 @@ export const noteSave = createServerFn({ method: "POST" })
   .inputValidator((v) => itemInput.parse(v))
   .handler(async ({ data }) => ({ id: saveItem(actor(), data) }));
 export const noteArchive = createServerFn({ method: "POST" })
-  .inputValidator((v) => z.object({ id, version: z.number().int(), archived: z.boolean() }).parse(v))
+  .inputValidator((v) =>
+    z.object({ id, version: z.number().int(), archived: z.boolean() }).parse(v),
+  )
   .handler(async ({ data }) => {
     setArchived(actor(), data);
     return { ok: true };

@@ -7,7 +7,9 @@ import { budapestToday } from "./task-schema";
 const store = () => {
   const d = db();
   if (!d)
-    throw new Error("A jegyzetek és ügyek csak a saját NAS-on mentődnek; az előnézet nem ment semmit.");
+    throw new Error(
+      "A jegyzetek és ügyek csak a saját NAS-on mentődnek; az előnézet nem ment semmit.",
+    );
   return d;
 };
 const current = (user: User) => {
@@ -47,9 +49,9 @@ export function notePeople() {
 }
 function out(u: User, r: Row) {
   const body = JSON.parse(r.body) as Record<string, unknown>;
-  const link = store().prepare("SELECT template_id FROM matter_task_links WHERE note_id=?").get(r.id) as
-    | { template_id: string }
-    | undefined;
+  const link = store()
+    .prepare("SELECT template_id FROM matter_task_links WHERE note_id=?")
+    .get(r.id) as { template_id: string } | undefined;
   return {
     ...(body as FamilyItemInput),
     id: r.id,
@@ -120,7 +122,18 @@ export function saveItem(user: User, raw: FamilyItemInput) {
         .prepare(
           "INSERT INTO family_notes(id,kind,owner_id,body,visibility,child_visible,pinned,archived,version,created_at,updated_by,updated_at) VALUES(?,?,?,?,?,?,?,0,1,?,?,?)",
         )
-        .run(id, v.kind, u.id, body, visibility, childVisible ? 1 : 0, pinned ? 1 : 0, now, u.id, now);
+        .run(
+          id,
+          v.kind,
+          u.id,
+          body,
+          visibility,
+          childVisible ? 1 : 0,
+          pinned ? 1 : 0,
+          now,
+          u.id,
+          now,
+        );
       audit(u, id, "create");
       return id;
     }
@@ -128,14 +141,27 @@ export function saveItem(user: User, raw: FamilyItemInput) {
     if (!canSee(u, old) || !canEdit(u, old)) throw new Error("Ezt az elemet nem szerkesztheted.");
     if (old.kind !== v.kind) throw new Error("Az elem típusa nem változtatható.");
     // Only the owner may change who can see the item.
-    if (old.owner_id !== u.id && (visibility !== old.visibility || (childVisible ? 1 : 0) !== old.child_visible))
+    if (
+      old.owner_id !== u.id &&
+      (visibility !== old.visibility || (childVisible ? 1 : 0) !== old.child_visible)
+    )
       throw new Error("A láthatóságot csak a létrehozó módosíthatja.");
     const r = store()
       .prepare(
         "UPDATE family_notes SET body=?,visibility=?,child_visible=?,pinned=?,version=version+1,updated_by=?,updated_at=? WHERE id=? AND version=?",
       )
-      .run(body, visibility, childVisible ? 1 : 0, pinned ? 1 : 0, u.id, now, v.id, v.version ?? -1);
-    if (!r.changes) throw new Error("Közben valaki más módosította. Töltsd újra, és próbáld meg ismét.");
+      .run(
+        body,
+        visibility,
+        childVisible ? 1 : 0,
+        pinned ? 1 : 0,
+        u.id,
+        now,
+        v.id,
+        v.version ?? -1,
+      );
+    if (!r.changes)
+      throw new Error("Közben valaki más módosította. Töltsd újra, és próbáld meg ismét.");
     audit(u, v.id, "update");
     return v.id;
   });
@@ -160,7 +186,9 @@ export function itemHistory(user: User, id: string) {
   if (!canSee(u, r)) throw new Error("A jegyzet nem található.");
   return (
     store()
-      .prepare("SELECT actor,action,at FROM family_note_events WHERE note_id=? ORDER BY id DESC LIMIT 50")
+      .prepare(
+        "SELECT actor,action,at FROM family_note_events WHERE note_id=? ORDER BY id DESC LIMIT 50",
+      )
       .all(id) as { actor: string; action: string; at: number }[]
   ).map((e) => ({ ...e, actorName: getUser(e.actor)?.displayName ?? "Ismeretlen" }));
 }

@@ -161,7 +161,9 @@ export function db() {
         CREATE TABLE IF NOT EXISTS scheduler_lease(id INTEGER PRIMARY KEY CHECK(id=1), owner TEXT NOT NULL, expires_at INTEGER NOT NULL);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='notifications'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='notifications'").get()
+    ) {
       const notifBackup = `${dataDir()}/backups/pre-notifications-phase7a.db`;
       if (!fs.existsSync(notifBackup)) d.exec(`VACUUM INTO '${notifBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;
@@ -170,7 +172,9 @@ export function db() {
         CREATE TABLE IF NOT EXISTS notification_settings(user_id TEXT PRIMARY KEY, body TEXT NOT NULL, version INTEGER NOT NULL, updated_at INTEGER NOT NULL);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_notes'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_notes'").get()
+    ) {
       const notesBackup = `${dataDir()}/backups/pre-family-notes-phase8a.db`;
       if (!fs.existsSync(notesBackup)) d.exec(`VACUUM INTO '${notesBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;

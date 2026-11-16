@@ -2,9 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createUser, createChildProfile, createSession, resetAuthDb, db, type User } from "@/lib/auth.server";
+import {
+  createUser,
+  createChildProfile,
+  createSession,
+  resetAuthDb,
+  db,
+  type User,
+} from "@/lib/auth.server";
 import { itemHistory, listItems, matterToTask, saveItem, setArchived } from "@/lib/notes.server";
-import { saveTask, listTasks } from "@/lib/tasks.server";
+import { saveTask } from "@/lib/tasks.server";
 import { balanceOf } from "@/lib/points.server";
 import type { FamilyItemInput } from "@/lib/notes-schema";
 const context = vi.hoisted(() => ({ token: undefined as string | undefined }));
@@ -26,9 +33,34 @@ import { notesList, noteSave, noteArchive, matterTask } from "@/lib/notes.functi
 
 let dir: string, dad: User, mom: User, kid: User, profile: string;
 const note = (p: Partial<FamilyItemInput> = {}) =>
-  ({ kind: "note", title: "Wifi helye", content: "A router a polcon.", category: "Otthon", visibility: "personal", childVisible: false, pinned: false, url: "", checklist: [], ...p }) as FamilyItemInput;
+  ({
+    kind: "note",
+    title: "Wifi helye",
+    content: "A router a polcon.",
+    category: "Otthon",
+    visibility: "personal",
+    childVisible: false,
+    pinned: false,
+    url: "",
+    checklist: [],
+    ...p,
+  }) as FamilyItemInput;
 const matter = (p: Record<string, unknown> = {}) =>
-  ({ kind: "matter", title: "Kazán szerviz", content: "", category: "Karbantartás", visibility: "family", childVisible: false, pinned: false, url: "", assignee: null, due: "2026-12-01", status: "planned", priority: "high", ...p }) as FamilyItemInput;
+  ({
+    kind: "matter",
+    title: "Kazán szerviz",
+    content: "",
+    category: "Karbantartás",
+    visibility: "family",
+    childVisible: false,
+    pinned: false,
+    url: "",
+    assignee: null,
+    due: "2026-12-01",
+    status: "planned",
+    priority: "high",
+    ...p,
+  }) as FamilyItemInput;
 const titles = (u: User, archived = false) => listItems(u, { archived }).items.map((i) => i.title);
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "texbox-notes-"));
@@ -64,7 +96,9 @@ describe("8a family notes and matters", () => {
   });
   it("foreign IDs cannot be edited, archived or read via history", () => {
     const id = saveItem(mom, note());
-    expect(() => saveItem(dad, { ...note({ title: "x" }), id, version: 1 })).toThrow("nem szerkesztheted");
+    expect(() => saveItem(dad, { ...note({ title: "x" }), id, version: 1 })).toThrow(
+      "nem szerkesztheted",
+    );
     expect(() => setArchived(dad, { id, version: 1, archived: true })).toThrow();
     expect(() => itemHistory(dad, id)).toThrow("nem található");
     expect(() => itemHistory(kid, "nope")).toThrow();
@@ -72,9 +106,17 @@ describe("8a family notes and matters", () => {
   it("revision conflict between two phones; parents co-edit family items but only owner changes visibility", () => {
     const id = saveItem(mom, note({ visibility: "family" }));
     saveItem(dad, { ...note({ visibility: "family", title: "Apa javította" }), id, version: 1 });
-    expect(() => saveItem(mom, { ...note({ visibility: "family", title: "Régi" }), id, version: 1 })).toThrow("módosította");
-    expect(() => saveItem(dad, { ...note({ visibility: "family", childVisible: true }), id, version: 2 })).toThrow("létrehozó");
-    expect(listItems(mom).items[0]).toMatchObject({ title: "Apa javította", updatedByName: "Apa", version: 2 });
+    expect(() =>
+      saveItem(mom, { ...note({ visibility: "family", title: "Régi" }), id, version: 1 }),
+    ).toThrow("módosította");
+    expect(() =>
+      saveItem(dad, { ...note({ visibility: "family", childVisible: true }), id, version: 2 }),
+    ).toThrow("létrehozó");
+    expect(listItems(mom).items[0]).toMatchObject({
+      title: "Apa javította",
+      updatedByName: "Apa",
+      version: 2,
+    });
   });
   it("archive and restore keep data and audit", () => {
     const id = saveItem(mom, note());
@@ -90,7 +132,9 @@ describe("8a family notes and matters", () => {
     expect(() => saveItem(mom, note({ url: "http://x.hu" }))).toThrow();
     saveItem(mom, note({ url: "https://ugyfelkapu.gov.hu" }));
     expect(() => saveItem(mom, matter({ assignee: "user:ghost" }))).toThrow("felelős");
-    expect(() => saveItem(mom, matter({ visibility: "personal", assignee: `user:${dad.id}` }))).toThrow();
+    expect(() =>
+      saveItem(mom, matter({ visibility: "personal", assignee: `user:${dad.id}` })),
+    ).toThrow();
     saveItem(mom, matter({ assignee: `profile:${profile}` }));
   });
   it("matter → task is explicit, idempotent and gives no points", () => {
@@ -99,8 +143,18 @@ describe("8a family notes and matters", () => {
     const b = matterToTask(dad, id, saveTask as never);
     expect(a.created).toBe(true);
     expect(b).toEqual({ taskId: a.taskId, created: false });
-    expect((db()!.prepare("SELECT count(*) c FROM task_templates").get() as { c: number }).c).toBe(1);
-    expect(listTasks(mom).occurrences.find((o) => o.templateId === a.taskId)?.body.points).toBe(0);
+    expect((db()!.prepare("SELECT count(*) c FROM task_templates").get() as { c: number }).c).toBe(
+      1,
+    );
+    expect(
+      JSON.parse(
+        (
+          db()!.prepare("SELECT body FROM task_templates WHERE id=?").get(a.taskId) as {
+            body: string;
+          }
+        ).body,
+      ).points,
+    ).toBe(0);
     saveItem(mom, { ...matter({ assignee: `user:${kid.id}`, status: "done" }), id, version: 1 });
     expect(balanceOf(`user:${kid.id}`).balance).toBe(0);
     expect(() => matterToTask(kid, id, saveTask as never)).toThrow();
