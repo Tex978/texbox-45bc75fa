@@ -1,4 +1,5 @@
 import { db, getUser, listUsers, listChildProfiles, userCan, type User } from "./auth.server";
+import { notifyRedemption } from "./notifications.server";
 import { rewardSchema, type RewardInput, type RedemptionStatus } from "./points-schema";
 
 // Personal points only: every balance belongs to exactly one user:<id> or profile:<id>; there is no family pool.
@@ -317,6 +318,7 @@ export function redeem(
       )
       .run(id, input.requestId, r.id, r.name, key, r.price, status, u.id, now, now);
     event(u, id, p.child ? "requested" : "redeemed");
+    notifyRedemption(u, { id, rewardName: r.name, personKey: key }, status);
     if (!p.child && r.price > 0)
       store()
         .prepare(
@@ -405,6 +407,7 @@ export function decideRedemption(
         .prepare("UPDATE rewards SET stock=stock+1 WHERE id=? AND stock IS NOT NULL")
         .run(r.reward_id);
     event(u, r.id, next, reason);
+    notifyRedemption(u, { id: r.id, rewardName: r.reward_name, personKey: r.person_key }, next, reason);
     return { status: next };
   });
 }

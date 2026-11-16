@@ -18,7 +18,12 @@ export function startScheduler(intervalMs = 20_000) {
         if (!auth.db()) return;
         const { tick } = await import("./schedules.server");
         const { executeSceneStep } = await import("./scene-devices.server");
-        await tick(worker, executeSceneStep);
+        const res = await tick(worker, executeSceneStep);
+        // Reminders ride the same single-instance lease; a failure never affects scene runs.
+        if (res.leader)
+          await import("./notifications.server")
+            .then((m) => m.reminderTick())
+            .catch((e: Error) => console.error("reminder tick failed", e.message));
       } catch (e) {
         console.error("scheduler tick failed", (e as Error).message);
       } finally {
