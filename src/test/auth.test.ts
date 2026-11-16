@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -23,6 +23,15 @@ beforeEach(() => {
 });
 
 describe("family accounts", () => {
+  it("does not open permissions when NAS account storage is unavailable", () => {
+    const old = process.env["DATA_DIR"];
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      process.env["DATA_DIR"] = "/dev/null/texbox-unwritable";
+      resetAuthDb();
+      expect(() => requirePermission(undefined, "settings")).toThrow("A fiókok tárolója nem elérhető");
+    } finally { process.env["DATA_DIR"] = old; resetAuthDb(); log.mockRestore(); }
+  });
   it("stores scrypt hashes, never the raw password", () => {
     const h = hashPassword("titok12345");
     expect(h).not.toContain("titok12345");
