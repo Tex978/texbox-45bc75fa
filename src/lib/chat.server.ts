@@ -41,20 +41,18 @@ export function chatList(token: string | undefined, before?: number) {
   const slice = rows.slice(0, 100);
   return {
     ...chatStatus(token),
-    items: slice
-      .reverse()
-      .map((r) => ({
-        id: Number(r.id),
-        text: r.text,
-        createdAt: r.created_at,
-        senderId: r.sender_id,
-        name: r.name,
-        mine: r.sender_id === user.id,
-        avatar: {
-          icon: isAvatarIcon(r.icon) ? r.icon : DEFAULT_AVATAR.icon,
-          color: isAvatarColor(r.color) ? r.color : DEFAULT_AVATAR.color,
-        } as Avatar,
-      })),
+    items: slice.reverse().map((r) => ({
+      id: Number(r.id),
+      text: r.text,
+      createdAt: r.created_at,
+      senderId: r.sender_id,
+      name: r.name,
+      mine: r.sender_id === user.id,
+      avatar: {
+        icon: isAvatarIcon(r.icon) ? r.icon : DEFAULT_AVATAR.icon,
+        color: isAvatarColor(r.color) ? r.color : DEFAULT_AVATAR.color,
+      } as Avatar,
+    })),
     olderCursor: rows.length > 100 ? Number(slice[0]?.id) : null,
   };
 }
