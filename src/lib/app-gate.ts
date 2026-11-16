@@ -108,6 +108,8 @@ export async function gate(request: Request): Promise<Response | null> {
   const accounts = hasDb ? userCount() : 0;
 
   if (path === "/__logout") {
+    if (request.headers.get("sec-fetch-site") === "cross-site")
+      return new Response("Nem engedélyezett kérés.", { status: 403 });
     endSession(cookieOf(request, SESSION_COOKIE));
     return go(request, "/", "");
   }

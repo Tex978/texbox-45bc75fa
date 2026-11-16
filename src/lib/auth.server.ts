@@ -267,6 +267,7 @@ export function login(
   const r = db()!.prepare("SELECT * FROM users WHERE username=?").get(normUser(username)) as any;
   if (!r || r.disabled || !verifyPassword(pw, r.password_hash)) {
     const n = (a && a.until <= now && a.n >= 5 ? 0 : (a?.n ?? 0)) + 1;
+    if (attempts.size > 10000) attempts.delete(attempts.keys().next().value ?? "");
     attempts.set(key, { n, until: n >= 5 ? now + 300_000 : 0 });
     return { error: "Hibás felhasználónév vagy jelszó." };
   }

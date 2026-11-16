@@ -130,6 +130,7 @@ function SearchBrowse() {
   const pref = useMediaPref<{ type: MediaType; category: MediaCategory; filters: MediaFilters }>(
     "media-search-state",
   );
+  const { save: savePref } = pref;
   const lastSaved = useRef("");
   const me = useQuery(meQuery);
   const canRequest = me.data?.mode === "open" || !!me.data?.user?.can.request;
@@ -152,10 +153,10 @@ function SearchBrowse() {
     if (!restored || raw === lastSaved.current) return;
     const timer = setTimeout(() => {
       lastSaved.current = raw;
-      void pref.save(next);
+      void savePref(next);
     }, 500);
     return () => clearTimeout(timer);
-  }, [restored, type, category, filters, pref.save]);
+  }, [restored, type, category, filters, savePref]);
   const setFilters = (next: Partial<MediaFilters>) => {
     setFiltersRaw((f) => normalizeFilters({ ...f, ...next }, type));
     setPage(1);

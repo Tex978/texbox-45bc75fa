@@ -49,6 +49,7 @@ export function StreamingBrowse() {
   const pref = useMediaPref<{ type: MediaType; provider: number; mode: StreamMode; days: number }>(
     "streaming-state",
   );
+  const { save: savePref } = pref;
   const lastSaved = useRef("");
   const me = useQuery(meQuery);
   const canRequest = me.data?.mode === "open" || !!me.data?.user?.can.request;
@@ -72,10 +73,10 @@ export function StreamingBrowse() {
     if (!restored || raw === lastSaved.current) return;
     const timer = setTimeout(() => {
       lastSaved.current = raw;
-      void pref.save(next);
+      void savePref(next);
     }, 500);
     return () => clearTimeout(timer);
-  }, [restored, type, provider, mode, days, pref.save]);
+  }, [restored, type, provider, mode, days, savePref]);
   const { data, isFetching, isError, refetch } = useQuery({
     ...opts(type, provider, mode, days, page),
     enabled: restored,
