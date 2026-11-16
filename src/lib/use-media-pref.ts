@@ -8,27 +8,60 @@ import type { MediaPrefKey } from "./media-preferences";
 export function useMediaPref<T>(key: MediaPrefKey) {
   const me = useQuery({ queryKey: ["me"], queryFn: () => getMe(), staleTime: 60000 });
   const qc = useQueryClient();
-  const queryKey = useMemo(() => ["media-prefs", me.data?.user?.id ?? "legacy"], [me.data?.user?.id]);
-  const q = useQuery({ queryKey, queryFn: () => getMediaPrefs(), enabled: !!me.data && (me.data.mode === "open" || !!me.data.user), staleTime: 30000 });
+  const queryKey = useMemo(
+    () => ["media-prefs", me.data?.user?.id ?? "legacy"],
+    [me.data?.user?.id],
+  );
+  const q = useQuery({
+    queryKey,
+    queryFn: () => getMediaPrefs(),
+    enabled: !!me.data && (me.data.mode === "open" || !!me.data.user),
+    staleTime: 30000,
+  });
   const saveFn = useServerFn(saveMediaPref);
   const migrated = useRef(false);
   const [error, setError] = useState("");
-  const prefs = useMemo(() => q.data ? JSON.parse(q.data.prefs) as Record<string, T> : undefined, [q.data]);
+  const prefs = useMemo(
+    () => (q.data ? (JSON.parse(q.data.prefs) as Record<string, T>) : undefined),
+    [q.data],
+  );
   const value = prefs?.[key];
   useEffect(() => {
     if (!q.data || migrated.current) return;
     migrated.current = true;
     let raw: string | null = null;
-    try { raw = localStorage.getItem(key); } catch { return; }
+    try {
+      raw = localStorage.getItem(key);
+    } catch {
+      return;
+    }
     if (!raw) return;
-    saveFn({ data: { key, value: raw, onlyMissing: true } }).then((r) => {
-      qc.setQueryData(queryKey, r);
-      try { localStorage.removeItem(key); } catch { /* migration was saved */ }
-    }).catch(() => setError("A korábbi keresési beállítás átvétele nem sikerült; a böngészőben megmaradt."));
+    saveFn({ data: { key, value: raw, onlyMissing: true } })
+      .then((r) => {
+        qc.setQueryData(queryKey, r);
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          /* migration was saved */
+        }
+      })
+      .catch(() =>
+        setError("A korábbi keresési beállítás átvétele nem sikerült; a böngészőben megmaradt."),
+      );
   }, [q.data, key, qc, saveFn, queryKey]);
   const save = async (next: T) => {
-    try { const r = await saveFn({ data: { key, value: JSON.stringify(next) } }); qc.setQueryData(queryKey, r); setError(""); }
-    catch { setError("A beállítás mentése nem sikerült. Próbáld újra."); }
+    try {
+      const r = await saveFn({ data: { key, value: JSON.stringify(next) } });
+      qc.setQueryData(queryKey, r);
+      setError("");
+    } catch {
+      setError("A beállítás mentése nem sikerült. Próbáld újra.");
+    }
   };
-  return { value, save, loading: q.isPending, error: error || (q.isError ? "A mentett keresési beállítások nem tölthetők be." : "") };
+  return {
+    value,
+    save,
+    loading: q.isPending,
+    error: error || (q.isError ? "A mentett keresési beállítások nem tölthetők be." : ""),
+  };
 }

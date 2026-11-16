@@ -8,7 +8,11 @@ function read() {
   const user = requirePermission(getCookie(SESSION_COOKIE));
   const key = mediaPrefStoreKey(user?.id);
   let prefs: Record<string, unknown> = {};
-  try { prefs = JSON.parse(storeGet(key) || "{}"); } catch { /* retain a safe empty view */ }
+  try {
+    prefs = JSON.parse(storeGet(key) || "{}");
+  } catch {
+    /* retain a safe empty view */
+  }
   return { key, prefs };
 }
 export const getMediaPrefs = createServerFn({ method: "GET" }).handler(async () => {
@@ -17,14 +21,21 @@ export const getMediaPrefs = createServerFn({ method: "GET" }).handler(async () 
 });
 export const saveMediaPref = createServerFn({ method: "POST" })
   .inputValidator((input: { key: MediaPrefKey; value: string; onlyMissing?: boolean }) => {
-    if (!input || !["media-search-state", "streaming-state"].includes(input.key) || typeof input.value !== "string" || input.value.length > 32000) throw new Error("Érvénytelen keresési beállítás.");
+    if (
+      !input ||
+      !["media-search-state", "streaming-state"].includes(input.key) ||
+      typeof input.value !== "string" ||
+      input.value.length > 32000
+    )
+      throw new Error("Érvénytelen keresési beállítás.");
     return input;
   })
   .handler(async ({ data }) => {
     const { key, prefs } = read();
     if (!data.onlyMissing || !(data.key in prefs)) {
       prefs[data.key] = normalizeMediaPref(data.key, JSON.parse(data.value));
-      if (!storeSet(key, JSON.stringify(prefs))) throw new Error("A keresési beállítás nem menthető a NAS-ra.");
+      if (!storeSet(key, JSON.stringify(prefs)))
+        throw new Error("A keresési beállítás nem menthető a NAS-ra.");
     }
     return { prefs: JSON.stringify(prefs) };
   });

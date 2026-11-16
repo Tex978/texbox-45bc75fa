@@ -8,18 +8,30 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 import { Route } from "@/routes/api/plex-thumb";
 
-const handler = (Route as unknown as {
-  server: { handlers: { GET: (ctx: { request: Request }) => Promise<Response> } };
-}).server.handlers.GET;
-const request = () => new Request("http://localhost/api/plex-thumb?path=%2Flibrary%2Fmetadata%2F42%2Fthumb%2F123");
+const handler = (
+  Route as unknown as {
+    server: { handlers: { GET: (ctx: { request: Request }) => Promise<Response> } };
+  }
+).server.handlers.GET;
+const request = () =>
+  new Request("http://localhost/api/plex-thumb?path=%2Flibrary%2Fmetadata%2F42%2Fthumb%2F123");
 
-afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.resetAllMocks(); });
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  vi.resetAllMocks();
+});
 
 describe("Plex poster proxy", () => {
   it("loads shared connection settings even when this browser has no configuration cookie", async () => {
     mocks.cookie.mockReturnValue(undefined);
-    mocks.storeGet.mockReturnValue(JSON.stringify({ PLEX_URL: "192.168.1.8:32400/", PLEX_TOKEN: "test-token" }));
-    const fetchMock = vi.fn(async () => new Response(new Uint8Array([1, 2, 3]), { headers: { "content-type": "image/png" } }));
+    mocks.storeGet.mockReturnValue(
+      JSON.stringify({ PLEX_URL: "192.168.1.8:32400/", PLEX_TOKEN: "test-token" }),
+    );
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(new Uint8Array([1, 2, 3]), { headers: { "content-type": "image/png" } }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const response = await handler({ request: request() });
     expect(mocks.storeGet).toHaveBeenCalledWith("nas-cfg");
@@ -37,17 +49,24 @@ describe("Plex poster proxy", () => {
     mocks.storeGet.mockReturnValue(undefined);
     vi.stubEnv("PLEX_URL", "https://plex.example.test");
     vi.stubEnv("PLEX_TOKEN", "env-test-token");
-    const fetchMock = vi.fn(async () => new Response("image", { headers: { "content-type": "image/jpeg" } }));
+    const fetchMock = vi.fn(
+      async () => new Response("image", { headers: { "content-type": "image/jpeg" } }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     expect((await handler({ request: request() })).status).toBe(200);
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("https://plex.example.test/photo/"), expect.objectContaining({ headers: { "X-Plex-Token": "env-test-token" } }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("https://plex.example.test/photo/"),
+      expect.objectContaining({ headers: { "X-Plex-Token": "env-test-token" } }),
+    );
   });
 
   it("rejects image paths outside the Plex library without contacting Plex", async () => {
     mocks.storeGet.mockReturnValue(JSON.stringify({ PLEX_URL: "http://plex.example.test" }));
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const response = await handler({ request: new Request("http://localhost/api/plex-thumb?path=https://other.example.test/image") });
+    const response = await handler({
+      request: new Request("http://localhost/api/plex-thumb?path=https://other.example.test/image"),
+    });
     expect(response.status).toBe(404);
     expect(fetchMock).not.toHaveBeenCalled();
   });
