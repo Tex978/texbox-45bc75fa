@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/lib/auth.functions";
 import { NotificationBell } from "./NotificationBell";
+import { UserAvatar } from "./Avatar";
 import { ROLE_LABELS } from "@/lib/permissions";
 import {
   LayoutDashboard,
@@ -129,17 +130,17 @@ export function ProfileMenu() {
       </DropdownMenu>
     );
   }
-  const initials = u.displayName
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="app-profile" aria-label={`Profil: ${u.displayName}`}>
-          <span className="app-avatar">{error ? <AlertCircle size={18} /> : initials}</span>
+          {error ? (
+            <span className="app-avatar">
+              <AlertCircle size={18} />
+            </span>
+          ) : (
+            <UserAvatar name={u.displayName} avatar={u.avatar} />
+          )}
           <span className="app-profile-name">{u.displayName}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -169,6 +170,18 @@ export function ProfileMenu() {
             </DropdownMenuItem>
           </>
         )}
+        <DropdownMenuItem asChild>
+          <Link to="/profile" className="min-h-11">
+            <UserRound />
+            Saját profil
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/profile" hash="eszkozok" className="min-h-11">
+            <KeyRound />
+            Bejelentkezett eszközeim
+          </Link>
+        </DropdownMenuItem>
         {u.can.family && (
           <DropdownMenuItem asChild>
             <Link to="/family" className="min-h-11">
