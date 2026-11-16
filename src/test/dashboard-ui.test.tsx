@@ -47,6 +47,14 @@ vi.mock("@/lib/use-shared-pref", () => ({
     queryFn: async () => ({ prefs: { "home-favorites": ["gree"] } }),
   },
 }));
+vi.mock("@/lib/dashboard.functions", async () => {
+  const srv = await import("@/lib/dashboard.server");
+  return {
+    dashboardGet: async () => srv.getDashboard(need()),
+    dashboardSave: async ({ data }: { data: Parameters<typeof srv.saveDashboard>[1] }) =>
+      srv.saveDashboard(need(), data),
+  };
+});
 import { Dashboard } from "@/components/Dashboard";
 const view = () =>
   render(
