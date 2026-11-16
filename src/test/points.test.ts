@@ -2,17 +2,44 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createUser, createChildProfile, resetAuthDb, db, updateUser, type User } from "@/lib/auth.server";
+import {
+  createUser,
+  createChildProfile,
+  resetAuthDb,
+  db,
+  updateUser,
+  type User,
+} from "@/lib/auth.server";
 import { saveTask, listTasks, actOnTask } from "@/lib/tasks.server";
-import { adjustPoints, balanceOf, decideRedemption, pointsOverview, redeem, saveReward, setWish } from "@/lib/points.server";
+import {
+  adjustPoints,
+  balanceOf,
+  decideRedemption,
+  pointsOverview,
+  redeem,
+  saveReward,
+  setWish,
+} from "@/lib/points.server";
 import type { TaskInput } from "@/lib/task-schema";
 
 let dir: string, dad: User, mom: User, kid: User, profile: string;
 const now = new Date("2026-11-16T12:00:00Z");
 const task = (p: Partial<TaskInput> = {}): TaskInput => ({
-  title: "Mosogatás", description: "", category: "Otthon", points: 10, visibility: "family",
-  assignee: null, start: "2026-11-16", end: null, time: "18:00", priority: "normal",
-  reminder: false, recurrence: "once", weekdays: [], dates: [], ...p,
+  title: "Mosogatás",
+  description: "",
+  category: "Otthon",
+  points: 10,
+  visibility: "family",
+  assignee: null,
+  start: "2026-11-16",
+  end: null,
+  time: "18:00",
+  priority: "normal",
+  reminder: false,
+  recurrence: "once",
+  weekdays: [],
+  dates: [],
+  ...p,
 });
 function occ(u: User, templateId: string) {
   const o = listTasks(u, now).occurrences.find((v) => v.templateId === templateId);
@@ -20,7 +47,17 @@ function occ(u: User, templateId: string) {
   return o;
 }
 const reward = (price: number, stock: number | null = null, eligible: string[] = []) =>
-  saveReward(dad, { name: "Mozi", description: "", category: "Élmény", price, stock, eligible, image: "", active: true, archived: false });
+  saveReward(dad, {
+    name: "Mozi",
+    description: "",
+    category: "Élmény",
+    price,
+    stock,
+    eligible,
+    image: "",
+    active: true,
+    archived: false,
+  });
 let n = 0;
 const rid = () => `req-${++n}`;
 beforeEach(() => {
@@ -36,13 +73,16 @@ afterEach(() => {
   resetAuthDb();
   rmSync(dir, { force: true, recursive: true });
 });
-const ledgerCount = () => (db()!.prepare("SELECT count(*) c FROM point_ledger").get() as { c: number }).c;
+const ledgerCount = () =>
+  (db()!.prepare("SELECT count(*) c FROM point_ledger").get() as { c: number }).c;
 
 describe("4a personal points", () => {
   it("backs up before migration and has no family pool", () => {
     expect(existsSync(join(dir, "backups/pre-points-phase4.db"))).toBe(true);
     const view = pointsOverview(mom);
-    expect(view.people.every((p) => p.key.startsWith("user:") || p.key.startsWith("profile:"))).toBe(true);
+    expect(
+      view.people.every((p) => p.key.startsWith("user:") || p.key.startsWith("profile:")),
+    ).toBe(true);
     expect(view.people.map((p) => p.key)).not.toContain(`user:${dad.id}`);
   });
   it("credits adult completion automatically, exactly once in the same transaction", () => {
@@ -79,12 +119,18 @@ describe("4a personal points", () => {
     }
   });
   it("backfills legacy approvals exactly once with source log; 0 points create no fake row", () => {
-    const t = saveTask(mom, task({ assignee: `user:${mom.id}`, visibility: "personal", points: 0 }));
+    const t = saveTask(
+      mom,
+      task({ assignee: `user:${mom.id}`, visibility: "personal", points: 0 }),
+    );
     const o = occ(mom, t);
     actOnTask(mom, { id: o.id, version: o.version, action: "complete" });
     expect(ledgerCount()).toBe(0);
     const d = db()!;
-    const big = saveTask(mom, task({ assignee: `profile:${profile}`, points: 100000, title: "Nagy" }));
+    const big = saveTask(
+      mom,
+      task({ assignee: `profile:${profile}`, points: 100000, title: "Nagy" }),
+    );
     let b = occ(mom, big);
     actOnTask(mom, { id: b.id, version: b.version, action: "complete" });
     b = occ(mom, big);
@@ -93,20 +139,53 @@ describe("4a personal points", () => {
     resetAuthDb();
     resetAuthDb();
     expect(balanceOf(`profile:${profile}`).balance).toBe(100000);
-    const rows = db()!.prepare("SELECT source,reason FROM point_ledger").all() as { source: string; reason: string }[];
+    const rows = db()!.prepare("SELECT source,reason FROM point_ledger").all() as {
+      source: string;
+      reason: string;
+    }[];
     expect(rows).toHaveLength(1);
     expect(rows[0]?.source).toBe(`task:${b.id}`);
   });
   it("adjustments need reason, ACL, allow negative balance and are audited", () => {
-    expect(() => adjustPoints(mom, { person: `profile:${profile}`, delta: -5, reason: "", requestId: rid() })).toThrow("indoklás");
-    expect(() => adjustPoints(kid, { person: `profile:${profile}`, delta: 5, reason: "csal", requestId: rid() })).toThrow("szülő");
-    expect(() => adjustPoints(mom, { person: `user:${mom.id}`, delta: 5, reason: "saját", requestId: rid() })).toThrow("saját");
-    expect(() => adjustPoints(mom, { person: `user:${dad.id}`, delta: 5, reason: "felnőtt", requestId: rid() })).toThrow("admin");
+    expect(() =>
+      adjustPoints(mom, { person: `profile:${profile}`, delta: -5, reason: "", requestId: rid() }),
+    ).toThrow("indoklás");
+    expect(() =>
+      adjustPoints(kid, {
+        person: `profile:${profile}`,
+        delta: 5,
+        reason: "csal",
+        requestId: rid(),
+      }),
+    ).toThrow("szülő");
+    expect(() =>
+      adjustPoints(mom, { person: `user:${mom.id}`, delta: 5, reason: "saját", requestId: rid() }),
+    ).toThrow("saját");
+    expect(() =>
+      adjustPoints(mom, {
+        person: `user:${dad.id}`,
+        delta: 5,
+        reason: "felnőtt",
+        requestId: rid(),
+      }),
+    ).toThrow("admin");
     const same = rid();
-    adjustPoints(mom, { person: `profile:${profile}`, delta: -5, reason: "Rossz könyvelés", requestId: same });
-    adjustPoints(mom, { person: `profile:${profile}`, delta: -5, reason: "Rossz könyvelés", requestId: same });
+    adjustPoints(mom, {
+      person: `profile:${profile}`,
+      delta: -5,
+      reason: "Rossz könyvelés",
+      requestId: same,
+    });
+    adjustPoints(mom, {
+      person: `profile:${profile}`,
+      delta: -5,
+      reason: "Rossz könyvelés",
+      requestId: same,
+    });
     expect(balanceOf(`profile:${profile}`).balance).toBe(-5);
-    expect(db()!.prepare("SELECT count(*) c FROM audit_log WHERE action='points-adjust'").get()).toEqual({ c: 2 });
+    expect(
+      db()!.prepare("SELECT count(*) c FROM audit_log WHERE action='points-adjust'").get(),
+    ).toEqual({ c: 2 });
   });
   it("children see only their own balance; disabled users are refused", () => {
     const view = pointsOverview(kid);
@@ -127,7 +206,9 @@ describe("4b reward shop", () => {
     expect(() => redeem(mom, { rewardId: r, requestId: rid(), expectedPrice: 20 })).toThrow();
     const r2 = reward(5);
     expect(() => redeem(mom, { rewardId: r2, requestId: rid(), expectedPrice: 4 })).toThrow("ára");
-    expect(() => redeem(mom, { rewardId: reward(50), requestId: rid(), expectedPrice: 50 })).toThrow("elég");
+    expect(() =>
+      redeem(mom, { rewardId: reward(50), requestId: rid(), expectedPrice: 50 }),
+    ).toThrow("elég");
   });
   it("child request reserves, approval deducts once, rejection releases, stock restored", () => {
     const key = `profile:${profile}`;
@@ -136,16 +217,27 @@ describe("4b reward shop", () => {
     const a = redeem(mom, { rewardId: r, requestId: rid(), expectedPrice: 20, person: key });
     expect(a.status).toBe("reserved");
     expect(balanceOf(key)).toMatchObject({ balance: 30, reserved: 20, available: 10 });
-    expect(() => redeem(mom, { rewardId: r, requestId: rid(), expectedPrice: 20, person: key })).toThrow("elég");
+    expect(() =>
+      redeem(mom, { rewardId: r, requestId: rid(), expectedPrice: 20, person: key }),
+    ).toThrow("elég");
     const row = pointsOverview(mom).redemptions[0]!;
     decideRedemption(dad, { id: row.id, version: row.version, action: "approve" });
-    expect(() => decideRedemption(mom, { id: row.id, version: row.version, action: "approve" })).toThrow();
+    expect(() =>
+      decideRedemption(mom, { id: row.id, version: row.version, action: "approve" }),
+    ).toThrow();
     expect(balanceOf(key)).toMatchObject({ balance: 10, reserved: 0, spent: 20 });
     adjustPoints(mom, { person: key, delta: 20, reason: "Plusz", requestId: rid() });
     const b = redeem(mom, { rewardId: r, requestId: rid(), expectedPrice: 20, person: key });
     const rowB = pointsOverview(mom).redemptions.find((x) => x.id === b.id)!;
-    expect(() => decideRedemption(mom, { id: rowB.id, version: rowB.version, action: "reject" })).toThrow("indok");
-    decideRedemption(mom, { id: rowB.id, version: rowB.version, action: "reject", reason: "Most nem" });
+    expect(() =>
+      decideRedemption(mom, { id: rowB.id, version: rowB.version, action: "reject" }),
+    ).toThrow("indok");
+    decideRedemption(mom, {
+      id: rowB.id,
+      version: rowB.version,
+      action: "reject",
+      reason: "Most nem",
+    });
     expect(balanceOf(key)).toMatchObject({ balance: 30, reserved: 0 });
     expect(pointsOverview(dad).rewards.find((x) => x.id === r)?.stock).toBe(1);
   });
@@ -155,9 +247,20 @@ describe("4b reward shop", () => {
     const r = reward(10, null, [key]);
     const req = redeem(kid, { rewardId: r, requestId: rid(), expectedPrice: 10 });
     const row = pointsOverview(kid).redemptions[0]!;
-    expect(() => decideRedemption(kid, { id: row.id, version: row.version, action: "approve" })).toThrow("szülő");
-    expect(() => redeem(kid, { rewardId: r, requestId: rid(), expectedPrice: 10, person: `profile:${profile}` })).toThrow();
-    expect(() => redeem(mom, { rewardId: r, requestId: rid(), expectedPrice: 10 })).toThrow("nem érhető el");
+    expect(() =>
+      decideRedemption(kid, { id: row.id, version: row.version, action: "approve" }),
+    ).toThrow("szülő");
+    expect(() =>
+      redeem(kid, {
+        rewardId: r,
+        requestId: rid(),
+        expectedPrice: 10,
+        person: `profile:${profile}`,
+      }),
+    ).toThrow();
+    expect(() => redeem(mom, { rewardId: r, requestId: rid(), expectedPrice: 10 })).toThrow(
+      "nem érhető el",
+    );
     expect(() => saveReward(kid, { name: "x", price: 1 })).toThrow("szülő");
     decideRedemption(kid, { id: req.id, version: 1, action: "cancel" });
     expect(balanceOf(key).available).toBe(10);
@@ -166,7 +269,9 @@ describe("4b reward shop", () => {
     expect(pointsOverview(kid).rewards).toHaveLength(0);
     expect(pointsOverview(kid).redemptions[0]?.rewardName).toBe("Mozi");
     setWish(kid, { person: key, rewardId: r, wish: true, goal: true });
-    expect(() => setWish(kid, { person: `profile:${profile}`, rewardId: r, wish: true, goal: false })).toThrow();
+    expect(() =>
+      setWish(kid, { person: `profile:${profile}`, rewardId: r, wish: true, goal: false }),
+    ).toThrow();
   });
   it("persists across DB restart", () => {
     adjustPoints(dad, { person: `user:${mom.id}`, delta: 7, reason: "Teszt", requestId: rid() });

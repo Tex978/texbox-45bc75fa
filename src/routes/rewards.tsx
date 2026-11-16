@@ -6,7 +6,10 @@ export const Route = createFileRoute("/rewards")({
   head: () => ({
     meta: [
       { title: "Ajándékbolt – TexBox" },
-      { name: "description", content: "Személyes pontegyenleg, jutalmak beváltása és szülői jóváhagyás a TexBoxban." },
+      {
+        name: "description",
+        content: "Személyes pontegyenleg, jutalmak beváltása és szülői jóváhagyás a TexBoxban.",
+      },
       { property: "og:title", content: "Ajándékbolt – TexBox" },
       { property: "og:description", content: "Saját pontok és családi jutalmak a saját NAS-on." },
       { property: "og:type", content: "website" },

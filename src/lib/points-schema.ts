@@ -13,7 +13,10 @@ export const rewardSchema = z.object({
     .string()
     .trim()
     .max(500)
-    .refine((v) => v === "" || /^https:\/\/[^\s"'<>]+$/i.test(v), "A kép csak https:// hivatkozás lehet.")
+    .refine(
+      (v) => v === "" || /^https:\/\/[^\s"'<>]+$/i.test(v),
+      "A kép csak https:// hivatkozás lehet.",
+    )
     .default(""),
   active: z.boolean().default(true),
   archived: z.boolean().default(false),
