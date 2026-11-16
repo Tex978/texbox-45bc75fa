@@ -44,7 +44,15 @@ export const meQuery = { queryKey: ["me"], queryFn: () => getMe(), staleTime: 60
 function ProfileMenu() {
   const { data } = useQuery(meQuery);
   const u = data?.user;
-  if (!u) return null;
+  if (!u) {
+    if (data?.mode === "accounts")
+      return (
+        <Button variant="outline" size="sm" asChild>
+          <a href="/__login">Belépés</a>
+        </Button>
+      );
+    return null;
+  }
   const initials = u.displayName
     .split(/\s+/)
     .map((w) => w[0])
