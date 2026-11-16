@@ -2,7 +2,8 @@
 Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/TEXBOX-CSALADI-ROADMAP.md`.
 - [x] 1. fázis: stabil profilmenü, felnőtt meghívás, tulajdonosi védelem, külön gyermekprofil; 98 teszt sikeres, automatikus build OK; 390/1280 px publikus állapot ellenőrizve, izolált valódi SQLite + UI mentés/újranyitás tesztelve. Érintett lint hibamentes egy figyelmeztetéssel; teljes lint korábbi 671 hibája nyitott.
 - [ ] NAS elfogadás: meglévő admin/session, két eszközös mentés, felnőtt aktiválás/reset, Docker-frissítés; helyi NAS nem érhető el innen.
-- [ ] 1b: saját profil, audit/munkamenet részletek, személyes kedvencek és ACL alap.
+- [x] 1b (fejlesztői környezetben): `/profile` Saját profil (név, beépített ikon+szín, felhasználónév nem módosítható), jelszócsere jelenlegi jelszóval (min. 10 karakter, erősségjelző, 5 hibás próba után 5 perc zár, opcionálisan más eszközök kijelentkeztetése), Bejelentkezett eszközeim (egyszerű böngésző/rendszer címke, belépés/lejárat, jelenlegi jelölése, egyedi és „minden más” kijelentkeztetés), saját eseménynapló, admin családi fiókeseménynapló szűrővel, családtag-kártyák avatarral/szereppel/meghívóstátusszal, kategorizált jogkapcsolók, bővített gyermekikonok. Szerverfüggvény-POST-ok Origin-ellenőrzése. `user_profiles` additív tábla, előtte `pre-profile-phase1b.db`. Ügy→feladat egy tranzakcióban (savepoint). Élő NAS-on ellenőrizendő.
+- [ ] 1c: más felnőtt munkameneteinek részletes admin nézete, jogok finomabb (szoba-szintű) bontása, utolsó aktivitás ideje, profilkép-feltöltés.
 - [x] 2a: mentett/szerkeszthető kézi jelenetek, Gree/redőny/boolean Tuya-lámpa adapterek, eszköz-ACL, futtatási napló és duplaindítás-védelem; izolált tesztek, NAS éles ellenőrzés nélkül.
 - [ ] 2a élő NAS: frissítés és data-mentés után két eszközös jelenetmentés, gyermek ACL, valódi gyártói ACK és fizikai állapot ellenőrzése; innen az otthoni eszközök nem érhetők el.
 - [ ] 2b: tartós időzítés/automatizálás, DST/kiesési szabályok; még nincs scheduler.
@@ -101,4 +102,4 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 
 - [x] 8a (fejlesztői környezetben): Családi szervező → „Jegyzetek és ügyek” fül — jegyzetek (kategória, https-link, rövid lista, kitűzés, személyes/felnőtt/gyerekkel megosztott) és ügyek (felelős, határidő, státusz, prioritás), keresés/szűrés, archívum+visszaállítás, előzmények, verzióütközés, „Közelgő ügyek”, explicit idempotens „Feladat létrehozása” (0 pont). `pre-family-notes-phase8a.db` mentés. Élő NAS-on ellenőrizendő.
 - [ ] 8b: ügyhatáridő-emlékeztető (értesítési beállítással), ügyből naptáresemény létrehozása/hivatkozása, főoldali ügy-kártya.
-- [ ] Későbbi: 7b push, 1b profil/audit, 6c eszközkedvencek, 2b/2 szenzortriggerek, végső QA.
+- [ ] Későbbi: 7b push, 1c, 8b ügyemlékeztetők, 6c eszközkedvencek, 2b/2 szenzortriggerek, végső QA.
