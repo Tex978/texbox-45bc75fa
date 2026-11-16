@@ -179,3 +179,8 @@ Naptár CRUD + ismétlődés + alkalom-kivétel + feladathivatkozás kész izol�
 
 ## Állapot 2026-11-16 – 6a
 Öt menüs navigáció és valós adatú családi főoldal kész, séma-változás nélkül; régi áttekintő a /media oldalon. 6b: tartós személyre szabás és főoldali eszközállapot/vezérlés. Élő NAS-ellenőrzés nyitott.
+
+## 6b – Személyre szabható főoldal (fejlesztői környezetben kész, NAS-on nyitott)
+- Kész: additív `dashboard_prefs` tábla (person_key, verzió), kötelező `backups/pre-dashboard-phase6b.db` snapshot; saját elrendezés minden fióknak, szülő kezeli a gyermekprofilokét; ismeretlen/tiltott kártya és jelenet szűrése; verzióütközés érthető hibával; audit; előnézetben nincs mentés.
+- Szerkesztő: fel/le gombok (billentyűzet, érintés), szem ikon, kedvenc jelenetek sorrendje, Mentés/Mégse, megerősített visszaállítás.
+- Nyitott: 6c konkrét kedvenc eszközök élő állapottal; drag-drop; élő NAS restart/két eszköz teszt.

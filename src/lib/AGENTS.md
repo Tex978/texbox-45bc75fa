@@ -11,4 +11,5 @@
 - Points are an append-only personal ledger keyed user:/profile: with UNIQUE source (task:/redeem:/adjust:); balance is always derived, child redemptions reserve via status='reserved' and deduct only on parent approval, and task credit runs inside the task approval transaction.
 - Organizer data (shopping, recipes, menu) is additive SQLite with soft-deleted items; shared freshness comes from polling, ingredient merges touch only open items with identical normalized name and unit, and organizer actions never write the point ledger.
 - Calendar stores Budapest wall-clock dates/times (no UTC instants) and expands recurrences at read time; per-occurrence exceptions and task links are keyed by (event, original date) so repeats stay deterministic and idempotent.
+- Personal dashboard layouts live in additive dashboard_prefs keyed user:/profile: with optimistic versions, normalised against server-side allowed cards and visible scenes on every read/write; never stored in the shared household store.
 <!-- AGENT-MEMORY:END -->
