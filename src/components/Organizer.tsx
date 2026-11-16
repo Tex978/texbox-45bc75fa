@@ -6,6 +6,8 @@ import {
   CalendarDays,
   Check,
   NotebookPen,
+  SlidersHorizontal,
+  Info,
   Plus,
   RefreshCw,
   ShoppingCart,
@@ -105,7 +107,8 @@ function Shopping() {
     [name, setName] = useState(""),
     [more, setMore] = useState(false),
     [extra, setExtra] = useState({ qty: "", unit: "", store: "", category: "", note: "" }),
-    [newList, setNewList] = useState("");
+    [newList, setNewList] = useState(""),
+    [creatingList, setCreatingList] = useState(false);
   const d = q.data;
   if (!d)
     return (
@@ -134,14 +137,15 @@ function Shopping() {
     }, "Hozzáadva.");
   const row = (i: (typeof items)[number]) => (
     <li key={i.id} className={`shop-item ${i.checked ? "shop-done" : ""}`}>
-      <button
+      <Button
+        variant="ghost"
         className="shop-check"
         aria-label={i.checked ? `${i.name} visszavonása` : `${i.name} kipipálása`}
         disabled={busy}
         onClick={() => run(() => check({ data: { id: i.id, checked: !i.checked } }))}
       >
         {i.checked && <Check size={18} />}
-      </button>
+      </Button>
       <span className="shop-main">
         <strong>{i.name}</strong> {fmtQty(i.qty, i.unit) && <span>{fmtQty(i.qty, i.unit)}</span>}
         <small>
@@ -163,16 +167,12 @@ function Shopping() {
   );
   return (
     <section className="org-section">
-      <div className="task-filters">
-        {d.lists.map((l) => (
-          <Button
-            key={l.id}
-            variant={l.id === lid ? "default" : "outline"}
-            onClick={() => setListId(l.id)}
-          >
-            {l.name}
-          </Button>
-        ))}
+      <div className="shop-list-switch">
+        <select aria-label="Kiválasztott lista" value={lid} onChange={(e) => setListId(e.target.value)}>
+          {d.lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+        </select>
+        {d.canManageLists && <Button variant="ghost" size="icon" aria-label="Új lista létrehozása" aria-expanded={creatingList} onClick={() => setCreatingList(!creatingList)}><Plus size={18} /></Button>}
+        <details className="shop-sync"><summary aria-label="Frissítési állapot"><Info size={18} /></summary><p>Frissítés 15 másodpercenként és visszatéréskor. Utoljára: {new Date(d.at).toLocaleTimeString("hu-HU")}</p></details>
       </div>
       <form
         className="shop-add"
@@ -190,9 +190,7 @@ function Shopping() {
         <Button type="submit" disabled={busy || !name.trim()} aria-label="Hozzáadás">
           <Plus size={18} /> Hozzáad
         </Button>
-        <Button type="button" variant="outline" onClick={() => setMore(!more)}>
-          {more ? "Kevesebb" : "Részletek"}
-        </Button>
+        <Button type="button" variant="ghost" size="icon" aria-label="Termék részletei" title="Részletek" aria-expanded={more} onClick={() => setMore(!more)}><SlidersHorizontal size={18} /></Button>
         {more && (
           <div className="shop-extra">
             <input
@@ -268,11 +266,7 @@ function Shopping() {
           <ul className="shop-items">{done.map(row)}</ul>
         </>
       )}
-      <p className="task-notice">
-        Frissítés 15 másodpercenként és visszatéréskor; nem azonnali. Utoljára:{" "}
-        {new Date(d.at).toLocaleTimeString("hu-HU")}
-      </p>
-      {d.canManageLists && (
+      {d.canManageLists && creatingList && (
         <form
           className="shop-add"
           onSubmit={(e) => {
@@ -716,12 +710,13 @@ function Menu() {
 export function Organizer() {
   const [tab, setTab] = useState("Bevásárlás");
   return (
-    <div className="tasks-area rewards-area">
-      <p className="task-notice">
-        A listák, receptek, a heti menü, a naptár és a jegyzetek csak a saját NAS-on mentődnek; a
-        személyes jegyzetek csak a létrehozójuknak látszanak.
-      </p>
-      <div className="task-tabs" role="tablist">
+    <div className="tasks-area rewards-area organizer-area">
+      <div className="org-tabs" role="tablist" aria-label="Családi szervező nézetek" onKeyDown={(e) => {
+        const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+        const i = tabs.indexOf(document.activeElement as HTMLButtonElement);
+        const next = e.key === "ArrowRight" ? (i + 1) % tabs.length : e.key === "ArrowLeft" ? (i - 1 + tabs.length) % tabs.length : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : -1;
+        if (next >= 0) { e.preventDefault(); tabs[next]?.focus(); tabs[next]?.click(); }
+      }}>
         {[
           ["Bevásárlás", ShoppingCart],
           ["Receptek", BookOpen],
@@ -734,15 +729,19 @@ export function Organizer() {
             <Button
               key={t as string}
               role="tab"
+              id={`org-tab-${t}`}
+              aria-controls="organizer-panel"
+              tabIndex={tab === t ? 0 : -1}
               aria-selected={tab === t}
-              variant={tab === t ? "default" : "outline"}
+              variant="ghost"
               onClick={() => setTab(t as string)}
             >
-              <Icon size={16} /> {t as string}
+              <Icon size={16} /> {t === "Heti menü" ? "Menü" : t === "Jegyzetek és ügyek" ? "Jegyzetek" : t as string}
             </Button>
           );
         })}
       </div>
+      <div id="organizer-panel" role="tabpanel" aria-labelledby={`org-tab-${tab}`}>
       {tab === "Bevásárlás" ? (
         <Shopping />
       ) : tab === "Receptek" ? (
@@ -754,6 +753,7 @@ export function Organizer() {
       ) : (
         <Menu />
       )}
+      </div>
     </div>
   );
 }

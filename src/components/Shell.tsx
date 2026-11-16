@@ -57,10 +57,8 @@ export const moreNav = [
   { to: "/search", label: "Filmek és sorozatok keresése", icon: Search },
   { to: "/downloads", label: "Letöltések", icon: Download },
   { to: "/library", label: "Tárhely", icon: HardDrive },
-  { to: "/organizer", label: "Bevásárlás, receptek, menü, naptár", icon: ShoppingCart },
   { to: "/rewards", label: "Pontjaim és ajándékbolt", icon: Gift },
   { to: "/family", label: "Családi fiókok és jogosultságok", icon: UserRound },
-  { to: "/home", label: "Okosotthon és energia", icon: House },
   { to: "/settings", label: "Kapcsolatok és állapot", icon: Cable },
 ] as const;
 export const isActiveArea = (path: string, match: readonly string[]) =>
@@ -232,16 +230,6 @@ export function Shell({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side={side} className="min-w-64">
-        {className.includes("smart-home") &&
-          primaryNav.map(({ to, label, icon: Icon }) => (
-            <DropdownMenuItem key={`p${to}`} asChild>
-              <Link to={to} className="min-h-12">
-                <Icon />
-                {label}
-              </Link>
-            </DropdownMenuItem>
-          ))}
-        {className.includes("smart-home") && <DropdownMenuSeparator />}
         {more.map(({ to, label, icon: Icon }) => (
           <DropdownMenuItem key={to} asChild>
             <Link to={to} className="min-h-12">
@@ -290,7 +278,7 @@ export function Shell({
       <main id="main-content" tabIndex={-1} className="app-main">
         {children}
       </main>
-      {!className.includes("smart-home") && (
+      {(
         <nav className="app-tabbar" aria-label="Fő területek">
           {primaryNav.map(({ to, label, icon: Icon, match }) => (
             <Link

@@ -644,12 +644,12 @@ function Home() {
   const toggleFavorite = (id: CategoryId) =>
     setFavorites(favorites.includes(id) ? favorites.filter((f) => f !== id) : [...favorites, id]);
   const sections = [
-    { id: "overview", name: "Otthon", icon: House },
+    { id: "overview", name: "Áttekintés", icon: House },
     { id: "rooms", name: "Szobák", icon: DoorOpen },
     { id: "devices", name: "Eszközök", icon: LayoutGrid },
     { id: "scenes", name: "Jelenetek", icon: Sparkles },
     { id: "energy", name: "Energia", icon: Sun },
-    { id: "more", name: "Több", icon: Settings2 },
+    { id: "more", name: "Beállítások", icon: Settings2 },
   ];
   const shownThermometers = visibleThermometers(thermometers.sensors, thermometers.meta);
   const vendorDevices = buildHomeDevices({
@@ -698,32 +698,9 @@ function Home() {
   return (
     <Shell demo={anyDemo} className={`smart-home hd ${light ? "home-light" : ""}`}>
       <div className="hd-layout">
-        <nav className="hd-nav" aria-label="Okosotthon nézetek">
-          <div className="hd-nav-brand">
-            <House size={20} />
-            <span>Otthonom</span>
-          </div>
-          {sections.map(({ id, name, icon: Icon }) => (
-            <button
-              type="button"
-              key={id}
-              id={`tab-${id}`}
-
-              aria-pressed={view === id}
-              aria-controls="home-panel"
-              className={view === id ? "hd-nav-active" : ""}
-              onClick={() => selectView(id)}
-            >
-              <Icon size={22} strokeWidth={view === id ? 2.3 : 1.7} />
-              <span>{name}</span>
-            </button>
-          ))}
-        </nav>
-
         <div className="hd-content">
           <header className="hd-header">
             <div className="min-w-0">
-              <p className="hd-kicker">{hello}</p>
               <h1 className="hd-title">
                 {view === "overview" ? "Otthonom" : sections.find((s) => s.id === view)?.name}
               </h1>
@@ -752,6 +729,32 @@ function Home() {
               </Button>
             </div>
           </header>
+
+          <nav className="hd-nav" role="tablist" aria-label="Okosotthon nézetek" onKeyDown={(e) => {
+            const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+            const i = tabs.indexOf(document.activeElement as HTMLButtonElement);
+            const next = e.key === "ArrowRight" ? (i + 1) % tabs.length : e.key === "ArrowLeft" ? (i - 1 + tabs.length) % tabs.length : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : -1;
+            if (next >= 0) { e.preventDefault(); tabs[next]?.focus(); tabs[next]?.click(); }
+          }}>
+          {sections.map(({ id, name, icon: Icon }) => (
+            <Button
+              variant="ghost"
+              role="tab"
+              tabIndex={view === id ? 0 : -1}
+              type="button"
+              key={id}
+              id={`tab-${id}`}
+
+              aria-selected={view === id}
+              aria-controls="home-panel"
+              className={view === id ? "hd-nav-active" : ""}
+              onClick={() => selectView(id)}
+            >
+              <Icon size={22} strokeWidth={view === id ? 2.3 : 1.7} />
+              <span>{name}</span>
+            </Button>
+          ))}
+        </nav>
 
           <div id="home-panel" role="tabpanel" aria-labelledby={`tab-${view}`} className="hd-panel">
             {view === "scenes" && <Scenes />}
@@ -795,7 +798,7 @@ function Home() {
                       <Wifi size={14} />
                       {online} online
                     </span>
-                    <span className={`hd-pill ${offline ? "hd-pill-off" : ""}`}>
+                    <span className="hd-pill">
                       <WifiOff size={14} />
                       {offline} offline
                     </span>
