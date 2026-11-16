@@ -39,6 +39,7 @@ export function TrainGame() {
   const [loaded, setLoaded] = useState(0);
   const [msg, setMsg] = useState("Várunk a vonatra!");
   const [wrong, setWrong] = useState(false);
+  const [locked, setLocked] = useState(false);
   const [finished, setFinished] = useState(false);
 
   // Shuffle after mount so the server and the browser render the same first frame.
@@ -51,13 +52,15 @@ export function TrainGame() {
     const t = makeTrain(Math.random, LEVELS[l]!.wagons);
     setTrain(t);
     setStations(pickStations(t, LEVELS[l]!.stations, Math.random));
-    setTarget(makeCargoTarget(Math.random, LEVELS[l]!.wagons));
+    const want = makeCargoTarget(Math.random, LEVELS[l]!.wagons);
+    setTarget(want);
     setLoaded(0);
     setWrong(false);
+    setLocked(false);
     setMsg(
       mode === "station"
         ? "Melyik állomásra menjen a vonat?"
-        : `Rakj ${target} ${WAGON_NAME}t a vonatba!`,
+        : `Rakj ${want} ${WAGON_NAME}t a vonatba!`,
     );
   }
 
