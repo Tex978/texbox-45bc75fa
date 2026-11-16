@@ -358,7 +358,7 @@
   .smart-home input[type="range"] { height: 40px; }
   .smart-home .smart-device select { font-size: 16px; }
   .smart-home .smart-section > p { overflow-wrap: anywhere; }
-  .history-dialog { position: fixed; top: auto; bottom: 0; left: 0; width: 100%; max-width: none; transform: none; border-radius: 8px 8px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .history-dialog { position: fixed; top: auto; bottom: 0; left: 0; width: 100%; max-width: none; translate: none; transform: none; border-radius: 8px 8px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
 }
 
 /* Film discovery shares the application palette. */
