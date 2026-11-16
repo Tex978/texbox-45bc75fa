@@ -1,6 +1,6 @@
 # 9b/2 – közvetlen következő chat-bővítés: média és fájlok
 
-Állapot: nincs implementálva; nincs demófeltöltés, látszatmentés vagy működésképtelen papírkapocs. Az egységes szobák és az ikon/szín avatár megmarad; a 9b/1 valódi szöveges chatre épít.
+Állapot: implementálva és izolált SQLite/UI tesztekkel ellenőrizve (277 teszt). Nincs éles NAS próba vagy publikálás. A meglévő szobák, ikon/szín avatar és macskás emoji/reakció funkció megmarad. A fájltároló az eredeti tartós data mappán belüli chat-attachments; nem igényel új mountot. Kötelező pre-chat-attachments.db snapshot az additív metadata előtt. Alapkvóta 2048 MB, opcionális TEXBOX_CHAT_QUOTA_MB. HEIC nem támogatott; ZIP tartalom nincs vírusvizsgálva, minden nem kép/videó kényszerített letöltés. Képelőnézet az eredeti védett képből, külön generált thumbnail nélkül. Szakaszolt raw streaming upload, nincs base64 videó/memóriába töltés. Nincs automatikus árvatörlés; félbeszakadt restart-piszkozat explicit törölhető. NAS mobil kamera/galéria és valódi videólejátszás még helyben ellenőrizendő.
 
 - Harang melletti meglévő chatpanel; papírkapocs/+ a szövegmezőnél, több fájl és opcionális szöveg/képaláírás. Mobil galéria/kamera/fájlválasztó böngészőtámogatás szerint; progress és megszakítás.
 - JPG/PNG/WebP képek; HEIC csak valódi kezelés esetén. MP4/WebM beágyazott lejátszás; MOV letöltés. PDF/TXT/DOCX/XLSX/ZIP és egyéb engedélyezett családi fájlok; fájlnév, méret, biztonságos letöltés. Képelőnézet és teljes nézet.
