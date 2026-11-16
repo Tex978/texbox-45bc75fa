@@ -196,9 +196,9 @@ export async function uploadChatFile(
         f.closeSync(handle);
       }
     } else {
-      const { fileTypeFromFile } = await import("file-type");
-      const detected = await fileTypeFromFile(filePath(id));
-      if (!detected || !type.signature.includes(detected.ext))
+      const { detectFileExt } = await import("./file-signature.server");
+      const detected = detectFileExt(filePath(id));
+      if (!detected || !type.signature.includes(detected))
         throw new Error("A fájl tartalma nem egyezik a megadott típusával.");
     }
     chatFileAccess(token, true);
