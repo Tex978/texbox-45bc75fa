@@ -763,3 +763,16 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .hd-detail { position: static; max-height: none; }
 }
 @media (min-width: 1200px) { .hd .hd-sheet .gree-workspace { grid-template-columns: minmax(0,1fr); } }
+
+/* Profile menu (family accounts) */
+.app-profile-slot { order: 3; }
+.app-profile { gap: 8px; padding: 4px 10px 4px 4px; height: 40px; border-radius: 999px; }
+.app-avatar { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; background: color-mix(in oklch, var(--primary) 22%, var(--card)); color: var(--primary); font-size: 12px; font-weight: 700; }
+.app-profile-name { font-size: 13px; font-weight: 500; }
+@media (max-width: 640px) { .app-profile-name { display: none; } .app-profile-slot { margin-left: auto; } }
+.family-grid { display: grid; gap: 14px; }
+.family-card { border: 1px solid var(--border); background: var(--card); border-radius: 16px; padding: 16px; display: grid; gap: 12px; }
+.family-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.family-perms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.family-perm { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 12px; border-radius: 12px; background: var(--background); border: 1px solid var(--border); font-size: 14px; }
+.family-link { word-break: break-all; font-size: 13px; padding: 10px 12px; border-radius: 10px; background: var(--background); border: 1px dashed var(--border); }
