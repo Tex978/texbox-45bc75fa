@@ -9,6 +9,7 @@ import { createUser, createSession, resetAuthDb, updateOwnProfile } from "@/lib/
 import { chatSend, chatList, chatStatus, chatMarkRead, chatReact } from "@/lib/chat.server";
 import { uploadChatFile, draftFiles } from "@/lib/chat-files.server";
 let token: string, dir: string;
+let duringUpload: (() => Promise<void>) | undefined;
 vi.mock("@/lib/chat-upload", () => ({
   uploadChatFileBrowser: async (file: File, progress: (n: number) => void) => {
     const bytes = await new Promise<Uint8Array>((resolve, reject) => {
@@ -18,16 +19,22 @@ vi.mock("@/lib/chat-upload", () => ({
       reader.readAsArrayBuffer(file);
     });
     progress(50);
-    const result = await uploadChatFile(
+    let release: (() => void) | undefined;
+    const pending = uploadChatFile(
       token,
       { name: file.name, size: file.size, mime: file.type },
       new ReadableStream<Uint8Array>({
         start(c) {
-          c.enqueue(bytes);
-          c.close();
+          release = () => {
+            c.enqueue(bytes);
+            c.close();
+          };
         },
       }),
     );
+    await duringUpload?.();
+    release?.();
+    const result = await pending;
     progress(100);
     return result;
   },
@@ -46,6 +53,7 @@ vi.mock("@/lib/chat.functions", () => ({
 import { FamilyChat } from "@/components/FamilyChat";
 afterEach(() => {
   cleanup();
+  duringUpload = undefined;
   resetAuthDb();
   delete process.env["DATA_DIR"];
   if (dir) rmSync(dir, { recursive: true, force: true });
@@ -105,6 +113,10 @@ it("sends and reads back SQLite messages through the authenticated chat UI", asy
     "family.png",
     { type: "image/png" },
   );
+  duringUpload = async () => {
+    await qc.refetchQueries({ queryKey: ["chat-drafts", mom.id] });
+    expect(qc.getQueryData<Array<{ missing: boolean }>>(["chat-drafts", mom.id])?.[0]?.missing).toBe(true);
+  };
   fireEvent.change(screen.getByLabelText("Chat csatolmányok"), { target: { files: [image] } });
   await screen.findByText("family.png");
   await waitFor(() =>
