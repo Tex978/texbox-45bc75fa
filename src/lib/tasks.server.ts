@@ -73,7 +73,7 @@ function occurrence(id: string): TaskOccurrence {
 export function listTasks(user: User, now = new Date()) {
   return tx(() => {
     const u = current(user), today = budapestToday(now), backlog = generate(today), ts = templates();
-    const rows = store().prepare("SELECT id FROM task_occurrences WHERE due_date<=? ORDER BY due_date,status LIMIT 5000").all(addDays(today, 7)) as { id: string }[];
+    const rows = store().prepare("SELECT id FROM task_occurrences WHERE due_date<=? AND (status IN ('open','claimed','pending','returned') OR due_date>=?) ORDER BY due_date,status").all(addDays(today, 7), addDays(today, -7)) as { id: string }[];
     return { today, backlog, parent: isParent(u), me: personKey(u.id), people: taskPeople(u), templates: ts.filter((t) => visible(u, t)).map((t) => ({ ...t, editable: editable(u, t) })), occurrences: rows.map((r) => occurrence(r.id)).filter((o) => { const t = ts.find((v) => v.id === o.templateId); return t && visible(u, t, o.assignee); }) };
   });
 }
