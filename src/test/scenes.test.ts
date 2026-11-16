@@ -140,6 +140,28 @@ describe("saved manual NAS scenes", () => {
     expect(count).toBe(1);
     expect(readRuns(adult, s.id)[0]?.status).toBe("partial");
   });
+  it("never executes old snapshot steps after the scene changes during a run", async () => {
+    const s = saveScene(admin, { ...input(), steps: [...input().steps, ...input().steps] }, devices);
+    let commands = 0;
+    await runScene(adult, s.id, crypto.randomUUID(), async () => {
+      commands++;
+      saveScene(admin, { ...s, steps: [{ device: devices[1].key, action: "open", value: 0 }] }, devices);
+      setDeviceAcl(admin, adult.id, devices[0].key, false);
+    });
+    expect(commands).toBe(1);
+    expect(readRuns(adult, s.id)[0]?.status).toBe("partial");
+  });
+  it("reauthorization rejects a changed scene before an adapter sends a command", async () => {
+    const s = saveScene(admin, input(), devices);
+    let commands = 0;
+    await runScene(adult, s.id, crypto.randomUUID(), async (_step, reauthorize) => {
+      saveScene(admin, { ...s, name: "Módosítva" }, devices);
+      reauthorize();
+      commands++;
+    });
+    expect(commands).toBe(0);
+    expect(readRuns(adult, s.id)[0]?.status).toBe("failed");
+  });
   it("validates temperature and does not allow unsupported brightness", () => {
     expect(() =>
       saveScene(

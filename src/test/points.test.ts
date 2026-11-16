@@ -196,6 +196,20 @@ describe("4a personal points", () => {
 });
 
 describe("4b reward shop", () => {
+  it("rejects an idempotency key belonging to another caller, person or reward", () => {
+    const r = reward(0, 2);
+    const req = rid();
+    const original = redeem(mom, { rewardId: r, requestId: req, expectedPrice: 0 });
+    expect(() => redeem(kid, { rewardId: r, requestId: req, expectedPrice: 0 })).toThrow();
+    expect(() =>
+      redeem(mom, { rewardId: r, requestId: req, expectedPrice: 0, person: `profile:${profile}` }),
+    ).toThrow();
+    expect(() =>
+      redeem(mom, { rewardId: reward(0), requestId: req, expectedPrice: 0 }),
+    ).toThrow();
+    expect(redeem(mom, { rewardId: r, requestId: req, expectedPrice: 0 })).toEqual(original);
+    expect(pointsOverview(mom).rewards.find((x) => x.id === r)?.stock).toBe(1);
+  });
   it("adult redeems instantly with atomic deduction, stock and idempotent double click", () => {
     adjustPoints(dad, { person: `user:${mom.id}`, delta: 30, reason: "Kezdő", requestId: rid() });
     const r = reward(20, 1);
