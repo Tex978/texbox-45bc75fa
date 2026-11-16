@@ -150,38 +150,49 @@ function ProfileCard({ p }: { p: P }) {
         <p className="text-xs text-muted-foreground">
           A felhasználónév (@{p.username}) a belépéshez kell, és biztonsági okból nem módosítható.
         </p>
-        <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm">Profilikon</legend>
-          <div className="profile-pick">
-            {AVATAR_ICONS.map((i) => (
-              <button
-                type="button"
-                key={i}
-                aria-pressed={icon === i}
-                aria-label={AVATAR_ICON_LABELS[i]}
-                onClick={() => setIcon(i)}
-              >
-                <UserAvatar name={name || p.username} avatar={{ icon: i, color }} size={36} />
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm">Szín</legend>
-          <div className="profile-pick">
-            {AVATAR_COLORS.map((c) => (
-              <button
-                type="button"
-                key={c}
-                aria-pressed={color === c}
-                aria-label={AVATAR_COLOR_LABELS[c]}
-                onClick={() => setColor(c)}
-              >
-                <UserAvatar name={name || p.username} avatar={{ icon, color: c }} size={36} />
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        <section
+          id="avatar"
+          className="scroll-mt-24 grid gap-3 border-t border-border pt-4"
+          aria-labelledby="avatar-heading"
+        >
+          <h2 id="avatar-heading" className="text-base font-semibold">
+            Avatar módosítása
+          </h2>
+          <fieldset className="grid gap-2">
+            <legend className="mb-1 text-sm">Profilikon</legend>
+            <div className="profile-pick">
+              {AVATAR_ICONS.map((i) => (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  key={i}
+                  aria-pressed={icon === i}
+                  aria-label={AVATAR_ICON_LABELS[i]}
+                  onClick={() => setIcon(i)}
+                >
+                  <UserAvatar name={name || p.username} avatar={{ icon: i, color }} size={36} />
+                </Button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="grid gap-2">
+            <legend className="mb-1 text-sm">Szín</legend>
+            <div className="profile-pick">
+              {AVATAR_COLORS.map((c) => (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  key={c}
+                  aria-pressed={color === c}
+                  aria-label={AVATAR_COLOR_LABELS[c]}
+                  onClick={() => setColor(c)}
+                >
+                  <UserAvatar name={name || p.username} avatar={{ icon, color: c }} size={36} />
+                </Button>
+              ))}
+            </div>
+          </fieldset>
+        </section>
         <Msg m={msg} />
         <Button disabled={busy} className="h-11 w-full sm:w-fit">
           <Save /> Profil mentése

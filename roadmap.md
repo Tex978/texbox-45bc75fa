@@ -118,3 +118,9 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] 8a (fejlesztői környezetben): Családi szervező → „Jegyzetek és ügyek” fül — jegyzetek (kategória, https-link, rövid lista, kitűzés, személyes/felnőtt/gyerekkel megosztott) és ügyek (felelős, határidő, státusz, prioritás), keresés/szűrés, archívum+visszaállítás, előzmények, verzióütközés, „Közelgő ügyek”, explicit idempotens „Feladat létrehozása” (0 pont). `pre-family-notes-phase8a.db` mentés. Élő NAS-on ellenőrizendő.
 - [ ] 8b: ügyhatáridő-emlékeztető (értesítési beállítással), ügyből naptáresemény létrehozása/hivatkozása, főoldali ügy-kártya.
 - Opcionális 2.0: 7b push, 1c, 8b ügyemlékeztetők, 6c eszközkedvencek, 2b/2 szenzortriggerek; az 1.0 végső fejlesztői QA fent lezárva, éles NAS átvétel külön nyitott.
+
+## Tulajdonosi konkrét javítások – 2026-11-16
+- [x] 9a: Otthon Szobák/Eszközök → Szobák kezelése, minden eszközcsempén Szoba módosítása. Közös verzióvédett home-rooms; hét prefix, legacy fallback, rename/merge, unassigned; 12 ikon/6 szín avatár jól látható és mentett. 249 teszt/56 fájl, automatikus build/typecheck OK; célzott lint 0 hiba/5 exportfigyelmeztetés; 360/390/768/1280 publikus drawer ellenőrizve, bejelentkezett SQLite UI mentés tesztelve.
+- [ ] 9b: valódi NAS SQLite családi chat; külön biztonságos implementációs kör, nincs álchat ikon.
+- [ ] Saját avatárkép: biztonságos feldolgozás és jogosult képkiadás külön körben; ikon/szín megmarad.
+- [ ] Éles NAS: többfiókos szobamentés, restart, avatar fejléc/család ellenőrzés.

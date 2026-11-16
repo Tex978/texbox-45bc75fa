@@ -176,6 +176,12 @@ export function ProfileMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
+          <Link to="/profile" hash="avatar" className="min-h-11">
+            <UserRound />
+            Avatar módosítása
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link to="/profile" hash="eszkozok" className="min-h-11">
             <KeyRound />
             Bejelentkezett eszközeim

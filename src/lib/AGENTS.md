@@ -16,4 +16,5 @@
 - Notifications are in-app only, keyed UNIQUE(recipient,source,event) to login accounts; emitters run inside the business transaction but never throw, and timed reminders run only in the scheduler lease holder with a short no-catch-up window.
 - Family notes/matters live in family_notes with owner-only personal items, explicit child sharing and archive-only removal; matter→task runs saveTask inside the notes transaction (tasks tx nests via SAVEPOINT when isTransaction) and is deduplicated by matter_task_links.
 - Own-account RPCs (profile, password, sessions, audit) resolve the user only from the session cookie and never accept a target id; sessions are exposed by a derived non-reversible id and plain UA labels; avatars are built-in icon/colour keys in additive user_profiles.
+- Unified rooms use a versioned shared-prefs key through dedicated authenticated rooms RPCs, with rooms write permission and mandatory DB/JSON backups before first write; explicit empty assignments and legacy aliases prevent deleted rooms resurfacing. Vendor metadata and device ACL stay untouched.
 <!-- AGENT-MEMORY:END -->

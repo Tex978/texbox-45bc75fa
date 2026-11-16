@@ -72,9 +72,12 @@ it("saves own profile, changes password and revokes another device through the r
   fireEvent.change(await screen.findByLabelText("Megjelenített név"), {
     target: { value: "Teszt szülő" },
   });
+  fireEvent.click(screen.getByRole("button", { name: "Cica" }));
+  fireEvent.click(screen.getByRole("button", { name: "Zöld" }));
   fireEvent.click(screen.getByRole("button", { name: "Profil mentése" }));
   await screen.findByText("Profil mentve. Minden eszközön a következő frissítéskor megjelenik.");
   expect(getUser(user.id)?.displayName).toBe("Teszt szülő");
+  expect(getUser(user.id)?.avatar).toEqual({ icon: "cat", color: "c2" });
   fireEvent.change(screen.getByLabelText("Jelenlegi jelszó"), { target: { value: "jelszo123" } });
   for (const label of ["Új jelszó", "Új jelszó újra"])
     fireEvent.change(screen.getByLabelText(label), { target: { value: "Kek-Hegy-2026" } });
@@ -88,5 +91,6 @@ it("saves own profile, changes password and revokes another device through the r
   expect(sessionUser(token)?.id).toBe(user.id);
   resetAuthDb();
   expect(getUser(user.id)?.displayName).toBe("Teszt szülő");
+  expect(getUser(user.id)?.avatar).toEqual({ icon: "cat", color: "c2" });
   qc.clear();
 });
