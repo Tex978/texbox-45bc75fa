@@ -150,7 +150,7 @@ export function readRuns(user: User, sceneId: string): Run[] {
       results: JSON.parse(r.results),
     }));
 }
-function canRun(u: User, s: Scene) {
+export function canRun(u: User, s: Scene) {
   if (
     !visible(u, s) ||
     !userCan(u, "home") ||

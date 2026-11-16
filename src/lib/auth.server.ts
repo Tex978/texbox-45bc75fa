@@ -150,6 +150,15 @@ export function db() {
         CREATE TABLE IF NOT EXISTS dashboard_prefs(person_key TEXT PRIMARY KEY, body TEXT NOT NULL, version INTEGER NOT NULL CHECK(version>=1), updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
         COMMIT;`);
     }
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='scene_schedules'").get()) {
+      const autoBackup = `${dataDir()}/backups/pre-automation-phase2b.db`;
+      if (!fs.existsSync(autoBackup)) d.exec(`VACUUM INTO '${autoBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS scene_schedules(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), scene_id TEXT NOT NULL, body TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)), enabled_at INTEGER, confirmed_scene_version INTEGER, version INTEGER NOT NULL, last_status TEXT, last_message TEXT NOT NULL DEFAULT '', last_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS schedule_runs(rule_id TEXT NOT NULL, slot TEXT NOT NULL, due_at INTEGER NOT NULL, status TEXT NOT NULL CHECK(status IN ('claimed','accepted','partial','failed','missed','blocked','interrupted')), run_id TEXT, message TEXT NOT NULL DEFAULT '', worker TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY(rule_id,slot));
+        CREATE TABLE IF NOT EXISTS scheduler_lease(id INTEGER PRIMARY KEY CHECK(id=1), owner TEXT NOT NULL, expires_at INTEGER NOT NULL);
+        COMMIT;`);
+    }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
     d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
       SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at
