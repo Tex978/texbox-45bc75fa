@@ -160,10 +160,13 @@ export async function gate(request: Request): Promise<Response | null> {
     return loginPage();
   }
 
+  // The first-admin page only exists where accounts can actually be saved (the NAS, with APP_PASSWORD set).
+  if (path === "/__setup" && !(hasDb && accounts === 0 && legacy)) return setupNoticePage();
+
   if (!legacy) return null; // hosted preview / unconfigured: open as before
 
   // No accounts yet: shared password still works, and unlocks first-admin setup.
-  if (hasDb && path === "/__setup") {
+  if (hasDb && accounts === 0 && path === "/__setup") {
     if (!post) return setupPage();
     const f = await request.formData();
     if (!same(String(f.get("legacy") || ""), legacy))
