@@ -38,7 +38,6 @@ export function TrainGame() {
   const [target, setTarget] = useState(1);
   const [loaded, setLoaded] = useState(0);
   const [msg, setMsg] = useState("Várunk a vonatra!");
-  const [wrong, setWrong] = useState(false);
   const [locked, setLocked] = useState(false);
   const [finished, setFinished] = useState(false);
 
@@ -55,7 +54,6 @@ export function TrainGame() {
     const want = makeCargoTarget(Math.random, LEVELS[l]!.wagons);
     setTarget(want);
     setLoaded(0);
-    setWrong(false);
     setLocked(false);
     setMsg(
       mode === "station"
@@ -85,12 +83,10 @@ export function TrainGame() {
   function tapStation(s: Station) {
     if (!train || locked) return;
     if (isCorrectStation(train, s)) {
-      setWrong(false);
       setLocked(true);
       setMsg(`Igen! A vonat ${TRAIN_COLORS[train.colorIndex]!.allative} ment! 👏`);
       setTimeout(advance, NEXT_DELAY_MS);
     } else {
-      setWrong(true);
       setMsg("Az nem jó állomás, próbáld újra! 🙂");
     }
   }
