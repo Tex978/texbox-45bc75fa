@@ -1,5 +1,5 @@
 import { db, requirePermission, isHostedAccountPreview } from "./auth.server";
-import { chatSendSchema, type ChatSend } from "./chat-schema";
+import { chatSendSchema, chatReactionSchema, CAT_EMOJIS, type ChatSend, type ChatReaction } from "./chat-schema";
 import { DEFAULT_AVATAR, isAvatarIcon, isAvatarColor, type Avatar } from "./profile-schema";
 
 function access(token: string | undefined) {
@@ -39,6 +39,7 @@ export function chatList(token: string | undefined, before?: number) {
     )
     .all(before ?? Number.MAX_SAFE_INTEGER) as MessageRow[];
   const slice = rows.slice(0, 100);
+  const reactions = slice.length ? d.prepare(`SELECT r.message_id,r.user_id,r.emoji,r.version,u.display_name FROM chat_reactions r JOIN users u ON u.id=r.user_id AND u.disabled=0 WHERE r.message_id IN (${slice.map(() => "?").join(",")})`).all(...slice.map(r=>r.id)) as {message_id:number;user_id:string;emoji:string|null;version:number;display_name:string}[] : [];
   return {
     ...chatStatus(token),
     items: slice.reverse().map((r) => ({
@@ -48,6 +49,9 @@ export function chatList(token: string | undefined, before?: number) {
       senderId: r.sender_id,
       name: r.name,
       mine: r.sender_id === user.id,
+      reactionVersion: reactions.find(x=>x.message_id===r.id&&x.user_id===user.id)?.version??0,
+      myReaction: reactions.find(x=>x.message_id===r.id&&x.user_id===user.id)?.emoji??null,
+      reactions: CAT_EMOJIS.map(emoji=>({emoji, people:reactions.filter(x=>x.message_id===r.id&&x.emoji===emoji).map(x=>({id:x.user_id,name:x.display_name}))})).filter(x=>x.people.length>0),
       avatar: {
         icon: isAvatarIcon(r.icon) ? r.icon : DEFAULT_AVATAR.icon,
         color: isAvatarColor(r.color) ? r.color : DEFAULT_AVATAR.color,
@@ -104,4 +108,22 @@ export function chatMarkRead(token: string | undefined, through: number) {
     `INSERT INTO chat_receipts(user_id,last_read_id,read_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET last_read_id=MAX(chat_receipts.last_read_id,excluded.last_read_id),read_at=excluded.read_at`,
   ).run(user.id, through, Date.now());
   return chatStatus(token);
+}
+// Desired-state + revision, not blind toggle: retries are idempotent; stale changes fail visibly.
+export function chatReact(token: string | undefined, input: ChatReaction) {
+  const data=chatReactionSchema.parse(input);
+  const {user,d}=access(token);
+  if(user.role==="child")throw new Error("Gyermekfiókkal a chat egyelőre csak olvasható.");
+  d.exec("BEGIN IMMEDIATE");
+  try {
+    if(!d.prepare("SELECT 1 FROM chat_messages WHERE id=?").get(data.messageId))throw new Error("Az üzenet nem található.");
+    const old=d.prepare("SELECT emoji,version FROM chat_reactions WHERE message_id=? AND user_id=?").get(data.messageId,user.id) as {emoji:string|null;version:number}|undefined;
+    if((old?.version??0)!==data.version) {
+      if(old?.emoji===data.emoji){d.exec("COMMIT");return {version:old.version};}
+      throw new Error("A reakció másik eszközön megváltozott. Frissíts és próbáld újra.");
+    }
+    const version=data.version+1;
+    d.prepare(`INSERT INTO chat_reactions(message_id,user_id,emoji,version,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(message_id,user_id) DO UPDATE SET emoji=excluded.emoji,version=excluded.version,updated_at=excluded.updated_at`).run(data.messageId,user.id,data.emoji,version,Date.now());
+    d.exec("COMMIT");return {version};
+  }catch(e){d.exec("ROLLBACK");throw e;}
 }
