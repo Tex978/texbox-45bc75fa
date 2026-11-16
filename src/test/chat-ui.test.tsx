@@ -25,6 +25,10 @@ afterEach(() => {
 });
 it("sends and reads back SQLite messages through the authenticated chat UI", async () => {
   vi.spyOn(document, "hasFocus").mockReturnValue(true);
+  Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+    configurable: true,
+    value: () => {},
+  });
   dir = mkdtempSync(join(tmpdir(), "texbox-chat-ui-"));
   process.env["DATA_DIR"] = dir;
   resetAuthDb();
