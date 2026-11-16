@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.resetModules(); });
 
+const realModule = process.getBuiltinModule.bind(process);
 async function setup(failWrite = false) {
   const files: Record<string, string> = {};
   const fs = {
@@ -22,7 +23,7 @@ async function setup(failWrite = false) {
       files[to] = value; delete files[from];
     }),
   };
-  vi.stubGlobal("process", { ...process, getBuiltinModule: (n: string) => (n === "node:fs" ? fs : process.getBuiltinModule(n)), env: { ...process.env, DATA_FILE: "/data/nas-state.json" } });
+  vi.stubGlobal("process", { ...process, getBuiltinModule: (n: string) => (n === "node:fs" ? fs : realModule(n)), env: { ...process.env, DATA_FILE: "/data/nas-state.json" } });
   return { store: await import("../lib/shared-store.server"), files, fs };
 }
 
