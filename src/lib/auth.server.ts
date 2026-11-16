@@ -225,6 +225,14 @@ export function db() {
         CREATE TABLE IF NOT EXISTS chat_reactions(message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, emoji TEXT CHECK(emoji IS NULL OR emoji IN ('😺','😸','😻','🙀','😿','😾','🐾')), version INTEGER NOT NULL CHECK(version>0), updated_at INTEGER NOT NULL, PRIMARY KEY(message_id,user_id), UNIQUE(message_id,user_id,emoji));
         COMMIT;`);
     }
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chat_attachments'").get()) {
+      const backup = `${dataDir()}/backups/pre-chat-attachments.db`;
+      if (!fs.existsSync(backup)) d.exec(`VACUUM INTO '${backup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS chat_attachments(id TEXT PRIMARY KEY, sender_id TEXT NOT NULL REFERENCES users(id), message_id INTEGER REFERENCES chat_messages(id), name TEXT NOT NULL, size INTEGER NOT NULL CHECK(size>0), mime TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('image','video','file')), status TEXT NOT NULL CHECK(status IN ('uploading','ready','deleted')), created_at INTEGER NOT NULL);
+        CREATE INDEX IF NOT EXISTS chat_attachment_message ON chat_attachments(message_id);
+        COMMIT;`);
+    }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
     d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
       SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at
