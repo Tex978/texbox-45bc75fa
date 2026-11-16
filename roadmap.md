@@ -98,3 +98,7 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 
 - [x] 7a (fejlesztői környezetben): appon belüli értesítési központ — harang + olvasatlan szám, /notifications szűrőkkel, egyedi/tömeges olvasottnak jelölés, fajtánkénti ki/be és emlékeztetési idő; jóváhagyási/döntési értesítések a feladat/beváltás tranzakciójában (UNIQUE címzett+forrás+esemény); naptár/feladat-emlékeztetők a NAS háttérütemezőben, kimaradtat nem pótol. `pre-notifications-phase7a.db` mentés. Élő NAS-on ellenőrizendő.
 - [ ] 7b telefonos push (Service Worker + VAPID + HTTPS) — nincs kész.
+
+- [x] 8a (fejlesztői környezetben): Családi szervező → „Jegyzetek és ügyek” fül — jegyzetek (kategória, https-link, rövid lista, kitűzés, személyes/felnőtt/gyerekkel megosztott) és ügyek (felelős, határidő, státusz, prioritás), keresés/szűrés, archívum+visszaállítás, előzmények, verzióütközés, „Közelgő ügyek”, explicit idempotens „Feladat létrehozása” (0 pont). `pre-family-notes-phase8a.db` mentés. Élő NAS-on ellenőrizendő.
+- [ ] 8b: ügyhatáridő-emlékeztető (értesítési beállítással), ügyből naptáresemény létrehozása/hivatkozása, főoldali ügy-kártya.
+- [ ] Későbbi: 7b push, 1b profil/audit, 6c eszközkedvencek, 2b/2 szenzortriggerek, végső QA.
