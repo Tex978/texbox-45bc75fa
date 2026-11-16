@@ -1,4 +1,5 @@
 # Aktuális családi központ – 2026-11-16
+- [x] Gyerek játékok (/games): háziállatos memóriajáték (6/8/12 kártya) és vonatos játék (állomások színezése + kocsirakodás 1–5 kocsig), 3–4 éves szintre. 6 új logikai teszt, 284/284 teszt sikeres, build OK; 360/390/768/1280 px Playwright-folyamat végigjátszva, nincs böngészőhiba. Éles NAS-on nem ellenőrizve.
 Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/TEXBOX-CSALADI-ROADMAP.md`.
 ## TEXBOX 1.0 lezárás – irányadó mai státusz
 - [x] Egyetlen lezáró fejlesztői QA-kör: 243 Vitest-teszt / 54 fájl és 8 Python Gree-próba sikeres; célzott lint tiszta; automatikus ellenőrzés legutóbbi eredménye `build OK` (típushibák nélkül).
