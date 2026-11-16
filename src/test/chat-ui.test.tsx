@@ -15,7 +15,8 @@ vi.mock("@/lib/chat.functions", () => ({
   chatMessageSend: async ({ data }: { data: Parameters<typeof chatSend>[1] }) =>
     chatSend(token, data),
   chatRead: async ({ data }: { data: { through: number } }) => chatMarkRead(token, data.through),
-  chatReactionSave: async ({data}:{data:Parameters<typeof chatReact>[1]})=>chatReact(token,data),
+  chatReactionSave: async ({ data }: { data: Parameters<typeof chatReact>[1] }) =>
+    chatReact(token, data),
 }));
 import { FamilyChat } from "@/components/FamilyChat";
 afterEach(() => {
@@ -50,20 +51,21 @@ it("sends and reads back SQLite messages through the authenticated chat UI", asy
   fireEvent.click(await screen.findByRole("button", { name: "Családi chat, 1 olvasatlan" }));
   await screen.findByText("Hazaértem!");
   await waitFor(() => expect(chatStatus(token).unread).toBe(0));
-  const field=screen.getByLabelText("Üzenet") as HTMLTextAreaElement;
+  const field = screen.getByLabelText("Üzenet") as HTMLTextAreaElement;
   fireEvent.change(field, { target: { value: "Én is indulok." } });
-  field.setSelectionRange(5,5);fireEvent.select(field);
-  fireEvent.click(screen.getByRole("button",{name:"Emojiválasztó"}));
-  fireEvent.click(screen.getByRole("button",{name:"Beszúrás: Vidám cica"}));
+  field.setSelectionRange(5, 5);
+  fireEvent.select(field);
+  fireEvent.click(screen.getByRole("button", { name: "Emojiválasztó" }));
+  fireEvent.click(screen.getByRole("button", { name: "Beszúrás: Vidám cica" }));
   expect(field.value).toBe("Én is😺 indulok.");
   fireEvent.click(screen.getByRole("button", { name: "Üzenet küldése" }));
   await screen.findByText("Én is😺 indulok.");
   expect(chatList(dadToken).items.at(-1)).toMatchObject({ text: "Én is😺 indulok.", name: "Anya" });
-  fireEvent.click(screen.getAllByRole("button",{name:"Láttam / oké reakció, 0"})[0]);
-  await screen.findByRole("button",{name:"Láttam / oké reakció, 1"});
+  fireEvent.click(screen.getAllByRole("button", { name: "Láttam / oké reakció, 0" })[0]);
+  await screen.findByRole("button", { name: "Láttam / oké reakció, 1" });
   expect(chatList(dadToken).items[0].reactions[0].people[0].name).toBe("Anya");
-  fireEvent.click(screen.getByRole("button",{name:"Láttam / oké reakció, 1"}));
-  await waitFor(()=>expect(chatList(dadToken).items[0].reactions).toEqual([]));
+  fireEvent.click(screen.getByRole("button", { name: "Láttam / oké reakció, 1" }));
+  await waitFor(() => expect(chatList(dadToken).items[0].reactions).toEqual([]));
   resetAuthDb();
   expect(chatList(dadToken).items).toHaveLength(2);
   qc.clear();

@@ -5,8 +5,21 @@ import { MessageCircle, Send, RefreshCw, Cat, Smile } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import { UserAvatar } from "./Avatar";
-import { chatMessages, chatMessageSend, chatRead, chatUnread, chatReactionSave } from "@/lib/chat.functions";
-import { CAT_EMOJIS, CAT_LABELS, COMPOSER_EMOJIS, insertChatEmoji, type ChatSend, type ChatReaction } from "@/lib/chat-schema";
+import {
+  chatMessages,
+  chatMessageSend,
+  chatRead,
+  chatUnread,
+  chatReactionSave,
+} from "@/lib/chat.functions";
+import {
+  CAT_EMOJIS,
+  CAT_LABELS,
+  COMPOSER_EMOJIS,
+  insertChatEmoji,
+  type ChatSend,
+  type ChatReaction,
+} from "@/lib/chat-schema";
 
 export function FamilyChat({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
@@ -31,7 +44,10 @@ export function FamilyChat({ userId }: { userId: string }) {
         {n > 0 && <span className="app-bell-count">{n > 99 ? "99+" : n}</span>}
       </Button>
       <SheetContent className="family-chat" aria-describedby="chat-description">
-        <SheetTitle className="chat-title"><Cat size={21} aria-hidden="true" />Családi chat</SheetTitle>
+        <SheetTitle className="chat-title">
+          <Cat size={21} aria-hidden="true" />
+          Családi chat
+        </SheetTitle>
         <SheetDescription id="chat-description" className="sr-only">
           Közös családi beszélgetés
         </SheetDescription>
@@ -43,12 +59,13 @@ export function FamilyChat({ userId }: { userId: string }) {
 function ChatConversation({ userId }: { userId: string }) {
   const qc = useQueryClient();
   const sendFn = useServerFn(chatMessageSend),
-    readFn = useServerFn(chatRead), reactFn = useServerFn(chatReactionSave);
+    readFn = useServerFn(chatRead),
+    reactFn = useServerFn(chatReactionSave);
   const [text, setText] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const [emojiError,setEmojiError]=useState("");
-  const textarea=useRef<HTMLTextAreaElement>(null);
-  const selection=useRef({start:0,end:0});
+  const [emojiError, setEmojiError] = useState("");
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  const selection = useRef({ start: 0, end: 0 });
   const request = useRef<ChatSend | null>(null);
   const [cursor, setCursor] = useState<number | undefined>();
   const q = useQuery({
@@ -58,7 +75,7 @@ function ChatConversation({ userId }: { userId: string }) {
     refetchInterval: 10000,
   });
   const area = useRef<HTMLDivElement>(null);
-  const scrolledThrough=useRef(0);
+  const scrolledThrough = useRef(0);
   const readThrough = useRef(0);
   const [readError, setReadError] = useState(false);
   const latest = q.data?.items.at(-1)?.id ?? 0;
@@ -67,7 +84,7 @@ function ChatConversation({ userId }: { userId: string }) {
       return;
     if (latest !== scrolledThrough.current) {
       area.current?.scrollTo({ top: area.current.scrollHeight });
-      scrolledThrough.current=latest;
+      scrolledThrough.current = latest;
     }
     if (latest <= readThrough.current) return;
     readThrough.current = latest;
@@ -91,17 +108,31 @@ function ChatConversation({ userId }: { userId: string }) {
       void qc.invalidateQueries({ queryKey: ["chat-unread", userId] });
     },
   });
-  const reaction=useMutation({
-    mutationFn:(data:ChatReaction)=>reactFn({data}),
-    onSettled:()=>{void qc.invalidateQueries({queryKey:["chat-messages",userId]});},
+  const reaction = useMutation({
+    mutationFn: (data: ChatReaction) => reactFn({ data }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["chat-messages", userId] });
+    },
   });
-  const rememberSelection=()=>{const el=textarea.current;if(el)selection.current={start:el.selectionStart,end:el.selectionEnd};};
-  const insertEmoji=(emoji:string)=>{
-    const result=insertChatEmoji(text,selection.current.start,selection.current.end,emoji);
-    if(result.text.length>1000){setEmojiError("Az üzenet legfeljebb 1000 karakter lehet.");return;}
-    setText(result.text);send.reset();setEmojiError("");setEmojiOpen(false);
-    selection.current={start:result.cursor,end:result.cursor};
-    requestAnimationFrame(()=>{textarea.current?.focus();textarea.current?.setSelectionRange(result.cursor,result.cursor);});
+  const rememberSelection = () => {
+    const el = textarea.current;
+    if (el) selection.current = { start: el.selectionStart, end: el.selectionEnd };
+  };
+  const insertEmoji = (emoji: string) => {
+    const result = insertChatEmoji(text, selection.current.start, selection.current.end, emoji);
+    if (result.text.length > 1000) {
+      setEmojiError("Az üzenet legfeljebb 1000 karakter lehet.");
+      return;
+    }
+    setText(result.text);
+    send.reset();
+    setEmojiError("");
+    setEmojiOpen(false);
+    selection.current = { start: result.cursor, end: result.cursor };
+    requestAnimationFrame(() => {
+      textarea.current?.focus();
+      textarea.current?.setSelectionRange(result.cursor, result.cursor);
+    });
   };
   return (
     <>
@@ -128,7 +159,10 @@ function ChatConversation({ userId }: { userId: string }) {
               </Button>
             )}
             {q.data?.items.length === 0 && (
-              <div className="chat-empty"><span aria-hidden="true">🐾</span><p>Még nincs üzenet.</p></div>
+              <div className="chat-empty">
+                <span aria-hidden="true">🐾</span>
+                <p>Még nincs üzenet.</p>
+              </div>
             )}
             {q.data?.items.map((m) => (
               <article key={m.id} className={`chat-message ${m.mine ? "chat-mine" : ""}`}>
@@ -146,14 +180,47 @@ function ChatConversation({ userId }: { userId: string }) {
                     </time>
                   </div>
                   <p>{m.text}</p>
-                  <div className="chat-reactions" role="group" aria-label={`Reakciók: ${m.name}, ${m.id}. üzenet`}>
-                    {CAT_EMOJIS.map((emoji,i)=>{
-                      const votes=m.reactions.find(r=>r.emoji===emoji);
-                      if(!q.data?.canSend&&!votes)return null;
-                      return <Button key={emoji} variant="ghost" size="sm" type="button" aria-label={`${CAT_LABELS[i]} reakció, ${votes?.people.length??0}`} aria-pressed={m.myReaction===emoji} title={votes?`${CAT_LABELS[i]}: ${votes.people.map(p=>p.name).join(", ")}`:CAT_LABELS[i]} disabled={reaction.isPending||!q.data?.canSend} onClick={()=>reaction.mutate({messageId:m.id,emoji:m.myReaction===emoji?null:emoji,version:m.reactionVersion})}><span aria-hidden="true">{emoji}</span>{votes&&<small>{votes.people.length}</small>}</Button>;
+                  <div
+                    className="chat-reactions"
+                    role="group"
+                    aria-label={`Reakciók: ${m.name}, ${m.id}. üzenet`}
+                  >
+                    {CAT_EMOJIS.map((emoji, i) => {
+                      const votes = m.reactions.find((r) => r.emoji === emoji);
+                      if (!q.data?.canSend && !votes) return null;
+                      return (
+                        <Button
+                          key={emoji}
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          aria-label={`${CAT_LABELS[i]} reakció, ${votes?.people.length ?? 0}`}
+                          aria-pressed={m.myReaction === emoji}
+                          title={
+                            votes
+                              ? `${CAT_LABELS[i]}: ${votes.people.map((p) => p.name).join(", ")}`
+                              : CAT_LABELS[i]
+                          }
+                          disabled={reaction.isPending || !q.data?.canSend}
+                          onClick={() =>
+                            reaction.mutate({
+                              messageId: m.id,
+                              emoji: m.myReaction === emoji ? null : emoji,
+                              version: m.reactionVersion,
+                            })
+                          }
+                        >
+                          <span aria-hidden="true">{emoji}</span>
+                          {votes && <small>{votes.people.length}</small>}
+                        </Button>
+                      );
                     })}
                   </div>
-                  {reaction.isError&&reaction.variables?.messageId===m.id&&<div className="chat-error" role="alert">{reaction.error.message}</div>}
+                  {reaction.isError && reaction.variables?.messageId === m.id && (
+                    <div className="chat-error" role="alert">
+                      {reaction.error.message}
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
@@ -183,11 +250,55 @@ function ChatConversation({ userId }: { userId: string }) {
         {q.data && !q.data.canSend && (
           <p className="chat-error">Gyermekfiókkal a chat egyelőre csak olvasható.</p>
         )}
-        {emojiError&&<p role="alert" className="chat-error">{emojiError}</p>}
-        {emojiOpen&&<div id="chat-emojis" className="chat-emoji-picker" role="group" aria-label="Emojiválasztó" onKeyDown={e=>{if(e.key==="Escape"){e.preventDefault();e.stopPropagation();setEmojiOpen(false);textarea.current?.focus();}}}>
-          {COMPOSER_EMOJIS.map((emoji,i)=><Button key={emoji} type="button" variant="ghost" size="icon" aria-label={`Beszúrás: ${i<CAT_LABELS.length?CAT_LABELS[i]:emoji}`} title={i<CAT_LABELS.length?CAT_LABELS[i]:emoji} onClick={()=>insertEmoji(emoji)}>{emoji}</Button>)}
-        </div>}
-        <Button type="button" variant="ghost" size="icon" aria-label="Emojiválasztó" title="Emojiválasztó" aria-expanded={emojiOpen} aria-controls="chat-emojis" disabled={send.isPending||q.isError||!q.data?.canSend} onPointerDown={rememberSelection} onClick={()=>setEmojiOpen(v=>!v)}><Smile size={21}/></Button>
+        {emojiError && (
+          <p role="alert" className="chat-error">
+            {emojiError}
+          </p>
+        )}
+        {emojiOpen && (
+          <div
+            id="chat-emojis"
+            className="chat-emoji-picker"
+            role="group"
+            aria-label="Emojiválasztó"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                setEmojiOpen(false);
+                textarea.current?.focus();
+              }
+            }}
+          >
+            {COMPOSER_EMOJIS.map((emoji, i) => (
+              <Button
+                key={emoji}
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Beszúrás: ${i < CAT_LABELS.length ? CAT_LABELS[i] : emoji}`}
+                title={i < CAT_LABELS.length ? CAT_LABELS[i] : emoji}
+                onClick={() => insertEmoji(emoji)}
+              >
+                {emoji}
+              </Button>
+            ))}
+          </div>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Emojiválasztó"
+          title="Emojiválasztó"
+          aria-expanded={emojiOpen}
+          aria-controls="chat-emojis"
+          disabled={send.isPending || q.isError || !q.data?.canSend}
+          onPointerDown={rememberSelection}
+          onClick={() => setEmojiOpen((v) => !v)}
+        >
+          <Smile size={21} />
+        </Button>
         <label className="sr-only" htmlFor="chat-text">
           Üzenet
         </label>
@@ -203,7 +314,7 @@ function ChatConversation({ userId }: { userId: string }) {
           disabled={send.isPending || q.isError || !q.data?.canSend}
           onChange={(e) => {
             setText(e.target.value);
-            selection.current={start:e.target.selectionStart,end:e.target.selectionEnd};
+            selection.current = { start: e.target.selectionStart, end: e.target.selectionEnd };
             setEmojiError("");
             send.reset();
           }}

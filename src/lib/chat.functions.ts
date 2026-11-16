@@ -23,5 +23,5 @@ export const chatRead = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => chatMarkRead(token(), data.through));
 export const chatReactionSave = createServerFn({ method: "POST" })
-  .inputValidator((v:unknown)=>chatReactionSchema.parse(v))
-  .handler(async({data})=>chatReact(token(),data));
+  .inputValidator((v: unknown) => chatReactionSchema.parse(v))
+  .handler(async ({ data }) => chatReact(token(), data));

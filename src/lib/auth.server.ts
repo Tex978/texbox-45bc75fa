@@ -216,7 +216,9 @@ export function db() {
         CREATE TABLE IF NOT EXISTS chat_receipts(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, last_read_id INTEGER NOT NULL DEFAULT 0 CHECK(last_read_id>=0), read_at INTEGER NOT NULL);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chat_reactions'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chat_reactions'").get()
+    ) {
       const backup = `${dataDir()}/backups/pre-chat-reactions.db`;
       if (!fs.existsSync(backup)) d.exec(`VACUUM INTO '${backup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;
