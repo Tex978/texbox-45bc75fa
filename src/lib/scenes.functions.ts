@@ -55,7 +55,6 @@ export const scenesSave = createServerFn({ method: "POST" })
   .inputValidator((d) => sceneSchema.parse(d))
   .handler(async ({ data }) => {
     const u = actor();
-    if (u.role !== "admin") throw new Error("Eszközengedélyt csak admin adhat.");
     return saveScene(u, data, (await sceneDevices()).devices);
   });
 export const scenesDelete = createServerFn({ method: "POST" })
@@ -78,6 +77,7 @@ export const scenesAcl = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const u = actor();
+    if (u.role !== "admin") throw new Error("Eszközengedélyt csak admin adhat.");
     if (!(await sceneDevices()).devices.some((d) => d.key === data.device))
       throw new Error("Ismeretlen eszköz.");
     setDeviceAcl(u, data.userId, data.device, data.allowed);
