@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const mocks = vi.hoisted(() => ({ save: vi.fn(async (d: unknown) => d) }));
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
@@ -45,7 +45,7 @@ describe("scene editor", () => {
     fireEvent.change(screen.getByLabelText("Művelet"), { target: { value: "temperature" } });
     fireEvent.change(screen.getByLabelText("Célhőmérséklet (°C)"), { target: { value: "23" } });
     fireEvent.click(screen.getByRole("button", { name: "Jelenet mentése" }));
-    await vi.waitFor(() =>
+    await waitFor(() =>
       expect(mocks.save).toHaveBeenCalledWith({
         data: expect.objectContaining({
           name: "Saját este",

@@ -556,6 +556,9 @@ export function Scenes() {
             Felnőttek a meglévő vezérlési jogukkal indíthatnak; gyermekfióknál minden eszközhöz
             külön engedély szükséges. A tiltás a közvetlen vezérlőkre is érvényes.
           </p>
+          <ul className="mb-4 grid gap-2 text-sm">
+            {q.data.acl?.map(a => <li key={`${a.user_id}:${a.device_key}`}>{q.data?.users.find(u => u.id === a.user_id)?.name || a.user_id} · {devices.data?.devices.find(d => d.key === a.device_key)?.name || a.device_key}: {a.allowed ? "engedélyezve" : "tiltva"}</li>)}
+          </ul>
           <form
             className="scene-fields"
             onSubmit={(e) => {
