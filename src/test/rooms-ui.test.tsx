@@ -81,7 +81,9 @@ it("moves real Xiaomi sensor and purifier through UI into persistent NAS room me
   const sensor = screen.getByLabelText("Xiaomi hőmérő szobája");
   fireEvent.change(sensor, { target: { value: "Nappali" } });
   await screen.findByText("Szobabeállítás mentve.");
-  await waitFor(() => expect(screen.getByLabelText("Xiaomi légtisztító szobája")).not.toBeDisabled());
+  await waitFor(() =>
+    expect(screen.getByLabelText("Xiaomi légtisztító szobája")).not.toBeDisabled(),
+  );
   fireEvent.change(screen.getByLabelText("Xiaomi légtisztító szobája"), {
     target: { value: "Nappali" },
   });
