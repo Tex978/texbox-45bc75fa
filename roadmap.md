@@ -95,3 +95,6 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 
 - [x] 2b/1 (fejlesztői környezetben): időzített kézi jelenetek — `scene_schedules`, `schedule_runs` (egyedi szabály+időpont), `scheduler_lease`; `pre-automation-phase2b.db` mentés. Kikapcsolva jön létre, bekapcsolás összefoglaló + megerősítés után, csak élő háttérütemezőnél. Nincs pótlás, nincs ismétlés megszakadás után. Élő NAS-on ellenőrizendő: a naplóban `TexBox scheduler started`, egy előre egyeztetett jelenettel próbafutás.
 - [ ] 2b/2 érzékelő/eseményalapú triggerek; telefonos értesítések.
+
+- [x] 7a (fejlesztői környezetben): appon belüli értesítési központ — harang + olvasatlan szám, /notifications szűrőkkel, egyedi/tömeges olvasottnak jelölés, fajtánkénti ki/be és emlékeztetési idő; jóváhagyási/döntési értesítések a feladat/beváltás tranzakciójában (UNIQUE címzett+forrás+esemény); naptár/feladat-emlékeztetők a NAS háttérütemezőben, kimaradtat nem pótol. `pre-notifications-phase7a.db` mentés. Élő NAS-on ellenőrizendő.
+- [ ] 7b telefonos push (Service Worker + VAPID + HTTPS) — nincs kész.
