@@ -30,14 +30,13 @@ use the editor.
 <!-- LOVABLE:END -->
 
 <!-- AGENT-MEMORY:BEGIN -->
-- Plex poster requests use the same shared-store-first configuration and legacy cookie fallback as overview reads; send the Plex token in a server-side header so other browsers can load posters without exposing credentials.
+- Plex posters use the shared-store config and a server-side token header, so any browser loads them without exposing credentials.
 - Thermometer metadata shares the existing server store; retain all discovered sensors for restoration while applying one visibility filter to tiles and summaries, and migrate browser names without overwriting shared choices.
 - Shared settings migrate legacy cookies only for missing keys, commit disk writes atomically before updating cache, and surface filesystem failures instead of claiming browser-only saves are shared; this prevents silent cross-device loss.
 - Docker builds use native runners per architecture and slash-free matrix architecture labels for artifact names, because GitHub rejects platform strings containing `/` as artifact names.
-- Smart-home presentation uses cached vendor readings for compact summary tiles and category-switched panels, not one long vendor list; preserve polling and device command semantics during layout changes.
 - Home Connect reads preserve HTTP-specific sanitized errors, treat only missing active programs as normal, and allow relinking from the error state; request provider-supported English responses while keeping the UI Hungarian.
 - Media discovery uses TMDB for movie/TV categories and details and OMDb or explicitly named Arr IMDb fields for IMDb scores; never relabel TMDB scores as IMDb. Preserve TMDB movie and TVDB series request IDs, keep provider credentials in the existing self-hosted configuration, and label sample catalogs and non-personalized fallbacks honestly.
-- App icons share one photo cutout as resized public PNGs; manifest-only, no service worker, so live reads stay uncached.
+- App icons are resized public PNGs of one cutout; manifest-only, no service worker, so live reads stay uncached.
 - The overview heading reuses the bundled full-body photographic cutout in normal layout flow (not the smart-home header) so the photo never covers device controls.
 - Thermometer history is requested on demand from Xiaomi with bounded reads, decoded in thermo-history.ts, and never synthesized as real measurements; dashboard mobile CSS remains scoped to smart-home.
 - Xiaomi thermometer reads select service/property IDs per model; Monitor 3 has a distinct layout, so avoid applying legacy BLE IDs universally.
