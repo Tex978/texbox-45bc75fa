@@ -10,4 +10,5 @@
 - Storage opens only through data-guard.server: never create the data dir or an empty DB/state silently; the marker tracks created files, empty folders need explicit gated confirmation, and diagnostics stay stat-only so a wrong mount is visible instead of looking like a first start.
 - Points are an append-only personal ledger keyed user:/profile: with UNIQUE source (task:/redeem:/adjust:); balance is always derived, child redemptions reserve via status='reserved' and deduct only on parent approval, and task credit runs inside the task approval transaction.
 - Organizer data (shopping, recipes, menu) is additive SQLite with soft-deleted items; shared freshness comes from polling, ingredient merges touch only open items with identical normalized name and unit, and organizer actions never write the point ledger.
+- Calendar stores Budapest wall-clock dates/times (no UTC instants) and expands recurrences at read time; per-occurrence exceptions and task links are keyed by (event, original date) so repeats stay deterministic and idempotent.
 <!-- AGENT-MEMORY:END -->
