@@ -12,7 +12,12 @@ services:
       - ./data:/data
     environment:
       PORT: 3050
+      # Csak az első admin fiók létrehozásához kell (/__setup), utána mindenki saját fiókkal lép be.
       APP_PASSWORD: valassz-egy-jelszot
+      # Titkosítja a mentett kapcsolati adatokat. Hozz létre egy hosszú véletlen értéket
+      # (pl. jelszókezelővel), és őrizd meg külön is: nélküle a mentett adatok nem olvashatók.
+      # TEXBOX_SECRET_KEY: ide-egy-hosszu-veletlen-ertek
+      # SESSION_DAYS: 30
     labels:
       com.centurylinklabs.watchtower.enable: "true"
 

@@ -6,7 +6,7 @@ import { ROLE_LABELS } from "@/lib/permissions";
 import { LayoutDashboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, Menu, Users, LogOut, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-const nav = [
+const allNav = [
   { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search },
   { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/home", label: "Okosotthon", icon: House }, { to: "/settings", label: "Kapcsolatok", icon: Cable },
@@ -22,6 +22,8 @@ function ProfileMenu() {
       <DropdownMenuItem asChild><a href="/__logout" className="min-h-11"><LogOut />Kijelentkezés / fiókváltás</a></DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
 }
 export function Shell({ children, demo, className = "" }: { children: ReactNode; demo?: boolean; className?: string }) {
+  const me = useQuery(meQuery).data;
+  const nav = allNav.filter((n) => n.to !== "/settings" || !me?.user || me.user.can.settings);
   return <div className={`app-shell min-h-screen bg-background text-foreground ${className}`}>
     <header className="app-header border-b border-border"><div className="app-header-inner">
       <div className="app-brand"><span className="app-brand-icon"><Server size={18} strokeWidth={1.7} /></span><span className="app-brand-name">NAS Vezérlő</span></div>
