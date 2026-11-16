@@ -159,6 +159,22 @@ describe("8a family notes and matters", () => {
     expect(balanceOf(`user:${kid.id}`).balance).toBe(0);
     expect(() => matterToTask(kid, id, saveTask as never)).toThrow();
   });
+  it("matter → task rolls back the new task when the link step fails", () => {
+    const id = saveItem(mom, matter());
+    const count = () =>
+      (db()!.prepare("SELECT count(*) c FROM task_templates").get() as { c: number }).c;
+    db()!.exec(
+      "CREATE TRIGGER fail_link BEFORE INSERT ON matter_task_links BEGIN SELECT RAISE(ABORT,'disk'); END",
+    );
+    expect(() => matterToTask(mom, id, saveTask as never)).toThrow("disk");
+    expect(count()).toBe(0);
+    db()!.exec("DROP TRIGGER fail_link");
+    expect(matterToTask(mom, id, saveTask as never).created).toBe(true);
+    expect(matterToTask(mom, id, saveTask as never).created).toBe(false);
+    expect(count()).toBe(1);
+    // A standalone saveTask still opens and commits its own transaction.
+    expect(db()!.isTransaction).toBe(false);
+  });
   it("RPC requires a session; child cannot write", async () => {
     await expect(notesList({ data: {} })).rejects.toThrow("Bejelentkezés");
     await expect(noteSave({ data: note() })).rejects.toThrow("Bejelentkezés");
