@@ -119,7 +119,7 @@ export function ProfileMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="app-profile" aria-label={`Profil: ${u.displayName}`}>
-          <span className="app-avatar">{initials}</span>
+          <span className="app-avatar">{error ? <AlertCircle size={18} /> : initials}</span>
           <span className="app-profile-name">{u.displayName}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -131,6 +131,11 @@ export function ProfileMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {error && <>
+          <DropdownMenuLabel className="max-w-72 whitespace-normal font-normal text-destructive">A munkamenet ellenőrzése sikertelen; az utolsó ismert profilt látod.</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => { void refetch(); }}><RefreshCw />Újraellenőrzés</DropdownMenuItem>
+          <DropdownMenuItem asChild><a href="/__login">Új belépés</a></DropdownMenuItem>
+        </>}
         {u.can.family && (
           <DropdownMenuItem asChild>
             <Link to="/family" className="min-h-11">
