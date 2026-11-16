@@ -14,6 +14,7 @@ import { Route as DownloadsRouteImport } from './routes/downloads'
 import { Route as FamilyRouteImport } from './routes/family'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as OrganizerRouteImport } from './routes/organizer'
 import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -44,6 +45,11 @@ const HomeRoute = HomeRouteImport.update({
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizerRoute = OrganizerRouteImport.update({
+  id: '/organizer',
+  path: '/organizer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RewardsRoute = RewardsRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/family': typeof FamilyRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/organizer': typeof OrganizerRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/family': typeof FamilyRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/organizer': typeof OrganizerRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/family': typeof FamilyRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/organizer': typeof OrganizerRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/family'
     | '/home'
     | '/library'
+    | '/organizer'
     | '/rewards'
     | '/search'
     | '/settings'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/family'
     | '/home'
     | '/library'
+    | '/organizer'
     | '/rewards'
     | '/search'
     | '/settings'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/family'
     | '/home'
     | '/library'
+    | '/organizer'
     | '/rewards'
     | '/search'
     | '/settings'
@@ -165,6 +177,7 @@ export interface RootRouteChildren {
   FamilyRoute: typeof FamilyRoute
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
+  OrganizerRoute: typeof OrganizerRoute
   RewardsRoute: typeof RewardsRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/library'
       fullPath: '/library'
       preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizer': {
+      id: '/organizer'
+      path: '/organizer'
+      fullPath: '/organizer'
+      preLoaderRoute: typeof OrganizerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rewards': {
@@ -261,6 +281,7 @@ const rootRouteChildren: RootRouteChildren = {
   FamilyRoute: FamilyRoute,
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
+  OrganizerRoute: OrganizerRoute,
   RewardsRoute: RewardsRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,

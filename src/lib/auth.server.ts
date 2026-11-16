@@ -107,6 +107,18 @@ export function db() {
         CREATE UNIQUE INDEX IF NOT EXISTS reward_one_goal ON reward_wishes(person_key) WHERE goal=1;
         COMMIT;`);
     }
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='shop_lists'").get()) {
+      const orgBackup = `${dataDir()}/backups/pre-organizer-phase5.db`;
+      if (!fs.existsSync(orgBackup)) d.exec(`VACUUM INTO '${orgBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS shop_lists(id TEXT PRIMARY KEY, name TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS shop_items(id TEXT PRIMARY KEY, list_id TEXT NOT NULL REFERENCES shop_lists(id), name TEXT NOT NULL, norm TEXT NOT NULL, qty REAL CHECK(qty IS NULL OR qty>0), unit TEXT NOT NULL DEFAULT '', store TEXT NOT NULL DEFAULT '', category TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '', checked INTEGER NOT NULL DEFAULT 0, deleted INTEGER NOT NULL DEFAULT 0, added_by TEXT NOT NULL, checked_by TEXT, version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE INDEX IF NOT EXISTS shop_item_list ON shop_items(list_id,deleted,checked);
+        CREATE TABLE IF NOT EXISTS recipes(id TEXT PRIMARY KEY, body TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL, created_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS menu_entries(id TEXT PRIMARY KEY, day TEXT NOT NULL, meal TEXT NOT NULL CHECK(meal IN ('reggeli','ebed','vacsora','egyeb')), recipe_id TEXT REFERENCES recipes(id), title TEXT NOT NULL, servings INTEGER NOT NULL CHECK(servings BETWEEN 1 AND 50), created_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE INDEX IF NOT EXISTS menu_day ON menu_entries(day);
+        COMMIT;`);
+    }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
     d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
       SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at

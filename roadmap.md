@@ -68,3 +68,10 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] Áttekinthető napelemes energiaáramlás és eszközállapotok.
 - [x] Asztali és telefonos megjelenítés, meglévő kezelési lehetőségek ellenőrzése.
 - [x] Betöltési adateltérés javítása és adatátadási regressziós teszt.
+## 5a – Családi szervező (2026-11-16)
+- [x] Közös bevásárlás (/organizer): fő lista + további listák (felnőtt hoz létre), termék mennyiség/egység/bolt/kategória/megjegyzés, ki adta hozzá/ki vette meg, idempotens pipálás/visszavonás, verzióalapú ütközésvédelem, gyerek csak saját tételt szerkeszt/töröl, gyakran vásárolt újrahozzáadás, 15 mp-es frissítés (nem azonnali). Pipálás nem ad pontot.
+- [x] Receptek: CRUD, archiválás, hozzávalók mennyiség+egység, lépések, adag, idő, kategória, https-kép, keresés/szűrő; csak szülő szerkeszt.
+- [x] Heti menü: Budapest hét (hétfőtől), napi étkezések, recept vagy egyedi étel, előző hét átvétele megerősítéssel; felnőtt szerkeszt, mindenki lát.
+- [x] Recept → bevásárlólista adaghoz arányosítva, csak azonos név+egység nyitott tétellel összevonva, pipált tétel érintetlen, összevonás előtt megerősítés.
+- [ ] Nyitott: teljes bevásárlás/főzés opcionális Feladatok-feladatként, menü-bejegyzés szerkesztése (most törlés+új), képfeltöltés, élő NAS-teszt két telefonon.
+- [ ] Később: 5b naptár/ügyintézés/határidők; 6. fázis kiegyensúlyozott főoldal és öt fő menüpont; 2b időzített automatizálás.

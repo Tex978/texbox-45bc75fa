@@ -170,3 +170,6 @@ A Growatt inverteres napi kW és heti/havi/éves kWh meglévő valódi API-előz
 Elsőként: 1. fázis NAS-próbája. Utána 1b profil/audit/ACL alap rövid biztonsági lépés, majd a kért 2. fázis kézi jelenetei. Az automatizálás külön mérföldkő, a feladat/pont szoros tranzakciós kapcsolattal a következő kettő. Szervező és végleges főoldal ezekre épül.
 
 Nem szükséges új kulcs az első fázishoz. Később dönteni kell e-mailküldő opcionális bevezetéséről, tulajdonosváltás biztonságos folyamatáról, szülői funkciójogokról, gyermek önálló belépéséről, push értesítések csatornájáról, automatizálás kiesés/DST viselkedéséről és energia saját tárolásáról. Egyik sincs automatikusan bekapcsolva.
+
+## Állapot 2026-11-16 – 5a
+Kód és izolált tesztek kész: shop_lists, shop_items, recipes, menu_entries (pre-organizer-phase5.db mentés után, additív). Élő Synology-ellenőrzés nyitott. 5b naptár/ügyintézés, 6. főoldal + öt menüpont, 2b automatizálás változatlanul későbbi.

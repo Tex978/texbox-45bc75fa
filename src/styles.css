@@ -261,7 +261,7 @@
 .app-brand-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--primary); }
 .app-brand-name { font-size: 16px; font-weight: 600; }
 .app-demo { font-size: 10px; color: var(--muted-foreground); border-left: 1px solid var(--border); padding-left: 12px; }
-.app-nav { margin-left: auto; display: flex; gap: 4px; }
+.app-nav { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; min-width: 0; gap: 4px; }
 .app-nav a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--muted-foreground); transition: background 160ms, color 160ms; }
 .app-nav a:hover { background: var(--card); color: var(--foreground); }
 .app-nav a[data-status="active"] { background: color-mix(in oklch, var(--primary) 12%, var(--background)); color: var(--primary); }
@@ -944,3 +944,28 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .points-history small { color: var(--muted-foreground); margin-left: auto; }
 .reward-form { margin: 14px 0; }
 .reward-form fieldset { border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Phase 5a: family organizer (shopping, recipes, weekly menu) */
+.org-section { display: grid; gap: 14px; margin-top: 14px; }
+.shop-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.shop-add > input { flex: 1 1 200px; min-width: 0; }
+.shop-extra { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; width: 100%; }
+.shop-extra input { min-width: 0; }
+.shop-frequent { display: flex; flex-wrap: wrap; gap: 6px; }
+.shop-items { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.shop-item { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); min-height: 56px; }
+.shop-check { flex: none; width: 36px; height: 36px; border-radius: 999px; border: 2px solid var(--primary); display: grid; place-items: center; background: transparent; color: var(--primary-foreground); }
+.shop-done .shop-check { background: var(--primary); }
+.shop-done .shop-main strong { text-decoration: line-through; color: var(--muted-foreground); }
+.shop-main { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.shop-main small { width: 100%; color: var(--muted-foreground); font-size: 12px; }
+.org-servings { width: 72px; }
+.menu-week { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.menu-day { border: 1px solid var(--border); border-radius: 16px; padding: 12px; background: var(--card); display: grid; gap: 8px; align-content: start; min-width: 0; }
+.menu-today { border-color: var(--primary); }
+.menu-day h3 { margin: 0; font-size: 15px; text-transform: capitalize; }
+.menu-meal { display: grid; gap: 4px; }
+.menu-meal-label { font-size: 12px; color: var(--muted-foreground); }
+.menu-entry { display: flex; align-items: center; gap: 6px; }
+.menu-add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
+.menu-add select, .menu-add input { min-width: 0; }
