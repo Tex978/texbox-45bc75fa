@@ -105,11 +105,12 @@ export function saveItem(user: User, raw: ItemInput) {
         .run(id, i.listId, i.name, normName(i.name), i.qty, i.unit, i.store, i.category, i.note, u.id, now, now);
       return id;
     }
+    const owner = store().prepare("SELECT added_by FROM shop_items WHERE id=?").get(i.id) as { added_by: string } | undefined;
+    if (!isAdult(u) && owner && owner.added_by !== u.id) throw new Error("Gyerek csak a saját tételét szerkesztheti.");
     if (
       !store()
         .prepare("UPDATE shop_items SET list_id=?,name=?,norm=?,qty=?,unit=?,store=?,category=?,note=?,version=version+1,updated_at=? WHERE id=? AND version=? AND deleted=0")
-        .run(i.listId, i.name, normName(i.name), i.qty, i.unit, i.store, i.category, i.note, now, i.id, i.version ?? -1).changes ||
-      (!isAdult(u) && (store().prepare("SELECT added_by FROM shop_items WHERE id=?").get(i.id) as { added_by: string } | undefined)?.added_by !== u.id)
+        .run(i.listId, i.name, normName(i.name), i.qty, i.unit, i.store, i.category, i.note, now, i.id, i.version ?? -1).changes
     )
       throw new Error("A terméket közben módosították vagy törölték. Töltsd újra.");
     return i.id;
