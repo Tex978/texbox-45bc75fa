@@ -9,6 +9,7 @@ const setCookie = (name: string, value: string, opts: Parameters<typeof writeBro
 };
 import { md5 } from "./md5";
 import { createSolarCache, SOLAR_SESSION_MS } from "./growatt-cache";
+import { parsePlantDetail, SPAN_TYPE, validHistoryDate, type HistoryPoint, type HistorySpan } from "./growatt-history";
 import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 import { filterMedia, mapArrMedia, imdbIdentifier, imdbScore, type MediaType, type MediaCategory, type MediaItem, type MediaDetail } from "./media";
@@ -364,20 +365,26 @@ export const deleteMedia = createServerFn({ method: "POST" })
 const growattHash = (pw: string) => md5(pw).split("").map((c, i) => (i % 2 === 0 && c === "0" ? "c" : c)).join("");
 type SolarData = Awaited<ReturnType<typeof fetchGrowatt>>;
 const cachedSolar = createSolarCache<SolarData>();
+// One Growatt login session per credential set, shared by live reads and history reads to avoid extra logins.
+const growattSessions = new Map<string, { cookie: string; userId: string; expiresAt: number }>();
+const validShared = (key: string) => { const x = growattSessions.get(key); return x && x.expiresAt > Date.now() ? x : undefined; };
+type HistoryResult = { demo: boolean; error: string; span: HistorySpan; date: string; plants: { name: string; points: HistoryPoint[] }[] };
+const cachedHistory = createSolarCache<HistoryResult>();
 async function growatt() {
   const base = (env("GROWATT_SERVER") || "https://server.growatt.com").replace(/\/+$/, "");
   const user = env("GROWATT_USER"), password = env("GROWATT_PASS"), sn = env("GROWATT_SN");
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([base, user, password, sn])));
   const key = Array.from(new Uint8Array(bytes)).map((b) => b.toString(16).padStart(2, "0")).join("");
-  return cachedSolar(key, async (session, saveSession) => {
+  return cachedSolar(key, async (cached, saveSession) => {
+    let session = cached ?? validShared(key);
     if (!session) {
       const lr = await fetch(`${base}/newTwoLoginAPI.do`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "okhttp/3.12.0" },
         body: new URLSearchParams({ userName: user, password: growattHash(password) }), signal: AbortSignal.timeout(15000) });
       const login = await lr.json().catch(() => null);
       if (!lr.ok || !login?.back?.success || !login.back.user?.id) throw new Error("Growatt: a belépést nem fogadta el a szolgáltató. Egy órára szüneteltetjük a próbálkozásokat; a meglévő tiltást ez nem oldja fel.");
       session = { cookie: (lr.headers.getSetCookie?.() || [lr.headers.get("set-cookie") || ""]).map((c) => c.split(";")[0]).join("; "), userId: String(login.back.user.id), expiresAt: Date.now() + SOLAR_SESSION_MS };
-      saveSession(session);
-    }
+      saveSession(session); growattSessions.set(key, session);
+    } else saveSession(session);
     return fetchGrowatt(base, session.cookie, session.userId, sn);
   });
 }
@@ -443,6 +450,43 @@ async function fetchGrowatt(base: string, cookie: string, userId: string, manual
     plants, flow: plants.find((x) => x.flow)?.flow ?? null, raw: JSON.stringify(pj).slice(0, 1500),
   };
 }
+export const getSolarHistory = createServerFn({ method: "GET" })
+  .inputValidator((d: { span: HistorySpan; date: string }) => {
+    if (!(d?.span in SPAN_TYPE) || !validHistoryDate(d.span, String(d.date ?? ""))) throw new Error("Érvénytelen időszak.");
+    return { span: d.span, date: String(d.date ?? "") };
+  })
+  .handler(async ({ data }): Promise<HistoryResult> => {
+    if (!has("GROWATT_USER")) return { demo: true, error: "", span: data.span, date: data.date, plants: [] };
+    const base = (env("GROWATT_SERVER") || "https://server.growatt.com").replace(/\/+$/, "");
+    const user = env("GROWATT_USER"), password = env("GROWATT_PASS"), sn = env("GROWATT_SN");
+    const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([base, user, password, sn])));
+    const key = Array.from(new Uint8Array(bytes)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    try {
+      return await cachedHistory(`${key}|${data.span}|${data.date}`, async () => {
+        let session = validShared(key);
+        const ua = "okhttp/3.12.0";
+        if (!session) {
+          const lr = await fetch(`${base}/newTwoLoginAPI.do`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": ua },
+            body: new URLSearchParams({ userName: user, password: growattHash(password) }), signal: AbortSignal.timeout(15000) });
+          const login = await lr.json().catch(() => null);
+          if (!lr.ok || !login?.back?.success || !login.back.user?.id) throw new Error("Growatt: a belépést nem fogadta el a szolgáltató. Egy órára szüneteltetjük az előzmény-lekérést.");
+          session = { cookie: (lr.headers.getSetCookie?.() || [lr.headers.get("set-cookie") || ""]).map((c) => c.split(";")[0]).join("; "), userId: String(login.back.user.id), expiresAt: Date.now() + SOLAR_SESSION_MS };
+          growattSessions.set(key, session);
+        }
+        const get = async (url: string) => { const r = await fetch(url, { headers: { "User-Agent": ua, Cookie: session!.cookie }, signal: AbortSignal.timeout(15000) }); if (!r.ok) throw new Error("Growatt: az előzményeket nem sikerült lekérni."); return r.json().catch(() => null); };
+        const pj = await get(`${base}/PlantListAPI.do?userId=${encodeURIComponent(session.userId)}`);
+        const list = ((pj?.back ?? pj)?.data ?? []) as { plantId?: string | number; plantName?: string }[];
+        if (!Array.isArray(list) || !list.length) { growattSessions.delete(key); throw new Error("Growatt: a munkamenet lejárt vagy nincs erőmű. Egy órára szüneteltetjük az előzmény-lekérést."); }
+        const plants = await Promise.all(list.map(async (x) => {
+          const q = new URLSearchParams({ plantId: String(x.plantId), type: String(SPAN_TYPE[data.span]), date: data.date });
+          const parsed = parsePlantDetail(await get(`${base}/newPlantDetailAPI.do?${q}`));
+          if (!parsed.ok) throw new Error("Growatt: a szolgáltató nem adott előzményt ehhez az időszakhoz.");
+          return { name: String(x.plantName ?? "Erőmű"), points: parsed.points };
+        }));
+        return { demo: false, error: "", span: data.span, date: data.date, plants };
+      });
+    } catch (e) { return { demo: false, error: String((e as Error).message || e), span: data.span, date: data.date, plants: [] }; }
+  });
 export const getSolar = createServerFn({ method: "GET" }).handler(async () => {
   if (!has("GROWATT_USER")) return { demo: true, error: "", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, plants: [{ name: "Otthon", currentW: 3420, todayKwh: 18.6, totalKwh: 8412, online: "", flow: null, raw: "" }], flow: { pv: 3420, soc: 64, charge: 1200, discharge: 0, load: 1850, toGrid: 370, fromGrid: 0 }, raw: "" };
   try { return { demo: false, error: "", ...(await growatt()) }; }
