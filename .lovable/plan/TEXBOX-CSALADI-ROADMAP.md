@@ -1,6 +1,15 @@
 # TEXBOX – egyeztetett családi központ
 
-Állapot: 2026-11-16. Meglévő projekt, magyar felület; 1., 2a és 3. fázis implementálva, élő Synology-elfogadás még nyitott. Ez a dokumentum az elfogadott teljes célt és a későbbi körök elfogadási feltételeit őrzi. Nem egy új projekt terve.
+Állapot: 2026-11-16. A TEXBOX 1.0 egyetlen lezáró fejlesztői QA-köre elvégezve; éles Synology-elfogadás külön nyitott. Az alábbi korábbi auditok és fázisállapotok történeti szövegek; a mai irányadó státusz az alábbi lezárás. Nem egy új projekt terve.
+
+## TEXBOX 1.0 – végső fejlesztői QA
+- Kész: fiókok/profil/jelszó/munkamenetek, 2a jelenetek, 2b/1 időzítés, feladatok, személyes pontok/jutalombolt, 5a/5b szervező/naptár, 6a/6b főoldal és öt terület, 7a belső értesítések, 8a jegyzetek/ügyek; régi média/NAS/gyártói nézetek megtartva.
+- Javított reprodukált P1: idegen beváltási kérésazonosító nem adhat vissza másik ügyletet; futás közben változó jelenet régi lépései nem küldhetők tovább, az adapter újraellenőrzése is verzióhoz kötött. Új regressziós tesztek.
+- Eredmény: 243/243 Vitest-teszt (54 fájl), 8/8 parancsmentes Python-próba; célzott lint tiszta; automatikus ellenőrzés `build OK`, típushiba nincs. Külön production Node/Docker image-build ebben a körben nem igazolt.
+- 14 URL három szélességen (390/768/1280), Streaming a Keresésben, öt fő terület, billentyűzetes tartalomugrás/menu: publikus előnézetben ellenőrizve. A családi UI mentési útvonalai izolált SQLite-tesztekben ellenőrzöttek; éles bejelentkezett NAS-böngészőpróba nincs.
+- Adatbiztonság: nincs új séma/migráció/snapshot, deploy vagy /data/auth/guard/titok konfigurációváltozás; nincs publikálás, éles parancs vagy NAS-frissítés.
+- Kötelező éles átvétel: `TEXBOX-1.0-ATADAS.md` ellenőrzőlistája. Watchtower az új image után frissíthet, előzetes teljes adatmentés szükséges.
+- Opcionális 2.0, nem lezárási akadály: 7b push, 2b/2 szenzorok, 1c, 6c konkrét eszközkedvencek, 8b ügyemlékeztető/kapcsolások, fájlfeltöltés és kozmetika. Új modul nem indul automatikusan.
 
 ## Változatlan alap és minden fázis kapuja
 
