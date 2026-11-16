@@ -119,6 +119,15 @@ export function db() {
         CREATE INDEX IF NOT EXISTS menu_day ON menu_entries(day);
         COMMIT;`);
     }
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='calendar_events'").get()) {
+      const calBackup = `${dataDir()}/backups/pre-calendar-phase5b.db`;
+      if (!fs.existsSync(calBackup)) d.exec(`VACUUM INTO '${calBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS calendar_events(id TEXT PRIMARY KEY, body TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS calendar_exceptions(event_id TEXT NOT NULL REFERENCES calendar_events(id), orig_date TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('skip','move')), new_date TEXT, actor TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY(event_id,orig_date));
+        CREATE TABLE IF NOT EXISTS calendar_task_links(event_id TEXT NOT NULL REFERENCES calendar_events(id), orig_date TEXT NOT NULL, template_id TEXT NOT NULL REFERENCES task_templates(id), created_by TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY(event_id,orig_date));
+        COMMIT;`);
+    }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
     d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
       SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at
