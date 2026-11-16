@@ -55,7 +55,6 @@ function out(u: User, r: Row) {
   return {
     ...(body as FamilyItemInput),
     id: r.id,
-    kind: r.kind,
     version: r.version,
     visibility: r.visibility,
     childVisible: !!r.child_visible,
