@@ -24,7 +24,7 @@ import {
   type TaskOccurrence,
 } from "@/lib/task-schema";
 
-const tasksQuery = {
+export const tasksQuery = {
   queryKey: ["family-tasks"],
   queryFn: () => tasksList(),
   retry: false,

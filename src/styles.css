@@ -993,3 +993,55 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .cal-month .cal-chip { font-size: 0; padding: 0; min-height: 8px; border-width: 0 0 0 6px; }
   .cal-month .cal-chip small { display: none; }
 }
+
+/* Phase 6a: five-area navigation and balanced family dashboard */
+.app-nav { order: 1; }
+.app-header-more { order: 2; flex-shrink: 0; }
+.app-more { gap: 6px; height: 40px; font-size: 12px; color: var(--muted-foreground); }
+.app-brand:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
+@media (max-width: 767px) {
+  .app-nav { display: none; }
+  .app-header-inner { padding: 10px 16px; flex-wrap: nowrap; }
+  .app-header-more { margin-left: auto; }
+  .app-profile-slot { margin-left: 0; }
+  .app-more span { display: none; }
+  .smart-home .app-header-inner { grid-template-columns: minmax(0,1fr) auto auto; }
+  .home-app-menu { display: none; }
+}
+.dash-hero { margin-bottom: 18px; }
+.dash-hero h1 { font-size: 30px !important; font-weight: 700 !important; }
+.dash-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (min-width: 1100px) { .dash-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .dash-wide { grid-column: span 3; } .dash-grid > .dash-wide:nth-child(2) { grid-column: span 3; } }
+@media (min-width: 768px) and (max-width: 1099px) { .dash-wide { grid-column: span 2; } }
+@media (max-width: 767px) { .dash-grid { grid-template-columns: minmax(0, 1fr); } }
+.dash-card { min-width: 0; border: 1px solid var(--border); border-radius: calc(var(--radius) + 6px); background: var(--card); padding: 16px; display: grid; gap: 10px; align-content: start; }
+.dash-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dash-card-head h2 { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 650; margin: 0; }
+.dash-card-head h2 svg { color: var(--primary); }
+.dash-link { font-size: 13px; color: var(--primary); white-space: nowrap; min-height: 32px; display: inline-flex; align-items: center; }
+.dash-link:focus-visible, .dash-chip:focus-visible, .dash-alert:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.dash-sub { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin: 4px 0 0; color: var(--muted-foreground); }
+.dash-chips, .dash-scenes { display: flex; flex-wrap: wrap; gap: 8px; }
+.dash-chip { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; background: var(--background); }
+.dash-scene { min-height: 44px; }
+.dash-note, .dash-empty { margin: 0; font-size: 13px; color: var(--muted-foreground); }
+.dash-empty a, .dash-note a { color: var(--primary); }
+.dash-big { margin: 0; font-size: 24px; font-weight: 700; }
+.dash-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.dash-list li { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--border); min-width: 0; }
+.dash-list li:last-child { border-bottom: 0; }
+.dash-list span { font-weight: 550; overflow-wrap: anywhere; }
+.dash-list small { color: var(--muted-foreground); font-size: 12px; }
+.dash-alert { display: block; padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; background: color-mix(in oklch, var(--primary) 14%, var(--card)); color: var(--primary); }
+.dash-error { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--muted-foreground); }
+.dash-error svg { color: var(--destructive); flex: none; }
+.dash-skeleton { display: grid; gap: 8px; }
+.dash-skeleton span { height: 14px; border-radius: 6px; background: var(--secondary); animation: dash-pulse 1.2s ease-in-out infinite; }
+.dash-skeleton span:nth-child(2) { width: 60%; }
+@keyframes dash-pulse { 50% { opacity: .5; } }
+.dash-stats { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted-foreground); }
+.dash-stats b { color: var(--foreground); font-size: 18px; margin-right: 4px; }
+.dash-progress { width: 100%; height: 8px; accent-color: var(--primary); }
+.dash-child .dash-card-head h2 { font-size: 17px; }
+.dash-child .dash-scene, .dash-child .dash-chip { min-height: 56px; font-size: 15px; padding: 0 18px; }
+.dash-child .dash-list span { font-size: 16px; }

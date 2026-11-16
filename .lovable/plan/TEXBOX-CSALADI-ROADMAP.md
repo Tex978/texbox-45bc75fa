@@ -176,3 +176,6 @@ Kód és izolált tesztek kész: shop_lists, shop_items, recipes, menu_entries (
 
 ## Állapot 2026-11-16 – 5b
 Naptár CRUD + ismétlődés + alkalom-kivétel + feladathivatkozás kész izolált tesztekkel (calendar_events, calendar_exceptions, calendar_task_links). Nyitott: push/emlékeztető ütemező, jegyzetek/ügyek, élő Synology-ellenőrzés. 2b automatizálás és 6. főoldal később.
+
+## Állapot 2026-11-16 – 6a
+Öt menüs navigáció és valós adatú családi főoldal kész, séma-változás nélkül; régi áttekintő a /media oldalon. 6b: tartós személyre szabás és főoldali eszközállapot/vezérlés. Élő NAS-ellenőrzés nyitott.
