@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DownloadsRouteImport } from './routes/downloads'
 import { Route as FamilyRouteImport } from './routes/family'
+import { Route as GamesRouteImport } from './routes/games'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as MediaRouteImport } from './routes/media'
@@ -40,6 +41,11 @@ const DownloadsRoute = DownloadsRouteImport.update({
 const FamilyRoute = FamilyRouteImport.update({
   id: '/family',
   path: '/family',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesRoute = GamesRouteImport.update({
+  id: '/games',
+  path: '/games',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/downloads': typeof DownloadsRoute
   '/family': typeof FamilyRoute
+  '/games': typeof GamesRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/media': typeof MediaRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/downloads': typeof DownloadsRoute
   '/family': typeof FamilyRoute
+  '/games': typeof GamesRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/media': typeof MediaRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/downloads': typeof DownloadsRoute
   '/family': typeof FamilyRoute
+  '/games': typeof GamesRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/media': typeof MediaRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/'
     | '/downloads'
     | '/family'
+    | '/games'
     | '/home'
     | '/library'
     | '/media'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/'
     | '/downloads'
     | '/family'
+    | '/games'
     | '/home'
     | '/library'
     | '/media'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/'
     | '/downloads'
     | '/family'
+    | '/games'
     | '/home'
     | '/library'
     | '/media'
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DownloadsRoute: typeof DownloadsRoute
   FamilyRoute: typeof FamilyRoute
+  GamesRoute: typeof GamesRoute
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
   MediaRoute: typeof MediaRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/family'
       fullPath: '/family'
       preLoaderRoute: typeof FamilyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games': {
+      id: '/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof GamesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -379,6 +399,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DownloadsRoute: DownloadsRoute,
   FamilyRoute: FamilyRoute,
+  GamesRoute: GamesRoute,
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
   MediaRoute: MediaRoute,
