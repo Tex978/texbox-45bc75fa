@@ -259,7 +259,7 @@ export function listRecipes(user: User) {
     ).map(recipeOut),
   };
 }
-export function saveRecipe(user: User, raw: RecipeInput & { archived?: boolean }) {
+export function saveRecipe(user: User, raw: RecipeInput & { archived?: boolean | undefined }) {
   return tx(() => {
     const u = current(user);
     if (!isParent(u)) throw new Error("Receptet csak jogosult szülő szerkeszthet.");
