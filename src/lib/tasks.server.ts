@@ -79,7 +79,7 @@ function templates(): TaskTemplate[] {
 const visible = (u: User, t: TaskTemplate, assignee = t.assignee) =>
   t.owner === u.id ||
   assignee === personKey(u.id) ||
-  (isParent(u) && !!assignee && person(assignee).child) ||
+  (isParent(u) && !!assignee && (assignee.startsWith("profile:") || (assignee.startsWith("user:") && getUser(assignee.slice(5))?.role === "child"))) ||
   (t.visibility === "family" && (isParent(u) || !assignee));
 const editable = (u: User, t: TaskTemplate) =>
   isParent(u) && (t.owner === u.id || t.visibility === "family");
@@ -247,6 +247,7 @@ export function actOnTask(
       assignee = o.assignee;
     const target = input.person ?? personKey(u.id);
     if (input.action === "claim") {
+      if (t.archived) throw new Error("A feladatsablon már törölt.");
       person(target);
       if (target !== personKey(u.id) && !parent)
         throw new Error("Más nevében nem vállalhatsz feladatot.");
