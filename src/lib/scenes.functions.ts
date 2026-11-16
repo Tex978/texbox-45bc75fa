@@ -16,6 +16,7 @@ import {
   runScene,
   readRuns,
   setDeviceAcl,
+  deviceAclList,
 } from "./scenes.server";
 import { sceneDevices, executeSceneStep } from "./scene-devices.server";
 const actor = () => {
@@ -34,6 +35,7 @@ export const scenesList = createServerFn({ method: "GET" }).handler(async () => 
     userId: u.id,
     canEdit: u.role !== "child" && userCan(u, "rooms"),
     admin: u.role === "admin",
+    acl: deviceAclList(u),
     users:
       u.role !== "child"
         ? listUsers()
