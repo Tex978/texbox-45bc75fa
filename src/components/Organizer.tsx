@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, CalendarDays, Check, Plus, RefreshCw, ShoppingCart, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { Calendar } from "./Calendar";
 import * as F from "@/lib/organizer.functions";
 import { MEALS, mealLabels, type RecipeInput } from "@/lib/organizer-schema";
 import { addDays } from "@/lib/task-schema";
@@ -707,8 +708,8 @@ export function Organizer() {
   return (
     <div className="tasks-area rewards-area">
       <p className="task-notice">
-        A listák, receptek és a heti menü csak a saját NAS-on mentődnek, és minden családtagnál
-        közösek.
+        A listák, receptek, a heti menü és a naptár csak a saját NAS-on mentődnek, és minden
+        családtagnál közösek.
       </p>
       <div className="task-tabs" role="tablist">
         {[
@@ -730,7 +731,15 @@ export function Organizer() {
           );
         })}
       </div>
-      {tab === "Bevásárlás" ? <Shopping /> : tab === "Receptek" ? <Recipes /> : <Menu />}
+      {tab === "Bevásárlás" ? (
+        <Shopping />
+      ) : tab === "Receptek" ? (
+        <Recipes />
+      ) : tab === "Naptár" ? (
+        <Calendar />
+      ) : (
+        <Menu />
+      )}
     </div>
   );
 }

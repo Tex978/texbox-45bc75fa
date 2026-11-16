@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { dateSchema } from "./task-schema";
 
-export const EVENT_TYPES = ["program", "orvos", "szuletesnap", "fizetes", "karbantartas", "ugyintezes"] as const;
+export const EVENT_TYPES = [
+  "program",
+  "orvos",
+  "szuletesnap",
+  "fizetes",
+  "karbantartas",
+  "ugyintezes",
+] as const;
 export const eventTypeLabels: Record<(typeof EVENT_TYPES)[number], string> = {
   program: "Program",
   orvos: "Orvosi időpont",
@@ -42,7 +49,10 @@ export const eventSchema = z
     until: dateSchema.nullable().default(null),
   })
   .refine((e) => !e.endDate || e.endDate >= e.date, "A befejezés nem lehet a kezdés előtt.")
-  .refine((e) => e.allDay || e.endDate || e.end >= e.start, "A befejező idő nem lehet a kezdés előtt.")
+  .refine(
+    (e) => e.allDay || e.endDate || e.end >= e.start,
+    "A befejező idő nem lehet a kezdés előtt.",
+  )
   .refine((e) => !e.until || e.until >= e.date, "Az ismétlés vége nem lehet a kezdés előtt.");
 export type EventInput = z.input<typeof eventSchema>;
 export type CalEvent = z.output<typeof eventSchema>;
@@ -73,6 +83,10 @@ export function occursOn(e: CalEvent, date: string) {
     }
     case "yearly":
       // 29 Feb birthdays appear on 28 Feb in non-leap years.
-      return (y - Number(e.date.slice(0, 4))) % e.interval === 0 && m === sm && d === Math.min(sd, lastDay(y, m));
+      return (
+        (y - Number(e.date.slice(0, 4))) % e.interval === 0 &&
+        m === sm &&
+        d === Math.min(sd, lastDay(y, m))
+      );
   }
 }
