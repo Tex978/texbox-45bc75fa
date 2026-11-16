@@ -19,6 +19,7 @@ import {
 } from "@/lib/auth.server";
 
 let user: User, token: string, dir: string;
+vi.mock("@/components/NotificationBell", () => ({ NotificationBell: () => null }));
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/auth.functions", () => ({
   profileGet: async () => ({
