@@ -11,7 +11,7 @@ import { saveEvent, calendarRange } from "@/lib/calendar.server";
 import { shoppingOverview, saveItem, menuWeek } from "@/lib/organizer.server";
 import { budapestToday } from "@/lib/task-schema";
 let me: User | null, dir: string;
-const run = vi.fn();
+const run = vi.hoisted(() => vi.fn());
 const need = () => {
   if (!me) throw new Error("A feladatokhoz jelentkezz be a saját NAS-címeden.");
   return me;
