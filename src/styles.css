@@ -776,3 +776,18 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .family-perms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .family-perm { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 12px; border-radius: 12px; background: var(--background); border: 1px solid var(--border); font-size: 14px; }
 .family-link { word-break: break-all; font-size: 13px; padding: 10px 12px; border-radius: 10px; background: var(--background); border: 1px dashed var(--border); }
+
+/* Media search filters: inline panel on desktop, bottom sheet on phones. */
+.media-filter-panel { display: grid; gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--card-foreground); }
+.media-filter-panel fieldset { display: grid; gap: .5rem; }
+.media-filter-panel legend, .media-filter-grid label { font-size: .8rem; font-weight: 600; color: var(--muted-foreground); }
+.media-chip-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.media-filter-grid { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.media-filter-grid label { display: grid; gap: .35rem; }
+.media-filter-grid input, .media-filter-grid select { min-height: 2.75rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); background: var(--background); color: var(--foreground); padding: 0 .75rem; font-size: 1rem; font-weight: 400; }
+.media-filter-backdrop { display: none; }
+@media (max-width: 639px) {
+  .media-filter-backdrop { display: block; position: fixed; inset: 0; z-index: 60; background: color-mix(in oklab, var(--background) 60%, transparent); backdrop-filter: blur(2px); }
+  .media-filter-panel { position: fixed; inset: auto 0 0 0; z-index: 61; margin: 0; max-height: 85dvh; overflow-y: auto; border-radius: 1.25rem 1.25rem 0 0; padding: 1.25rem 1rem calc(1rem + env(safe-area-inset-bottom)); box-shadow: 0 -12px 40px color-mix(in oklab, var(--foreground) 18%, transparent); }
+  .media-chip-row button { min-height: 2.5rem; }
+}
