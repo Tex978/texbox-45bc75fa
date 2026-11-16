@@ -8,8 +8,8 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 vi.mock("@/lib/nas.functions", () => ({ getGree: vi.fn(), greeControl: vi.fn() }));
 vi.mock("@/lib/prefs.functions", () => ({
-  getSharedPrefs: vi.fn(async () => ({ prefs: {}, shared: true })),
-  saveSharedPref: vi.fn(async ({ data }: { data: { key: string; value: unknown } }) => ({ prefs: { [data.key]: data.value } })),
+  getSharedPrefs: vi.fn(async () => ({ prefs: "{}", shared: true })),
+  saveSharedPref: vi.fn(async ({ data }: { data: { key: string; value: string } }) => ({ prefs: JSON.stringify({ [data.key]: JSON.parse(data.value) }) })),
 }));
 import { saveSharedPref } from "@/lib/prefs.functions";
 const units = [
@@ -91,7 +91,7 @@ describe("climate selection and commands", () => {
       target: { value: "Nappali" },
     });
     await waitFor(() => expect(vi.mocked(saveSharedPref)).toHaveBeenCalled());
-    expect((vi.mocked(saveSharedPref).mock.calls.at(-1)![0] as any).data.value.assignments).toEqual({
+    expect((vi.mocked(saveSharedPref).mock.calls.at(-1)![0] as any)).toEqual({
       "192.168.1.60": "Nappali",
     });
   });

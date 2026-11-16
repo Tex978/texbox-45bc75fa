@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSharedPrefs, saveSharedPref } from "./prefs.functions";
 import type { PrefKey } from "./shared-prefs";
 
-export const sharedPrefsQuery = { queryKey: ["shared-prefs"], queryFn: () => getSharedPrefs(), staleTime: 30_000 };
+export const sharedPrefsQuery = { queryKey: ["shared-prefs"], queryFn: async () => { const r = await getSharedPrefs(); return { prefs: JSON.parse(r.prefs) as Record<string, unknown>, shared: r.shared }; }, staleTime: 30_000 };
 
 /** NAS-shared preference. Legacy browser values are migrated once (only if the NAS has none). */
 export function useSharedPref<T>(key: PrefKey, initial: T) {
@@ -21,8 +21,8 @@ export function useSharedPref<T>(key: PrefKey, initial: T) {
     if (!raw) return;
     let value: unknown;
     try { value = JSON.parse(raw); } catch { localStorage.removeItem(key); return; }
-    saveSharedPref({ data: { key, value, onlyMissing: true } })
-      .then((r) => { localStorage.removeItem(key); qc.setQueryData(sharedPrefsQuery.queryKey, { prefs: r.prefs, shared: true }); })
+    saveSharedPref({ data: { key, value: JSON.stringify(value), onlyMissing: true } })
+      .then((r) => { localStorage.removeItem(key); qc.setQueryData(sharedPrefsQuery.queryKey, { prefs: JSON.parse(r.prefs) as Record<string, unknown>, shared: true }); })
       .catch(() => setError("A böngészőben tárolt korábbi beállítás átvétele nem sikerült; itt megmaradt."));
   }, [q.data, key, qc]);
 
@@ -31,8 +31,8 @@ export function useSharedPref<T>(key: PrefKey, initial: T) {
     const prev = qc.getQueryData<{ prefs: Record<string, unknown>; shared: boolean }>(sharedPrefsQuery.queryKey);
     qc.setQueryData(sharedPrefsQuery.queryKey, { shared: true, ...prev, prefs: { ...prev?.prefs, [key]: next } });
     try {
-      const r = await saveSharedPref({ data: { key, value: next } });
-      qc.setQueryData(sharedPrefsQuery.queryKey, { prefs: r.prefs, shared: true });
+      const r = await saveSharedPref({ data: { key, value: JSON.stringify(next) } });
+      qc.setQueryData(sharedPrefsQuery.queryKey, { prefs: JSON.parse(r.prefs) as Record<string, unknown>, shared: true });
       setError("");
       return true;
     } catch (e) {
