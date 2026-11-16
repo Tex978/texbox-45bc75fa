@@ -11,7 +11,7 @@ export function taskPeople(user: User) {
 }
 function person(key: string) {
   const [kind, id, extra] = key.split(":");
-  if (extra) throw new Error("Ismeretlen családtag.");
+  if (!id || extra) throw new Error("Ismeretlen családtag.");
   if (kind === "user") { const u = getUser(id); if (u && !u.disabled) return { child: u.role === "child" }; }
   if (kind === "profile" && listChildProfiles().some((p) => p.id === id && !p.disabled)) return { child: true };
   throw new Error("Ismeretlen vagy inaktív családtag.");
@@ -78,7 +78,7 @@ export function listTasks(user: User, now = new Date()) {
   });
 }
 function event(u: User, id: string, action: string, reason = "") { store().prepare("INSERT INTO task_events(occurrence_id,actor,action,reason,at) VALUES(?,?,?,?,?)").run(id, u.id, action, reason, Date.now()); }
-export function actOnTask(user: User, input: { id: string; version: number; action: "claim" | "complete" | "approve" | "return" | "reject" | "cancel"; person?: string; reason?: string }) {
+export function actOnTask(user: User, input: { id: string; version: number; action: "claim" | "complete" | "approve" | "return" | "reject" | "cancel"; person?: string | undefined; reason?: string | undefined }) {
   return tx(() => {
     const u = current(user), o = occurrence(input.id), t = templates().find((v) => v.id === o.templateId), parent = isParent(u);
     if (!t || !visible(u, t, o.assignee)) throw new Error("Nem láthatod ezt a feladatot.");
