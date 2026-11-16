@@ -1,4 +1,6 @@
 # Okosotthon megújítás
+- [x] Gree+ általános kapcsolati hiba szűkítése: belépés és eszközlekérés külön, biztonságos hibajelzése; időkorlátok és korlátozott párhuzamos lekérés az öt klímához; nyolc Python- és három vezérlési teszt sikeres.
+- [ ] Gree+ most jelzett hiba pontos élő oka: a Synology frissítése után kapott részletes hiba szükséges; az otthoni fiók és hálózat innen nem elérhető.
 - [x] Hőmérők: közösen mentett elrejtés/visszaállítás, nevek átvétele és csak látható eszközök az összesítésben; kilenc teszt sikeres, telefonon élő hőmérő elrejtése, újratöltése és visszaállítása ellenőrizve.
 - [x] Hiányzó telefonos beállítások: tartós mentési hibák látható jelzése, régi sütik átvételének javítása, tárolási állapot és öt sikeres regressziós teszt.
 - [ ] Beállítások élő ellenőrzése a tb.texbox.synology.me címen: belépés védi, innen nem elérhető; a javítás frissítése és az eredeti böngészőben a korábbi beállítások átvétele szükséges.

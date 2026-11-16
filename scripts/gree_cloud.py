@@ -10,6 +10,7 @@ import logging
 import sys
 import time
 
+import aiohttp
 from greeclimate_davo22.cloud_api import GreeCloudApi
 from greeclimate_davo22.cloud_device import CloudDevice
 from greeclimate_davo22.cloud_gateway import GreeCloudGateway, uses_mqtt
@@ -22,11 +23,28 @@ FANS = {"auto": 0, "low": 1, "mediumLow": 2, "medium": 3, "mediumHigh": 4, "high
 sessions = {}
 
 
+def connection_error(stage, error):
+    # Never expose provider exception text: it may contain tokens or passwords.
+    prefix = {"login": "Gree+ belépés", "discovery": "Gree+ klímák lekérése"}[stage]
+    if isinstance(error, (TimeoutError, asyncio.TimeoutError)):
+        return f"{prefix}: időtúllépés. Ellenőrizd a Synology internetkapcsolatát és a fiók régióját."
+    if isinstance(error, aiohttp.ClientResponseError):
+        return f"{prefix}: a Gree szerver HTTP {error.status} hibát adott. Próbáld újra később."
+    if isinstance(error, (aiohttp.ClientError, OSError)):
+        return f"{prefix}: hálózati hiba. Ellenőrizd a Synology internetkapcsolatát."
+    if isinstance(error, (KeyError, TypeError, json.JSONDecodeError)):
+        return f"{prefix}: a Gree szerver válasza nem feldolgozható. Ellenőrizd a fiók régióját; kapcsolódási frissítés lehet szükséges."
+    if stage == "login":
+        return "Gree+ belépés sikertelen. Ellenőrizd az e-mailt, a jelszót és a régiót."
+    return "Gree+ klímák lekérése sikertelen. Ellenőrizd, hogy a Gree+ alkalmazásban láthatók-e a klímák, és megfelelő-e a régió."
+
+
 class Account:
     def __init__(self, cfg):
         self.api = GreeCloudApi.for_server(cfg["region"], cfg["user"], cfg["password"])
         self.region = cfg["region"]
         self.mqtt = None
+        self.mqtt_lock = asyncio.Lock()
         self.gateway = GreeCloudGateway(self.api, timeout=8)
         self.records = {}
         self.devices = {}
@@ -37,7 +55,10 @@ class Account:
     async def discover(self):
         if self.records and time.monotonic() - self.discovered_at < 900:
             return
-        records = await self.api.get_all_devices()
+        try:
+            records = await asyncio.wait_for(self.api.get_all_devices(), 35)
+        except Exception as error:
+            raise ValueError(connection_error("discovery", error)) from None
         self.records = {r.mac: r for r in records}
         self.discovered_at = time.monotonic()
 
@@ -45,8 +66,16 @@ class Account:
         if record.mac in self.devices:
             return self.devices[record.mac]
         if uses_mqtt(record.version) and self.mqtt is None:
-            self.mqtt = GreeMqttClient(self.api.user_id, self.api.token, server=GreeMqttClient.server_for_region(self.region))
-            await asyncio.wait_for(self.mqtt.connect(), 12)
+            async with self.mqtt_lock:
+                if self.mqtt is None:
+                    mqtt = GreeMqttClient(self.api.user_id, self.api.token, server=GreeMqttClient.server_for_region(self.region))
+                    try:
+                        await asyncio.wait_for(mqtt.connect(), 12)
+                    except Exception:
+                        with contextlib.suppress(Exception):
+                            await mqtt.disconnect()
+                        raise
+                    self.mqtt = mqtt
         info = DeviceInfo("", 7000, record.mac, record.name, model=record.model, version=record.version)
         device = CloudDevice(self.mqtt, info, record.key, gateway=self.gateway,
                              parent_mac=record.parent_mac, timeout=8, command_timeout=8)
@@ -70,16 +99,19 @@ class Account:
         if self.cache is not None and time.monotonic() - self.cached_at < 60:
             return self.cache
         await self.discover()
-        units = []
-        for record in self.records.values():
+        # Five slow units must not exhaust the bridge's overall timeout.
+        slots = asyncio.Semaphore(3)
+        async def read_unit(record):
             try:
-                device = await self.device(record)
-                await asyncio.wait_for(device.update_state(), 12)
-                units.append(self.state(record, device))
+                async with slots:
+                    device = await self.device(record)
+                    await asyncio.wait_for(device.update_state(), 12)
+                    return self.state(record, device)
             except Exception:
                 self.devices.pop(record.mac, None)
-                units.append({"ip": record.mac, "name": record.name, "online": False,
-                              "properties": {}, "error": "A klíma nem válaszolt a Gree+ kapcsolaton."})
+                return {"ip": record.mac, "name": record.name, "online": False,
+                        "properties": {}, "error": "A klíma nem válaszolt a Gree+ kapcsolaton."}
+        units = await asyncio.gather(*(read_unit(record) for record in self.records.values()))
         self.cache = {"configured": True, "units": units, "error": ""}
         self.cached_at = time.monotonic()
         return self.cache
@@ -130,10 +162,10 @@ async def handle(req):
     if account is None:
         account = Account(cfg)
         try:
-            await account.api.login()
-        except Exception:
+            await asyncio.wait_for(account.api.login(), 25)
+        except Exception as error:
             await account.close()
-            raise ValueError("Gree+ belépés sikertelen. Ellenőrizd az e-mailt, a jelszót és a régiót.")
+            raise ValueError(connection_error("login", error)) from None
         sessions[key] = account
     if req["action"] == "control":
         return await account.control(req["command"])
