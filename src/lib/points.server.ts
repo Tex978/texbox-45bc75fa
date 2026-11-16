@@ -195,7 +195,7 @@ export function redeem(user: User, input: { rewardId: string; requestId: string;
     if (!r.active || r.archived) throw new Error("Ez a jutalom jelenleg nem elérhető.");
     if (!eligibleFor(r, key)) throw new Error("Ez a jutalom nem érhető el ennek a családtagnak.");
     if (r.price !== input.expectedPrice) throw new Error("A jutalom ára közben megváltozott. Nézd meg újra.");
-    if (balanceOf(key).available < r.price) throw new Error("Nincs elég elérhető pont.");
+    if (r.price > 0 && balanceOf(key).available < r.price) throw new Error("Nincs elég elérhető pont.");
     if (!store().prepare("UPDATE rewards SET stock=stock-1 WHERE id=? AND stock IS NOT NULL AND stock>0").run(r.id).changes && r.stock !== null)
       throw new Error("A jutalom elfogyott.");
     const id = crypto.randomUUID(),
