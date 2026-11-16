@@ -9,7 +9,7 @@ export const fileInfoSchema = z
       .string()
       .min(1)
       .max(180)
-      .refine((v) => !/[\/\\\x00-\x1f\x7f]/.test(v) && !v.startsWith("."), "Érvénytelen fájlnév."),
+      .refine((v) => !v.includes("/") && !v.includes("\\") && !Array.from(v).some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127) && !v.startsWith("."), "Érvénytelen fájlnév."),
     size: z.number().int().positive().max(CHAT_FILE_LIMITS.video),
     mime: z.string().max(120),
   })

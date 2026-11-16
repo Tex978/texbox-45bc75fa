@@ -163,7 +163,7 @@ export async function uploadChatFile(
           stream: total > 8192,
         });
         if (
-          /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text) ||
+          Array.from(text).some(c=>{const n=c.charCodeAt(0);return n<32&&n!==9&&n!==10&&n!==13;}) ||
           /<\s*(?:!doctype|html|script|svg)|^\s*#!/i.test(text)
         )
           throw new Error("Aktív vagy nem szöveges fájl nem küldhető TXT-ként.");
@@ -307,6 +307,7 @@ export function downloadChatFile(token: string | undefined, id: string, request:
     pull(controller) {
       try {
         chatFileAccess(token);
+        if(row(id)?.status!=="ready")throw new Error("A fájl elérése megszűnt.");
         const b = new Uint8Array(Math.min(64 * 1024, range.end - position + 1));
         const n = f.readSync(fd, b, 0, b.length, position);
         if (!n) {

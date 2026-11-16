@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Download, FileText, Trash2, X } from "lucide-react";
+import { Download, FileText, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { chatFileUrl, type ChatFile } from "@/lib/chat-files";
 export function ChatAttachments({
   files,
   onDelete,
 }: {
   files: ChatFile[];
-  onDelete?: (id: string) => void;
+  onDelete?: ((id: string) => void) | undefined;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [failed, setFailed] = useState<string[]>([]);
@@ -85,35 +86,16 @@ export function ChatAttachments({
           )}
         </div>
       ))}
-      {expanded && (
-        <div
-          className="chat-image-full"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Kép teljes nézet"
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              e.stopPropagation();
-              setExpanded(null);
-            }
-          }}
-        >
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            autoFocus
-            aria-label="Kép bezárása"
-            onClick={() => setExpanded(null)}
-          >
-            <X size={20} />
-          </Button>
+      <Dialog open={!!expanded} onOpenChange={open=>{if(!open)setExpanded(null);}}>
+        <DialogContent className="chat-image-dialog" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">Kép teljes nézet</DialogTitle>
+          {expanded&&
           <img
             src={chatFileUrl(expanded)}
             alt={files.find((f) => f.id === expanded)?.name ?? "Kép"}
-          />
-        </div>
-      )}
+          />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
