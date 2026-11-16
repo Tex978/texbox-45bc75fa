@@ -261,7 +261,7 @@
 .app-brand-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--primary); }
 .app-brand-name { font-size: 16px; font-weight: 600; }
 .app-demo { font-size: 10px; color: var(--muted-foreground); border-left: 1px solid var(--border); padding-left: 12px; }
-.app-nav { margin-left: auto; display: flex; gap: 4px; }
+.app-nav { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; min-width: 0; gap: 4px; }
 .app-nav a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--muted-foreground); transition: background 160ms, color 160ms; }
 .app-nav a:hover { background: var(--card); color: var(--foreground); }
 .app-nav a[data-status="active"] { background: color-mix(in oklch, var(--primary) 12%, var(--background)); color: var(--primary); }
