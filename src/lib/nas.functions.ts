@@ -1544,7 +1544,9 @@ export const blindGroupAction = createServerFn({ method: "POST" })
     let failed = 0;
     for (const b of data.blinds.slice(0, 50)) {
       try {
-        await withDeviceLock(`blind:${b.mac}`, () => writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), b.mac, b.deviceType, { operation }));
+        await withDeviceLock(`blind:${b.mac}`, () =>
+          writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), b.mac, b.deviceType, { operation }),
+        );
       } catch {
         failed++;
       }
@@ -2186,7 +2188,9 @@ export const tuyaCommand = createServerFn({ method: "POST" })
     try {
       const r = await tuyaReady();
       if (!r) return { ok: false, error: "Nincs összekötve" };
-      await withDeviceLock(`tuya:${data.id}`, () => r.t.sendTuya(r.s, data.id, data.code, data.value));
+      await withDeviceLock(`tuya:${data.id}`, () =>
+        r.t.sendTuya(r.s, data.id, data.code, data.value),
+      );
       return { ok: true, error: "" };
     } catch (e) {
       return { ok: false, error: (e as Error).message };
