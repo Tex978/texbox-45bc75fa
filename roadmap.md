@@ -6,7 +6,7 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] 2a: mentett/szerkeszthető kézi jelenetek, Gree/redőny/boolean Tuya-lámpa adapterek, eszköz-ACL, futtatási napló és duplaindítás-védelem; izolált tesztek, NAS éles ellenőrzés nélkül.
 - [ ] 2a élő NAS: frissítés és data-mentés után két eszközös jelenetmentés, gyermek ACL, valódi gyártói ACK és fizikai állapot ellenőrzése; innen az otthoni eszközök nem érhetők el.
 - [ ] 2b: tartós időzítés/automatizálás, DST/kiesési szabályok; még nincs scheduler.
-- [ ] 3. fázis: ismétlődő feladatok, vállalás és szülői jóváhagyás.
+- [ ] 3. fázis folyamatban: SQLite CRUD, ismétlődés, vállalás és szülői jóváhagyás; tesztelés és mobil/PC ellenőrzés következik.
 - [ ] 4. fázis: kizárólag személyes pontszámla és jutalombolt.
 - [ ] 5. fázis: bevásárlás, receptek/menü, naptár.
 - [ ] 6. fázis: személyes kiegyensúlyozott főoldal és öt fő terület.
