@@ -1,3 +1,4 @@
+import { useSharedPref } from "@/lib/use-shared-pref";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { SmartSection as Card } from "@/components/SmartHomeUI";
@@ -48,10 +49,10 @@ export function Appliances() {
   const qc = useQueryClient();
   const [link, setLink] = useState<{ code: string; url: string } | null>(null);
   const [msg, setMsg] = useState("");
-  const [meta, setMeta] = useState<Meta>({});
+  const { value: metaRaw, save: saveMeta } = useSharedPref<Meta>("hc-meta", {});
+  const meta: Meta = metaRaw && typeof metaRaw === "object" ? metaRaw : {};
   const [edit, setEdit] = useState(false);
-  useEffect(() => { try { setMeta(JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { /* */ } }, []);
-  const upd = (id: string, v: { name?: string; hidden?: boolean }) => setMeta((m) => { const n = { ...m, [id]: { ...m[id], ...v } }; localStorage.setItem(KEY, JSON.stringify(n)); return n; });
+  const upd = (id: string, v: { name?: string; hidden?: boolean }) => void saveMeta({ ...meta, [id]: { ...meta[id], ...v } });
   const start = async () => { setMsg(""); const r = await hcStartLink(); if (r.ok) setLink({ code: r.code, url: r.url }); else setMsg(r.error); };
   const finish = async () => { const r = await hcFinishLink(); if (r.ok) { setLink(null); qc.invalidateQueries({ queryKey: ["hc"] }); } else setMsg(r.error); };
   const label = (a: Appliance) => meta[a.haId]?.name || a.name || TYPE[a.type] || a.type;

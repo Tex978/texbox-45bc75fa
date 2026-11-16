@@ -1,3 +1,4 @@
+import { useSharedPref } from "@/lib/use-shared-pref";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { SmartSection as Card } from "@/components/SmartHomeUI";
@@ -16,8 +17,9 @@ export function Blinds() {
   const [err, setErr] = useState("");
   const [setup, setSetup] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({});
-  const [excl, setExcl] = useState<string[]>([]);
-  useEffect(() => { try { setExcl(JSON.parse(localStorage.getItem("blinds-excluded") || "[]")); } catch { /* ignore */ } }, []);
+  const { value: exclRaw, save: saveExcl } = useSharedPref<string[]>("blinds-excluded", []);
+  const excl = Array.isArray(exclRaw) ? exclRaw : [];
+  const setExcl = (v: string[]) => void saveExcl(v);
   const inc = (l: Blind[]) => l.filter((b) => !excl.includes(b.mac));
   const optimistic = (macs: string[], pos: number) =>
     qc.setQueryData(blindsQuery.queryKey, { ...data, blinds: data.blinds.map((x) => (macs.includes(x.mac) ? { ...x, position: pos } : x)) });
@@ -93,7 +95,7 @@ export function Blinds() {
         </div>
       )}
       {err && <p className="mt-3 font-mono text-xs text-destructive">● {err}</p>}
-      {setup && <BlindSetup excluded={excl} setExcluded={(v) => { setExcl(v); localStorage.setItem("blinds-excluded", JSON.stringify(v)); }} blinds={data.blinds} demo={data.demo} onClose={() => setSetup(false)} />}
+      {setup && <BlindSetup excluded={excl} setExcluded={setExcl} blinds={data.blinds} demo={data.demo} onClose={() => setSetup(false)} />}
     </Card>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useSharedPref } from "./use-shared-pref";
 
 export type GreeRooms = { rooms: string[]; assignments: Record<string, string> };
 export const GREE_ROOMS_KEY = "home-gree-rooms";
@@ -36,33 +36,8 @@ export function renameGreeRoom(state: GreeRooms, old: string, name: string): Gre
   };
 }
 export function useGreeRooms() {
-  const [state, setState] = useState<GreeRooms>(empty);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    const read = () => {
-      try {
-        setState(parseGreeRooms(localStorage.getItem(GREE_ROOMS_KEY)));
-      } catch {
-        setError("A szobabeosztás nem olvasható ebben a böngészőben.");
-      }
-    };
-    read();
-    window.addEventListener("storage", read);
-    window.addEventListener("gree-rooms-changed", read);
-    return () => {
-      window.removeEventListener("storage", read);
-      window.removeEventListener("gree-rooms-changed", read);
-    };
-  }, []);
-  const save = (next: GreeRooms) => {
-    try {
-      localStorage.setItem(GREE_ROOMS_KEY, JSON.stringify(next));
-      setState(next);
-      setError("");
-      window.dispatchEvent(new Event("gree-rooms-changed"));
-    } catch {
-      setError("A szobabeosztás mentése nem sikerült. Engedélyezd a böngésző helyi tárolását.");
-    }
-  };
+  const { value, save: store, error } = useSharedPref<unknown>(GREE_ROOMS_KEY, empty);
+  const state = parseGreeRooms(JSON.stringify(value ?? null));
+  const save = (next: GreeRooms) => { void store(next); };
   return { state, save, error };
 }
