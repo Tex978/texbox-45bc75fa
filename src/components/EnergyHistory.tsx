@@ -49,7 +49,7 @@ export function EnergyHistory() {
     {query.isPending ? <div className="en-chart en-chart-state" role="status"><LoaderCircle className="animate-spin" aria-label="Előzmények betöltése" /></div>
       : r?.demo ? <p className="en-chart en-chart-state">Mintaüzemmódban nincs valódi előzmény. A Growatt-fiók beállítása után jelenik meg.</p>
       : query.isError || r?.error ? <p className="en-chart en-chart-state en-chart-err" role="alert">{r?.error || "Nem sikerült lekérni az előzményeket."}</p>
-      : values.length === 0 ? <p className="en-chart en-chart-state">Ehhez az időszakhoz a Growatt nem adott vissza mérést.</p>
+      : values.length === 0 || values.every((v) => v === 0) ? <p className="en-chart en-chart-state">{values.length ? "A Growatt ehhez az időszakhoz csak nulla értékeket adott vissza, ezért nem rajzolunk grafikont. Ennél az inverternél az erőmű-szintű napi, havi és éves bontás valószínűleg nem érhető el." : "Ehhez az időszakhoz a Growatt nem adott vissza mérést."}</p>
       : <>
         <div className="en-history-sum">{span === "day" ? <><span>Csúcs</span><strong>{f(Math.max(...values))} {unit}</strong></> : <><span>Összesen</span><strong>{f(sum)} {unit}</strong></>}</div>
         <div className="en-chart" aria-label={`Termelés grafikon, ${title(span, day)}`}>
