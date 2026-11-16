@@ -83,9 +83,12 @@ function Widget({
       ) : q?.error ? (
         <div className="dash-error" role="status">
           <AlertCircle size={16} />
-          <span>{q.error.message}</span>
-          <Button variant="ghost" size="sm" onClick={() => void q.refetch()}>
-            <RefreshCw size={14} /> Újra
+          <details className="dash-error-detail">
+            <summary>Nem elérhető</summary>
+            <p>{q.error.message}</p>
+          </details>
+          <Button variant="ghost" size="icon" aria-label={`${title}: újrapróbálás`} onClick={() => void q.refetch()}>
+            <RefreshCw size={14} />
           </Button>
         </div>
       ) : (
@@ -172,7 +175,7 @@ function HomeQuick({ favorites = [] }: { favorites?: string[] }) {
     }
   }
   const all = scenes.data?.scenes ?? [];
-  // Personal favourite scenes (validated server-side) first; otherwise the newest six.
+  // Personal favourite scenes (validated server-side) first; show at most three quick actions.
   const list = favorites.length
     ? favorites.map((id) => all.find((s) => s.id === id)).filter((s) => !!s)
     : all.slice(0, 3);

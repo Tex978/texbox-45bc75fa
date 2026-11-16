@@ -225,7 +225,7 @@ export function Shell({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" type="button" className="app-more" aria-label="További oldalak">
-          <MoreHorizontal size={20} strokeWidth={1.8} />
+          <Menu size={20} strokeWidth={1.8} />
           <span>Több</span>
         </Button>
       </DropdownMenuTrigger>
