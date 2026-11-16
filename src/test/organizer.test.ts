@@ -22,9 +22,18 @@ afterEach(() => {
 });
 const main = () => S.shoppingOverview(mom).lists[0]!.id;
 const recipeIn = {
-  title: "Palacsinta", description: "", category: "Desszert", servings: 4, minutes: 30,
-  ingredients: [{ name: "Liszt", qty: 200, unit: "g" }, { name: "Tojás", qty: 2, unit: "db" }, { name: "Só", qty: null, unit: "" }],
-  steps: ["Összekeverjük", "Kisütjük"], image: "",
+  title: "Palacsinta",
+  description: "",
+  category: "Desszert",
+  servings: 4,
+  minutes: 30,
+  ingredients: [
+    { name: "Liszt", qty: 200, unit: "g" },
+    { name: "Tojás", qty: 2, unit: "db" },
+    { name: "Só", qty: null, unit: "" },
+  ],
+  steps: ["Összekeverjük", "Kisütjük"],
+  image: "",
 };
 
 describe("5a shopping list", () => {
@@ -32,12 +41,26 @@ describe("5a shopping list", () => {
     expect(existsSync(join(dir, "backups/pre-organizer-phase5.db"))).toBe(true);
     const list = main();
     expect(S.shoppingOverview(dad).lists).toHaveLength(1);
-    const id = S.saveItem(kid, { listId: list, name: "Tej", qty: 2, unit: "l", store: "Lidl", category: "Tejtermék" });
+    const id = S.saveItem(kid, {
+      listId: list,
+      name: "Tej",
+      qty: 2,
+      unit: "l",
+      store: "Lidl",
+      category: "Tejtermék",
+    });
     S.checkItem(mom, { id, checked: true });
     S.checkItem(dad, { id, checked: true }); // second phone: idempotent
     resetAuthDb();
     const it0 = S.shoppingOverview(dad).items[0]!;
-    expect(it0).toMatchObject({ name: "Tej", qty: 2, checked: true, addedBy: "Bence", checkedBy: "Apa", version: 2 });
+    expect(it0).toMatchObject({
+      name: "Tej",
+      qty: 2,
+      checked: true,
+      addedBy: "Bence",
+      checkedBy: "Apa",
+      version: 2,
+    });
     S.checkItem(mom, { id, checked: false });
     expect(S.shoppingOverview(dad).items[0]).toMatchObject({ checked: false, checkedBy: null });
     expect(db()!.prepare("SELECT count(*) c FROM point_ledger").get()).toEqual({ c: 0 });
@@ -47,7 +70,9 @@ describe("5a shopping list", () => {
     const list = main();
     const id = S.saveItem(mom, { listId: list, name: "Kenyér" });
     S.saveItem(dad, { id, version: 1, listId: list, name: "Kenyér (fél)" });
-    expect(() => S.saveItem(mom, { id, version: 1, listId: list, name: "Zsemle" })).toThrow("közben");
+    expect(() => S.saveItem(mom, { id, version: 1, listId: list, name: "Zsemle" })).toThrow(
+      "közben",
+    );
     expect(() => S.saveItem(mom, { listId: list, name: " " })).toThrow();
     expect(() => S.saveItem(mom, { listId: list, name: "x", qty: -1 })).toThrow();
     expect(() => S.saveItem(mom, { listId: "nope", name: "x" })).toThrow("lista");
@@ -82,7 +107,11 @@ describe("5a recipes and weekly menu", () => {
     expect(() => S.saveRecipe(mom, { ...recipeIn, id, version: 1 })).toThrow("közben");
     S.saveRecipe(mom, { ...recipeIn, id, version: 2, archived: true });
     resetAuthDb();
-    expect(S.listRecipes(kid).recipes[0]).toMatchObject({ title: "Palacsinta", archived: true, version: 3 });
+    expect(S.listRecipes(kid).recipes[0]).toMatchObject({
+      title: "Palacsinta",
+      archived: true,
+      version: 3,
+    });
     expect(S.listRecipes(kid).canEdit).toBe(false);
   });
   it("Budapest week, menu entries, copy previous week with confirmation", () => {
@@ -92,13 +121,23 @@ describe("5a recipes and weekly menu", () => {
     const r = S.saveRecipe(mom, recipeIn);
     S.saveMenuEntry(mom, { day: "2026-11-17", meal: "vacsora", recipeId: r, servings: 6 });
     S.saveMenuEntry(dad, { day: "2026-11-18", meal: "ebed", title: "Rántott hús" });
-    expect(() => S.saveMenuEntry(kid, { day: "2026-11-18", meal: "ebed", title: "Pizza" })).toThrow("felnőtt");
+    expect(() => S.saveMenuEntry(kid, { day: "2026-11-18", meal: "ebed", title: "Pizza" })).toThrow(
+      "felnőtt",
+    );
     expect(() => S.saveMenuEntry(mom, { day: "2026-11-18", meal: "ebed" })).toThrow("ételnevet");
     expect(() => S.saveMenuEntry(mom, { day: "2026-02-30", meal: "ebed", title: "x" })).toThrow();
-    expect(S.menuWeek(kid, "2026-11-20").entries.map((e) => e.title)).toEqual(["Palacsinta", "Rántott hús"]);
+    expect(S.menuWeek(kid, "2026-11-20").entries.map((e) => e.title)).toEqual([
+      "Palacsinta",
+      "Rántott hús",
+    ]);
     expect(S.copyWeek(mom, { from: "2026-11-16", to: "2026-11-23" })).toMatchObject({ copied: 2 });
-    expect(S.copyWeek(mom, { from: "2026-11-16", to: "2026-11-23" })).toMatchObject({ needsConfirm: true });
-    expect(S.menuWeek(mom, "2026-11-23").entries.map((e) => e.day)).toEqual(["2026-11-24", "2026-11-25"]);
+    expect(S.copyWeek(mom, { from: "2026-11-16", to: "2026-11-23" })).toMatchObject({
+      needsConfirm: true,
+    });
+    expect(S.menuWeek(mom, "2026-11-23").entries.map((e) => e.day)).toEqual([
+      "2026-11-24",
+      "2026-11-25",
+    ]);
   });
   it("adds scaled ingredients, merges only same unit into open items, keeps checked ones, asks confirmation", () => {
     expect(scaleQty(200, 4, 6)).toBe(300);
@@ -111,12 +150,19 @@ describe("5a recipes and weekly menu", () => {
     const preview = S.addRecipeToList(mom, { recipeId: r, listId: list, servings: 6 });
     expect(preview).toMatchObject({ needsConfirm: true, merges: ["Tojás"] });
     expect(S.shoppingOverview(mom).items).toHaveLength(2);
-    expect(S.addRecipeToList(mom, { recipeId: r, listId: list, servings: 6, confirm: true })).toMatchObject({ added: 2, merged: 1 });
+    expect(
+      S.addRecipeToList(mom, { recipeId: r, listId: list, servings: 6, confirm: true }),
+    ).toMatchObject({ added: 2, merged: 1 });
     const items = S.shoppingOverview(mom).items;
     expect(items.find((i) => i.id === egg)?.qty).toBe(13);
     expect(items.find((i) => i.id === flourDone)).toMatchObject({ checked: true, qty: 1 });
-    expect(items.find((i) => i.name === "Liszt" && !i.checked)).toMatchObject({ qty: 300, unit: "g" });
-    expect(() => S.addRecipeToList(kid, { recipeId: r, listId: list, servings: 2 })).toThrow("felnőtt");
+    expect(items.find((i) => i.name === "Liszt" && !i.checked)).toMatchObject({
+      qty: 300,
+      unit: "g",
+    });
+    expect(() => S.addRecipeToList(kid, { recipeId: r, listId: list, servings: 2 })).toThrow(
+      "felnőtt",
+    );
     expect(() => S.addRecipeToList(mom, { recipeId: r, listId: list, servings: 0 })).toThrow();
   });
 });

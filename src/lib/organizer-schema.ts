@@ -6,7 +6,10 @@ export const httpsImage = z
   .string()
   .trim()
   .max(500)
-  .refine((v) => v === "" || /^https:\/\/[^\s"'<>]+$/i.test(v), "A kép csak https:// hivatkozás lehet.")
+  .refine(
+    (v) => v === "" || /^https:\/\/[^\s"'<>]+$/i.test(v),
+    "A kép csak https:// hivatkozás lehet.",
+  )
   .default("");
 export const itemSchema = z.object({
   id: z.string().max(100).optional(),
@@ -54,7 +57,12 @@ export const menuSchema = z.object({
 });
 /** Lowercase, accent-insensitive name used only to match identical products. */
 export const normName = (s: string) =>
-  s.trim().toLocaleLowerCase("hu-HU").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+  s
+    .trim()
+    .toLocaleLowerCase("hu-HU")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
 export const normUnit = (s: string) => s.trim().toLocaleLowerCase("hu-HU").replace(/\.$/, "");
 /** Monday (Budapest civil date) of the week containing `date`. */
 export function weekStart(date: string) {

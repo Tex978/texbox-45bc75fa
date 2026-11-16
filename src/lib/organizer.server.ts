@@ -40,22 +40,51 @@ function tx<T>(fn: () => T): T {
     throw e;
   }
 }
-const nameOf = (id: string | null) => (id ? (getUser(id)?.displayName ?? "Korábbi családtag") : null);
+const nameOf = (id: string | null) =>
+  id ? (getUser(id)?.displayName ?? "Korábbi családtag") : null;
 type ItemRow = {
-  id: string; list_id: string; name: string; norm: string; qty: number | null; unit: string; store: string;
-  category: string; note: string; checked: number; added_by: string; checked_by: string | null; version: number; updated_at: number;
+  id: string;
+  list_id: string;
+  name: string;
+  norm: string;
+  qty: number | null;
+  unit: string;
+  store: string;
+  category: string;
+  note: string;
+  checked: number;
+  added_by: string;
+  checked_by: string | null;
+  version: number;
+  updated_at: number;
 };
 const itemOut = (r: ItemRow) => ({
-  id: r.id, listId: r.list_id, name: r.name, qty: r.qty, unit: r.unit, store: r.store, category: r.category,
-  note: r.note, checked: !!r.checked, addedBy: nameOf(r.added_by), checkedBy: nameOf(r.checked_by), version: r.version,
+  id: r.id,
+  listId: r.list_id,
+  name: r.name,
+  qty: r.qty,
+  unit: r.unit,
+  store: r.store,
+  category: r.category,
+  note: r.note,
+  checked: !!r.checked,
+  addedBy: nameOf(r.added_by),
+  checkedBy: nameOf(r.checked_by),
+  version: r.version,
 });
 function ensureDefaultList(u: User) {
   const d = store();
   if (!d.prepare("SELECT 1 FROM shop_lists LIMIT 1").get())
-    d.prepare("INSERT INTO shop_lists VALUES(?,?,0,1,?,?)").run(crypto.randomUUID(), "Fő bevásárlólista", u.id, Date.now());
+    d.prepare("INSERT INTO shop_lists VALUES(?,?,0,1,?,?)").run(
+      crypto.randomUUID(),
+      "Fő bevásárlólista",
+      u.id,
+      Date.now(),
+    );
 }
 function list(id: string) {
-  const r = store().prepare("SELECT * FROM shop_lists WHERE id=?").get(id) as { id: string; archived: number } | undefined;
+  const r = store().prepare("SELECT * FROM shop_lists WHERE id=?").get(id) as
+    { id: string; archived: number } | undefined;
   if (!r || r.archived) throw new Error("A lista nem található vagy archivált.");
   return r;
 }
@@ -65,8 +94,14 @@ export function shoppingOverview(user: User) {
     const u = current(user);
     ensureDefaultList(u);
     const d = store();
-    const lists = d.prepare("SELECT id,name,version FROM shop_lists WHERE archived=0 ORDER BY created_at").all() as { id: string; name: string; version: number }[];
-    const items = (d.prepare("SELECT * FROM shop_items WHERE deleted=0 ORDER BY checked,category,name").all() as ItemRow[]).map(itemOut);
+    const lists = d
+      .prepare("SELECT id,name,version FROM shop_lists WHERE archived=0 ORDER BY created_at")
+      .all() as { id: string; name: string; version: number }[];
+    const items = (
+      d
+        .prepare("SELECT * FROM shop_items WHERE deleted=0 ORDER BY checked,category,name")
+        .all() as ItemRow[]
+    ).map(itemOut);
     // Frequently bought: by history count, excluding what is already open on a list.
     const frequent = d
       .prepare(
@@ -76,7 +111,15 @@ export function shoppingOverview(user: User) {
     return { lists, items, frequent, canManageLists: isAdult(u), at: Date.now() };
   });
 }
-export function saveList(user: User, input: { id?: string | undefined; name: string; archived?: boolean | undefined; version?: number | undefined }) {
+export function saveList(
+  user: User,
+  input: {
+    id?: string | undefined;
+    name: string;
+    archived?: boolean | undefined;
+    version?: number | undefined;
+  },
+) {
   return tx(() => {
     const u = current(user);
     if (!isAdult(u)) throw new Error("Listát csak felnőtt hozhat létre vagy archiválhat.");
@@ -87,7 +130,13 @@ export function saveList(user: User, input: { id?: string | undefined; name: str
       store().prepare("INSERT INTO shop_lists VALUES(?,?,0,1,?,?)").run(id, name, u.id, Date.now());
       return id;
     }
-    if (!store().prepare("UPDATE shop_lists SET name=?,archived=?,version=version+1 WHERE id=? AND version=?").run(name, input.archived ? 1 : 0, input.id, input.version ?? -1).changes)
+    if (
+      !store()
+        .prepare(
+          "UPDATE shop_lists SET name=?,archived=?,version=version+1 WHERE id=? AND version=?",
+        )
+        .run(name, input.archived ? 1 : 0, input.id, input.version ?? -1).changes
+    )
       throw new Error("A listát közben módosították. Töltsd újra.");
     return input.id;
   });
@@ -101,16 +150,47 @@ export function saveItem(user: User, raw: ItemInput) {
     if (!i.id) {
       const id = crypto.randomUUID();
       store()
-        .prepare("INSERT INTO shop_items(id,list_id,name,norm,qty,unit,store,category,note,added_by,version,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,1,?,?)")
-        .run(id, i.listId, i.name, normName(i.name), i.qty, i.unit, i.store, i.category, i.note, u.id, now, now);
+        .prepare(
+          "INSERT INTO shop_items(id,list_id,name,norm,qty,unit,store,category,note,added_by,version,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,1,?,?)",
+        )
+        .run(
+          id,
+          i.listId,
+          i.name,
+          normName(i.name),
+          i.qty,
+          i.unit,
+          i.store,
+          i.category,
+          i.note,
+          u.id,
+          now,
+          now,
+        );
       return id;
     }
-    const owner = store().prepare("SELECT added_by FROM shop_items WHERE id=?").get(i.id) as { added_by: string } | undefined;
-    if (!isAdult(u) && owner && owner.added_by !== u.id) throw new Error("Gyerek csak a saját tételét szerkesztheti.");
+    const owner = store().prepare("SELECT added_by FROM shop_items WHERE id=?").get(i.id) as
+      { added_by: string } | undefined;
+    if (!isAdult(u) && owner && owner.added_by !== u.id)
+      throw new Error("Gyerek csak a saját tételét szerkesztheti.");
     if (
       !store()
-        .prepare("UPDATE shop_items SET list_id=?,name=?,norm=?,qty=?,unit=?,store=?,category=?,note=?,version=version+1,updated_at=? WHERE id=? AND version=? AND deleted=0")
-        .run(i.listId, i.name, normName(i.name), i.qty, i.unit, i.store, i.category, i.note, now, i.id, i.version ?? -1).changes
+        .prepare(
+          "UPDATE shop_items SET list_id=?,name=?,norm=?,qty=?,unit=?,store=?,category=?,note=?,version=version+1,updated_at=? WHERE id=? AND version=? AND deleted=0",
+        )
+        .run(
+          i.listId,
+          i.name,
+          normName(i.name),
+          i.qty,
+          i.unit,
+          i.store,
+          i.category,
+          i.note,
+          now,
+          i.id,
+          i.version ?? -1,
+        ).changes
     )
       throw new Error("A terméket közben módosították vagy törölték. Töltsd újra.");
     return i.id;
@@ -121,8 +201,16 @@ export function checkItem(user: User, input: { id: string; checked: boolean }) {
   return tx(() => {
     const u = current(user);
     const r = store()
-      .prepare("UPDATE shop_items SET checked=?,checked_by=?,version=version+(checked<>?),updated_at=? WHERE id=? AND deleted=0")
-      .run(input.checked ? 1 : 0, input.checked ? u.id : null, input.checked ? 1 : 0, Date.now(), input.id);
+      .prepare(
+        "UPDATE shop_items SET checked=?,checked_by=?,version=version+(checked<>?),updated_at=? WHERE id=? AND deleted=0",
+      )
+      .run(
+        input.checked ? 1 : 0,
+        input.checked ? u.id : null,
+        input.checked ? 1 : 0,
+        Date.now(),
+        input.id,
+      );
     if (!r.changes) throw new Error("A termék már nincs a listán.");
   });
 }
@@ -142,8 +230,19 @@ export function deleteItems(user: User, input: { ids: string[] }) {
   });
 }
 
-type RecipeRow = { id: string; body: string; archived: number; version: number; created_by: string };
-const recipeOut = (r: RecipeRow) => ({ ...recipeSchema.parse(JSON.parse(r.body)), id: r.id, version: r.version, archived: !!r.archived });
+type RecipeRow = {
+  id: string;
+  body: string;
+  archived: number;
+  version: number;
+  created_by: string;
+};
+const recipeOut = (r: RecipeRow) => ({
+  ...recipeSchema.parse(JSON.parse(r.body)),
+  id: r.id,
+  version: r.version,
+  archived: !!r.archived,
+});
 function recipe(id: string) {
   const r = store().prepare("SELECT * FROM recipes WHERE id=?").get(id) as RecipeRow | undefined;
   if (!r) throw new Error("A recept nem található.");
@@ -153,7 +252,11 @@ export function listRecipes(user: User) {
   const u = current(user);
   return {
     canEdit: isParent(u),
-    recipes: (store().prepare("SELECT * FROM recipes ORDER BY archived,updated_at DESC").all() as RecipeRow[]).map(recipeOut),
+    recipes: (
+      store()
+        .prepare("SELECT * FROM recipes ORDER BY archived,updated_at DESC")
+        .all() as RecipeRow[]
+    ).map(recipeOut),
   };
 }
 export function saveRecipe(user: User, raw: RecipeInput & { archived?: boolean }) {
@@ -167,7 +270,13 @@ export function saveRecipe(user: User, raw: RecipeInput & { archived?: boolean }
       store().prepare("INSERT INTO recipes VALUES(?,?,0,1,?,?)").run(id, body, u.id, Date.now());
       return id;
     }
-    if (!store().prepare("UPDATE recipes SET body=?,archived=?,version=version+1,updated_at=? WHERE id=? AND version=?").run(body, raw.archived ? 1 : 0, Date.now(), r.id, r.version ?? -1).changes)
+    if (
+      !store()
+        .prepare(
+          "UPDATE recipes SET body=?,archived=?,version=version+1,updated_at=? WHERE id=? AND version=?",
+        )
+        .run(body, raw.archived ? 1 : 0, Date.now(), r.id, r.version ?? -1).changes
+    )
       throw new Error("A receptet közben módosították. Töltsd újra.");
     return r.id;
   });
@@ -178,12 +287,26 @@ export function menuWeek(user: User, date?: string, now = new Date()) {
     start = weekStart(date ? dateSchema.parse(date) : budapestToday(now));
   const entries = store()
     .prepare("SELECT * FROM menu_entries WHERE day>=? AND day<=? ORDER BY day,meal")
-    .all(start, addDays(start, 6)) as { id: string; day: string; meal: string; recipe_id: string | null; title: string; servings: number }[];
+    .all(start, addDays(start, 6)) as {
+    id: string;
+    day: string;
+    meal: string;
+    recipe_id: string | null;
+    title: string;
+    servings: number;
+  }[];
   return {
     start,
     today: budapestToday(now),
     canEdit: isAdult(u),
-    entries: entries.map((e) => ({ id: e.id, day: e.day, meal: e.meal, recipeId: e.recipe_id, title: e.title, servings: e.servings })),
+    entries: entries.map((e) => ({
+      id: e.id,
+      day: e.day,
+      meal: e.meal,
+      recipeId: e.recipe_id,
+      title: e.title,
+      servings: e.servings,
+    })),
   };
 }
 export function saveMenuEntry(user: User, raw: unknown) {
@@ -199,7 +322,9 @@ export function saveMenuEntry(user: User, raw: unknown) {
     }
     if (!title) throw new Error("Válassz receptet vagy írj ételnevet.");
     const id = crypto.randomUUID();
-    store().prepare("INSERT INTO menu_entries VALUES(?,?,?,?,?,?,?,?)").run(id, m.day, m.meal, m.recipeId, title, m.servings, u.id, Date.now());
+    store()
+      .prepare("INSERT INTO menu_entries VALUES(?,?,?,?,?,?,?,?)")
+      .run(id, m.day, m.meal, m.recipeId, title, m.servings, u.id, Date.now());
     return id;
   });
 }
@@ -209,7 +334,10 @@ export function deleteMenuEntry(user: User, id: string) {
     store().prepare("DELETE FROM menu_entries WHERE id=?").run(id);
   });
 }
-export function copyWeek(user: User, input: { from: string; to: string; confirm?: boolean | undefined }) {
+export function copyWeek(
+  user: User,
+  input: { from: string; to: string; confirm?: boolean | undefined },
+) {
   return tx(() => {
     const u = current(user);
     if (!isAdult(u)) throw new Error("A heti menüt felnőtt szerkesztheti.");
@@ -217,12 +345,34 @@ export function copyWeek(user: User, input: { from: string; to: string; confirm?
       to = weekStart(dateSchema.parse(input.to));
     if (from === to) throw new Error("Válassz másik hetet.");
     const d = store();
-    const existing = (d.prepare("SELECT count(*) c FROM menu_entries WHERE day>=? AND day<=?").get(to, addDays(to, 6)) as { c: number }).c;
+    const existing = (
+      d
+        .prepare("SELECT count(*) c FROM menu_entries WHERE day>=? AND day<=?")
+        .get(to, addDays(to, 6)) as { c: number }
+    ).c;
     if (existing && !input.confirm) return { needsConfirm: true, copied: 0 };
-    const rows = d.prepare("SELECT * FROM menu_entries WHERE day>=? AND day<=?").all(from, addDays(from, 6)) as { day: string; meal: string; recipe_id: string | null; title: string; servings: number }[];
+    const rows = d
+      .prepare("SELECT * FROM menu_entries WHERE day>=? AND day<=?")
+      .all(from, addDays(from, 6)) as {
+      day: string;
+      meal: string;
+      recipe_id: string | null;
+      title: string;
+      servings: number;
+    }[];
     const shift = Math.round((Date.parse(to) - Date.parse(from)) / 86400000);
     const ins = d.prepare("INSERT INTO menu_entries VALUES(?,?,?,?,?,?,?,?)");
-    for (const r of rows) ins.run(crypto.randomUUID(), addDays(r.day, shift), r.meal, r.recipe_id, r.title, r.servings, u.id, Date.now());
+    for (const r of rows)
+      ins.run(
+        crypto.randomUUID(),
+        addDays(r.day, shift),
+        r.meal,
+        r.recipe_id,
+        r.title,
+        r.servings,
+        u.id,
+        Date.now(),
+      );
     return { needsConfirm: false, copied: rows.length };
   });
 }
@@ -230,13 +380,17 @@ export function copyWeek(user: User, input: { from: string; to: string; confirm?
  * Adds scaled recipe ingredients to a list. Same name+unit merges into an OPEN item only;
  * checked items keep their state and a new row is added. Without confirm, merges are only previewed.
  */
-export function addRecipeToList(user: User, input: { recipeId: string; listId: string; servings: number; confirm?: boolean | undefined }) {
+export function addRecipeToList(
+  user: User,
+  input: { recipeId: string; listId: string; servings: number; confirm?: boolean | undefined },
+) {
   return tx(() => {
     const u = current(user);
     if (!isAdult(u)) throw new Error("Hozzávalókat felnőtt tehet a listára.");
     list(input.listId);
     const r = recipe(input.recipeId);
-    if (!Number.isInteger(input.servings) || input.servings < 1 || input.servings > 50) throw new Error("Az adagszám 1–50 lehet.");
+    if (!Number.isInteger(input.servings) || input.servings < 1 || input.servings > 50)
+      throw new Error("Az adagszám 1–50 lehet.");
     const d = store(),
       now = Date.now();
     const plan = r.ingredients.map((ing) => {
@@ -244,7 +398,9 @@ export function addRecipeToList(user: User, input: { recipeId: string; listId: s
       const match = d
         .prepare("SELECT * FROM shop_items WHERE list_id=? AND deleted=0 AND checked=0 AND norm=?")
         .all(input.listId, normName(ing.name)) as ItemRow[];
-      const same = match.find((m) => normUnit(m.unit) === normUnit(ing.unit) && (m.qty === null) === (qty === null));
+      const same = match.find(
+        (m) => normUnit(m.unit) === normUnit(ing.unit) && (m.qty === null) === (qty === null),
+      );
       return { ing, qty, same };
     });
     const merges = plan.filter((p) => p.same).map((p) => p.ing.name);
@@ -254,11 +410,27 @@ export function addRecipeToList(user: User, input: { recipeId: string; listId: s
     for (const p of plan) {
       if (p.same) {
         if (p.qty !== null && p.same.qty !== null)
-          d.prepare("UPDATE shop_items SET qty=?,version=version+1,updated_at=? WHERE id=?").run(Math.round((p.same.qty + p.qty) * 100) / 100, now, p.same.id);
+          d.prepare("UPDATE shop_items SET qty=?,version=version+1,updated_at=? WHERE id=?").run(
+            Math.round((p.same.qty + p.qty) * 100) / 100,
+            now,
+            p.same.id,
+          );
         merged++;
       } else {
-        d.prepare("INSERT INTO shop_items(id,list_id,name,norm,qty,unit,store,category,note,added_by,version,created_at,updated_at) VALUES(?,?,?,?,?,?,'','',?,?,1,?,?)")
-          .run(crypto.randomUUID(), input.listId, p.ing.name, normName(p.ing.name), p.qty, p.ing.unit, `Recept: ${r.title}`.slice(0, 200), u.id, now, now);
+        d.prepare(
+          "INSERT INTO shop_items(id,list_id,name,norm,qty,unit,store,category,note,added_by,version,created_at,updated_at) VALUES(?,?,?,?,?,?,'','',?,?,1,?,?)",
+        ).run(
+          crypto.randomUUID(),
+          input.listId,
+          p.ing.name,
+          normName(p.ing.name),
+          p.qty,
+          p.ing.unit,
+          `Recept: ${r.title}`.slice(0, 200),
+          u.id,
+          now,
+          now,
+        );
         added++;
       }
     }

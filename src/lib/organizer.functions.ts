@@ -14,9 +14,20 @@ function access() {
   return user;
 }
 const id = z.string().min(1).max(100);
-export const shopList = createServerFn({ method: "GET" }).handler(async () => S.shoppingOverview(access()));
+export const shopList = createServerFn({ method: "GET" }).handler(async () =>
+  S.shoppingOverview(access()),
+);
 export const shopSaveList = createServerFn({ method: "POST" })
-  .inputValidator((v) => z.object({ id: id.optional(), name: z.string().max(60), archived: z.boolean().optional(), version: z.number().int().optional() }).parse(v))
+  .inputValidator((v) =>
+    z
+      .object({
+        id: id.optional(),
+        name: z.string().max(60),
+        archived: z.boolean().optional(),
+        version: z.number().int().optional(),
+      })
+      .parse(v),
+  )
   .handler(async ({ data }) => ({ id: S.saveList(access(), data) }));
 export const shopSaveItem = createServerFn({ method: "POST" })
   .inputValidator((v) => itemSchema.parse(v))
@@ -33,7 +44,9 @@ export const shopDelete = createServerFn({ method: "POST" })
     S.deleteItems(access(), data);
     return { ok: true };
   });
-export const recipesList = createServerFn({ method: "GET" }).handler(async () => S.listRecipes(access()));
+export const recipesList = createServerFn({ method: "GET" }).handler(async () =>
+  S.listRecipes(access()),
+);
 export const recipeSave = createServerFn({ method: "POST" })
   .inputValidator((v) => recipeSchema.extend({ archived: z.boolean().optional() }).parse(v))
   .handler(async ({ data }) => ({ id: S.saveRecipe(access(), data) }));
@@ -50,8 +63,21 @@ export const menuRemove = createServerFn({ method: "POST" })
     return { ok: true };
   });
 export const menuCopy = createServerFn({ method: "POST" })
-  .inputValidator((v) => z.object({ from: z.string().max(10), to: z.string().max(10), confirm: z.boolean().optional() }).parse(v))
+  .inputValidator((v) =>
+    z
+      .object({ from: z.string().max(10), to: z.string().max(10), confirm: z.boolean().optional() })
+      .parse(v),
+  )
   .handler(async ({ data }) => S.copyWeek(access(), data));
 export const recipeToList = createServerFn({ method: "POST" })
-  .inputValidator((v) => z.object({ recipeId: id, listId: id, servings: z.number().int(), confirm: z.boolean().optional() }).parse(v))
+  .inputValidator((v) =>
+    z
+      .object({
+        recipeId: id,
+        listId: id,
+        servings: z.number().int(),
+        confirm: z.boolean().optional(),
+      })
+      .parse(v),
+  )
   .handler(async ({ data }) => S.addRecipeToList(access(), data));
