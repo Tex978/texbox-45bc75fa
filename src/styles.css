@@ -697,7 +697,16 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 @media (prefers-reduced-motion: reduce) { .en-path-on { animation: none; } }
 .en-history-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .en-history-head h3 { margin: 0; }
-.en-span { grid-template-columns: repeat(4,minmax(0,1fr)); min-width: min(100%, 320px); }
+.en-span { grid-template-columns: repeat(5,minmax(0,1fr)); min-width: min(100%, 360px); }
+.en-hist-tiles { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 8px; margin: 8px 0 12px; }
+.en-hist-tile { display: flex; flex-direction: column; gap: 2px; min-height: 64px; padding: 10px 12px; text-align: left; border-radius: 14px; border: 1px solid var(--border); background: var(--secondary); color: var(--foreground); transition: opacity .15s; }
+.en-hist-tile[aria-pressed="false"] { opacity: .45; }
+.en-hist-tile span { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground); }
+.en-hist-tile i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+.en-hist-tile strong { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.en-hist-tile small { font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
+.en-hist-tile em { font-style: normal; font-size: 11px; color: var(--muted-foreground); }
+@media (max-width: 640px) { .en-hist-tiles { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 .en-date { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; font-size: 14px; font-weight: 600; text-transform: capitalize; }
 .en-history-sum { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 10px; }
 .en-history-sum span { font-size: 12px; color: var(--muted-foreground); }
