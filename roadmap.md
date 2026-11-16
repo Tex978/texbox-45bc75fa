@@ -83,3 +83,10 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] ACL: felnőttek egyenrangúan kezelik a családi eseményeket; személyes csak tulajdonos+érintett; gyerek csak érintett vagy egész családos eseményt lát, nem ír. Revízióütközés, audit, archiválás (nincs törlés), `pre-calendar-phase5b.db` mentés.
 - [x] Eseményből egyszeri feladat 0 ponttal, alkalmonként egyedi kulccsal (ismételt gomb ugyanazt adja).
 - [ ] Nyitott: valódi emlékeztető/push értesítés (nincs tartós NAS ütemező), családi jegyzetek/ügyek modul, egyetlen alkalom időpontjának (óra) módosítása, főoldali "következő program" kártya (6. fázis), élő NAS-teszt.
+
+## 6a – Főoldal és navigáció (2026-11-16)
+- [x] Öt fő terület (Főoldal / Otthon / Feladatok / Család / Média) telefonon alsó sávban, PC-n fejlécben; Több menü: keresés, letöltések, tárhely, szervező, ajándékbolt, családi fiókok, okosotthon/energia, kapcsolatok. Minden régi URL működik.
+- [x] Új főoldal valós, jogosultság-ellenőrzött adatokkal: kedvenc eszközcsoportok + mentett jelenetek indítása (valódi futási napló alapján jelez), mai feladatok + szülői jóváhagyás-figyelmeztetés, következő program, bevásárlás, mai menü, saját pontok + cél, média/NAS összefoglaló. Betöltés/hiba/üres állapot, gyerek nézet nagyobb gombokkal.
+- [x] A régi Plex/NAS áttekintő változatlan tartalommal a /media oldalon.
+- [ ] 6b: személyes kártyasorrend/láthatóság tartós mentése (nincs még per-felhasználós preferenciatár; nem készült új séma), kedvenc eszközök élő állapota és gyorsvezérlése a főoldalon (most link az Otthonhoz).
+- [ ] Továbbra is nyitott: 2b időzített jelenetek, valódi emlékeztetők, családi jegyzetek, élő NAS-ellenőrzés.
