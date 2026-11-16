@@ -183,3 +183,10 @@ export const familyRevokeSessions = createServerFn({ method: "POST" })
     audit(me.id, "sessions-revoke", data.id);
     return { ok: true };
   });
+
+/** Admin-only, read-only storage health (paths, presence, backups); never returns secrets or writes files. */
+export const getStorageStatus = createServerFn({ method: "GET" }).handler(async () => {
+  admin();
+  const { storageReport } = await import("./data-guard.server");
+  return storageReport();
+});
