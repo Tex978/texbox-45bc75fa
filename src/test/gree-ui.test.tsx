@@ -80,12 +80,13 @@ describe("climate selection and commands", () => {
       expect(screen.getByRole("button", { name: "Klíma A panel kikapcsolás" })).toBeEnabled(),
     );
   });
-  it("saves a custom room for the selected climate only in browser storage", () => {
+  it("saves a custom room for the selected climate to the shared NAS store", async () => {
     mount(<Gree />);
     fireEvent.change(screen.getByRole("textbox", { name: "Új szoba neve" }), {
       target: { value: "Nappali" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Szoba hozzáadása" }));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Klíma A szobája" })).toHaveTextContent("Nappali"));
     fireEvent.change(screen.getByRole("combobox", { name: "Klíma A szobája" }), {
       target: { value: "Nappali" },
     });
