@@ -5,7 +5,12 @@ import { AlarmClock, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { schedulesList, scheduleSave, scheduleToggle, scheduleDelete } from "@/lib/schedules.functions";
+import {
+  schedulesList,
+  scheduleSave,
+  scheduleToggle,
+  scheduleDelete,
+} from "@/lib/schedules.functions";
 import {
   DST_NOTE,
   RECURRENCE_LABELS,
@@ -44,7 +49,13 @@ function describe(r: ScheduleInput) {
 }
 const stepText = (s: SceneStep, name: (k: string) => string) =>
   `${name(s.device)}: ${ACTION_LABELS[s.action]}${
-    typeof s.value === "boolean" ? (s.value ? " (be)" : " (ki)") : s.value !== "" ? ` → ${s.value}` : ""
+    typeof s.value === "boolean"
+      ? s.value
+        ? " (be)"
+        : " (ki)"
+      : s.value !== ""
+        ? ` → ${s.value}`
+        : ""
   }`;
 
 export function Schedules({
@@ -103,7 +114,12 @@ export function Schedules({
           <AlarmClock size={18} /> Időzítések
         </h3>
         {q.data?.canCreate && (
-          <Button size="sm" variant="outline" disabled={!scenes.length} onClick={() => setDraft(blank())}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!scenes.length}
+            onClick={() => setDraft(blank())}
+          >
             <Plus size={14} /> Új időzítés
           </Button>
         )}
@@ -148,7 +164,9 @@ export function Schedules({
                       ? ` · Utolsó: ${statusLabels[r.lastStatus] ?? r.lastStatus}${r.lastAt ? ` (${when(r.lastAt)})` : ""}`
                       : ""}
                   </p>
-                  {r.lastMessage && <p className="text-xs text-muted-foreground">{r.lastMessage}</p>}
+                  {r.lastMessage && (
+                    <p className="text-xs text-muted-foreground">{r.lastMessage}</p>
+                  )}
                   {r.sceneChanged && (
                     <p className="task-error text-xs">A jelenet a jóváhagyás óta változott.</p>
                   )}
@@ -283,7 +301,10 @@ export function Schedules({
                   <select
                     value={draft.recurrence}
                     onChange={(e) =>
-                      setDraft({ ...draft, recurrence: e.target.value as ScheduleInput["recurrence"] })
+                      setDraft({
+                        ...draft,
+                        recurrence: e.target.value as ScheduleInput["recurrence"],
+                      })
                     }
                   >
                     {Object.entries(RECURRENCE_LABELS).map(([k, v]) => (
@@ -329,7 +350,9 @@ export function Schedules({
                     min={1}
                     max={8}
                     value={draft.everyWeeks}
-                    onChange={(e) => setDraft({ ...draft, everyWeeks: Number(e.target.value) || 1 })}
+                    onChange={(e) =>
+                      setDraft({ ...draft, everyWeeks: Number(e.target.value) || 1 })
+                    }
                   />
                 </label>
               )}
@@ -366,7 +389,9 @@ export function Schedules({
           <DialogHeader>
             <DialogTitle>Időzítés bekapcsolása</DialogTitle>
             <DialogDescription>
-              {target ? `${describe(target)} (Europe/Budapest) a(z) „${target.sceneName}” jelenet fut.` : ""}
+              {target
+                ? `${describe(target)} (Europe/Budapest) a(z) „${target.sceneName}” jelenet fut.`
+                : ""}
             </DialogDescription>
           </DialogHeader>
           {target && targetScene && (

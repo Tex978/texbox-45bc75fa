@@ -66,7 +66,8 @@ const isoDow = (s: string) => {
   const [y, m, d] = s.split("-").map(Number) as [number, number, number];
   return ((new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7) + 1;
 };
-const dayDiff = (a: string, b: string) => (Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400_000;
+const dayDiff = (a: string, b: string) =>
+  (Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400_000;
 /** Does the rule fall on this local calendar date? */
 export function occursOn(r: ScheduleInput, day: string) {
   if (day < r.startDate) return false;

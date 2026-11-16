@@ -28,6 +28,12 @@ vi.mock("@/lib/scenes.functions", () => ({
   scenesRuns: async () => [],
   scenesAcl: vi.fn(),
 }));
+vi.mock("@/lib/schedules.functions", () => ({
+  schedulesList: async () => ({ rules: [], schedulerAlive: false, canCreate: true }),
+  scheduleSave: vi.fn(),
+  scheduleToggle: vi.fn(),
+  scheduleDelete: vi.fn(),
+}));
 import { Scenes } from "@/components/Scenes";
 afterEach(() => cleanup());
 describe("scene editor", () => {

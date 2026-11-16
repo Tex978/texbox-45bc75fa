@@ -8,9 +8,7 @@ import { gate } from "./lib/app-gate";
 // Started on module load and re-ensured on each request (idempotent) in case the bundle loads lazily.
 const ensureScheduler = () => {
   if (typeof process !== "undefined" && process.versions?.node && !process.env["VITEST"])
-    void import("./lib/scheduler.server")
-      .then((m) => m.startScheduler())
-      .catch(() => undefined);
+    void import("./lib/scheduler.server").then((m) => m.startScheduler()).catch(() => undefined);
 };
 ensureScheduler();
 

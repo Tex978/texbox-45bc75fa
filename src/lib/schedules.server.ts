@@ -1,7 +1,15 @@
 import { audit, db, getUser, userCan, type User } from "./auth.server";
 import { canRun, getScene, runScene } from "./scenes.server";
 import type { SceneStep } from "./scene-schema";
-import { budapestInstant, addDaysStr, budapestParts, nextDue, occursOn, scheduleSchema, type ScheduleInput } from "./schedule-schema";
+import {
+  budapestInstant,
+  addDaysStr,
+  budapestParts,
+  nextDue,
+  occursOn,
+  scheduleSchema,
+  type ScheduleInput,
+} from "./schedule-schema";
 
 // Timed manual scenes (2b/1): rules are bound to their author's account and one scene; the scene ACL
 // is re-checked before every run and every step. Missed slots are never caught up and a claimed slot
@@ -56,8 +64,7 @@ const hasLock = (steps: SceneStep[]) => steps.some((s) => /^lock/i.test(s.device
 /** True only while a background scheduler process holds a fresh lease (heartbeat). */
 export function schedulerAlive(now = Date.now()) {
   const r = store().prepare("SELECT expires_at FROM scheduler_lease WHERE id=1").get() as
-    | { expires_at: number }
-    | undefined;
+    { expires_at: number } | undefined;
   return !!r && r.expires_at > now;
 }
 export function listSchedules(user: User, now = Date.now()) {
@@ -71,7 +78,9 @@ export function listSchedules(user: User, now = Date.now()) {
         scene = sceneOrNull(r.scene_id),
         next = r.enabled ? nextDue(body, now) : null;
       const runs = store()
-        .prepare("SELECT slot,status,message,at FROM schedule_runs WHERE rule_id=? ORDER BY due_at DESC LIMIT 5")
+        .prepare(
+          "SELECT slot,status,message,at FROM schedule_runs WHERE rule_id=? ORDER BY due_at DESC LIMIT 5",
+        )
         .all(r.id) as { slot: string; status: string; message: string; at: number }[];
       return {
         ...body,
@@ -83,7 +92,10 @@ export function listSchedules(user: User, now = Date.now()) {
         enabled: !!r.enabled,
         sceneName: scene?.name ?? null,
         sceneVersion: scene?.version ?? null,
-        sceneChanged: !!scene && r.confirmed_scene_version !== null && scene.version !== r.confirmed_scene_version,
+        sceneChanged:
+          !!scene &&
+          r.confirmed_scene_version !== null &&
+          scene.version !== r.confirmed_scene_version,
         steps: scene?.steps ?? [],
         nextAt: next?.at ?? null,
         lastStatus: r.last_status,
@@ -125,7 +137,12 @@ export function saveSchedule(user: User, raw: ScheduleInput) {
 }
 export function setScheduleEnabled(
   user: User,
-  input: { id: string; version: number; enabled: boolean; confirmSceneVersion?: number | undefined },
+  input: {
+    id: string;
+    version: number;
+    enabled: boolean;
+    confirmSceneVersion?: number | undefined;
+  },
   now = Date.now(),
 ) {
   const u = active(user),
@@ -160,7 +177,8 @@ export function setScheduleEnabled(
 export function deleteSchedule(user: User, id: string) {
   const u = active(user),
     r = getRow(id);
-  if (r.owner_id !== u.id && u.role !== "admin") throw new Error("Ezt az időzítést nem törölheted.");
+  if (r.owner_id !== u.id && u.role !== "admin")
+    throw new Error("Ezt az időzítést nem törölheted.");
   store().prepare("DELETE FROM scene_schedules WHERE id=?").run(id);
   audit(u.id, "schedule-delete", id);
 }
@@ -171,22 +189,26 @@ export function acquireLease(worker: string, now = Date.now()) {
   d.prepare("INSERT OR IGNORE INTO scheduler_lease(id,owner,expires_at) VALUES(1,?,0)").run(worker);
   return (
     d
-      .prepare("UPDATE scheduler_lease SET owner=?,expires_at=? WHERE id=1 AND (owner=? OR expires_at<?)")
+      .prepare(
+        "UPDATE scheduler_lease SET owner=?,expires_at=? WHERE id=1 AND (owner=? OR expires_at<?)",
+      )
       .run(worker, now + LEASE_MS, worker, now).changes === 1
   );
 }
 type Executor = (step: SceneStep, reauthorize: () => void) => Promise<void>;
-function finish(r: Row, slot: string, status: string, message: string, runId: string | null, disable: boolean) {
+function finish(
+  r: Row,
+  slot: string,
+  status: string,
+  message: string,
+  runId: string | null,
+  disable: boolean,
+) {
   const d = store(),
     now = Date.now();
-  d.prepare("UPDATE schedule_runs SET status=?,message=?,run_id=?,at=? WHERE rule_id=? AND slot=?").run(
-    status,
-    message,
-    runId,
-    now,
-    r.id,
-    slot,
-  );
+  d.prepare(
+    "UPDATE schedule_runs SET status=?,message=?,run_id=?,at=? WHERE rule_id=? AND slot=?",
+  ).run(status, message, runId, now, r.id, slot);
   d.prepare(
     `UPDATE scene_schedules SET last_status=?,last_message=?,last_at=?${disable ? ",enabled=0" : ""} WHERE id=?`,
   ).run(status, message, now, r.id);
@@ -194,7 +216,8 @@ function finish(r: Row, slot: string, status: string, message: string, runId: st
 async function execute(r: Row, slot: string, executor: Executor) {
   const owner = getUser(r.owner_id);
   const block = (msg: string) => finish(r, slot, "blocked", msg, null, true);
-  if (!owner || owner.disabled || owner.role === "child") return block("A létrehozó fiók nem aktív; az időzítés leállt.");
+  if (!owner || owner.disabled || owner.role === "child")
+    return block("A létrehozó fiók nem aktív; az időzítés leállt.");
   const scene = sceneOrNull(r.scene_id);
   if (!scene) return block("A céljelenetet törölték; az időzítés leállt.");
   if (scene.version !== r.confirmed_scene_version)
@@ -207,11 +230,20 @@ async function execute(r: Row, slot: string, executor: Executor) {
   }
   try {
     const runId = await runScene(owner, r.scene_id, `sched:${r.id}:${slot}`, executor);
-    const run = store().prepare("SELECT status FROM scene_runs WHERE id=?").get(runId) as { status: string };
+    const run = store().prepare("SELECT status FROM scene_runs WHERE id=?").get(runId) as {
+      status: string;
+    };
     const status = ["accepted", "partial", "failed"].includes(run.status) ? run.status : "failed";
     finish(r, slot, status, "Részletek a jelenet futásnaplójában.", runId, false);
   } catch (e) {
-    finish(r, slot, "failed", e instanceof Error ? e.message : "A jelenet nem indult el.", null, false);
+    finish(
+      r,
+      slot,
+      "failed",
+      e instanceof Error ? e.message : "A jelenet nem indult el.",
+      null,
+      false,
+    );
   }
 }
 /** One scheduler pass. Safe to call concurrently: lease + UNIQUE(rule_id,slot) claim guarantee at most one run per slot. */
@@ -219,7 +251,9 @@ export async function tick(worker: string, executor: Executor, now = Date.now())
   if (!acquireLease(worker, now)) return { leader: false, ran: 0, missed: 0 };
   const d = store();
   // Claims left by a dead worker are never repeated (non-idempotent device commands).
-  d.prepare("UPDATE schedule_runs SET status='interrupted',message='Újraindítás vagy kiesés miatt megszakadt; nem ismételjük.' WHERE status='claimed' AND worker<>?").run(worker);
+  d.prepare(
+    "UPDATE schedule_runs SET status='interrupted',message='Újraindítás vagy kiesés miatt megszakadt; nem ismételjük.' WHERE status='claimed' AND worker<>?",
+  ).run(worker);
   const rows = d.prepare("SELECT * FROM scene_schedules WHERE enabled=1").all() as Row[];
   let ran = 0,
     missed = 0;
@@ -233,18 +267,31 @@ export async function tick(worker: string, executor: Executor, now = Date.now())
       const slot = `${day}T${body.time}`;
       const late = now - at > GRACE_MS;
       const claim = d
-        .prepare("INSERT OR IGNORE INTO schedule_runs(rule_id,slot,due_at,status,message,worker,at) VALUES(?,?,?,?,?,?,?)")
-        .run(r.id, slot, at, late ? "missed" : "claimed", late ? "Kiesés miatt kimaradt; nem pótoljuk." : "", worker, now);
+        .prepare(
+          "INSERT OR IGNORE INTO schedule_runs(rule_id,slot,due_at,status,message,worker,at) VALUES(?,?,?,?,?,?,?)",
+        )
+        .run(
+          r.id,
+          slot,
+          at,
+          late ? "missed" : "claimed",
+          late ? "Kiesés miatt kimaradt; nem pótoljuk." : "",
+          worker,
+          now,
+        );
       if (!claim.changes) continue;
       if (late) {
         missed++;
-        d.prepare("UPDATE scene_schedules SET last_status='missed',last_message=?,last_at=? WHERE id=?").run("Kiesés miatt kimaradt; nem pótoljuk.", now, r.id);
+        d.prepare(
+          "UPDATE scene_schedules SET last_status='missed',last_message=?,last_at=? WHERE id=?",
+        ).run("Kiesés miatt kimaradt; nem pótoljuk.", now, r.id);
       } else {
         ran++;
         acquireLease(worker, Date.now());
         await execute(r, slot, executor);
       }
-      if (body.recurrence === "once") d.prepare("UPDATE scene_schedules SET enabled=0 WHERE id=?").run(r.id);
+      if (body.recurrence === "once")
+        d.prepare("UPDATE scene_schedules SET enabled=0 WHERE id=?").run(r.id);
     }
   }
   return { leader: true, ran, missed };

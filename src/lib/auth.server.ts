@@ -150,7 +150,9 @@ export function db() {
         CREATE TABLE IF NOT EXISTS dashboard_prefs(person_key TEXT PRIMARY KEY, body TEXT NOT NULL, version INTEGER NOT NULL CHECK(version>=1), updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='scene_schedules'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='scene_schedules'").get()
+    ) {
       const autoBackup = `${dataDir()}/backups/pre-automation-phase2b.db`;
       if (!fs.existsSync(autoBackup)) d.exec(`VACUUM INTO '${autoBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;

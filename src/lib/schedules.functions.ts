@@ -32,7 +32,12 @@ export const scheduleSave = createServerFn({ method: "POST" })
 export const scheduleToggle = createServerFn({ method: "POST" })
   .inputValidator((v) =>
     z
-      .object({ id, version: z.number().int(), enabled: z.boolean(), confirmSceneVersion: z.number().int().optional() })
+      .object({
+        id,
+        version: z.number().int(),
+        enabled: z.boolean(),
+        confirmSceneVersion: z.number().int().optional(),
+      })
       .parse(v),
   )
   .handler(async ({ data }) => {
