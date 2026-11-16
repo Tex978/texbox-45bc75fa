@@ -3,7 +3,7 @@
 - [x] M3 (alap) Család oldal: meghívó és jelszó link, szerepkörök, egyedi jogosultságok, letiltás, profilmenü.
 - [x] M2 Közös beállítások a NAS-on: kedvencek, téma, Gree szobák, redőny-kizárások, Bosch nevek; böngészős értékek egyszeri átvétele; 63 teszt sikeres.
 - [x] M4 Keresés szűrők: műfaj, év, TMDB-értékelés, rendezés, elérhetőség; telefonon alsó panel, böngészőnként megőrizve; 69 teszt sikeres.
-- [ ] M5 Streaming felfedező oldal (TMDB HU szolgáltatók).
+- [x] M5 Streaming felfedező: TMDB HU szolgáltatók, új (hét/hónap/3 hónap) és népszerű, kérés gomb.
 - [ ] M6 Egységes app-keret és oldalak újratervezése.
 - [ ] M7 Energia saját idősortárolás.
 - [ ] Élő ellenőrzés a Synologyn: frissítés után az admin létrehozása és TEXBOX_SECRET_KEY megadása a felhasználónál.

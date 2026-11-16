@@ -18,6 +18,7 @@ import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 import { filterMedia, mapArrMedia, imdbIdentifier, imdbScore, type MediaType, type MediaCategory, type MediaItem, type MediaDetail } from "./media";
 import { mediaDemo } from "./media-demo";
+import { pickProviders, streamParams, type Provider, type StreamMode } from "./streaming";
 import { activeCount, discoverParams, matchesAvailability, matchesRaw, needsDiscover, normalizeFilters, type MediaFilters } from "./media-filters";
 import { homeConnectFailure } from "./home-connect";
 import { mergeThermometerMeta, type ThermometerMeta } from "./thermometer-meta";
@@ -300,6 +301,35 @@ export const browseMedia = createServerFn({ method: "GET" })
       const found = await arr("RADARR", `/importlist/movie?includeRecommendations=${data.category === "recommended"}&includePopular=${data.category === "popular"}&includeTrending=${data.category === "trending"}`);
       return result(found.filter((x: any) => !x.isExisting && !x.isExcluded).slice(0, 40).map((x: any) => mapArrMedia(x, data.type)));
     } catch (error) { return result([], error instanceof Error && error.message.startsWith("A TMDB") ? error.message : "A filmkínálat nem érhető el. Ellenőrizd a kapcsolatot."); }
+  });
+
+export const getStreaming = createServerFn({ method: "GET" })
+  .inputValidator((d: { type: MediaType; provider: number; mode: StreamMode; days: number; page: number }) => ({
+    type: d.type === "Sorozat" ? "Sorozat" as const : "Film" as const, provider: Math.max(0, Math.floor(Number(d.provider)) || 0),
+    mode: d.mode === "popular" ? "popular" as const : "new" as const, days: Number(d.days) || 30, page: Math.max(1, Math.min(20, Math.floor(d.page) || 1)),
+  }))
+  .handler(async ({ data }) => {
+    if (!has("TMDB_TOKEN")) return { configured: false, providers: [] as Provider[], items: [] as MediaItem[], hasMore: false, error: "" };
+    const kind = data.type === "Film" ? "movie" : "tv";
+    try {
+      const providers = pickProviders((await tmdb(`/watch/providers/${kind}`, { watch_region: "HU" })).results ?? []);
+      const ids = data.provider && providers.some((p) => p.id === data.provider) ? [data.provider] : providers.map((p) => p.id);
+      if (!ids.length) return { configured: true, providers, items: [], hasMore: false, error: "A TMDB nem jelez magyarországi streaming szolgáltatót." };
+      const response = await tmdb(`/discover/${kind}`, { ...streamParams(kind, ids, data.mode, data.days), page: String(data.page) });
+      const items: MediaItem[] = [];
+      for (let i = 0; i < response.results.length; i += 4) {
+        const batch = await Promise.all(response.results.slice(i, i + 4).map((x: any) => tmdbItem(x, data.type)));
+        for (const item of batch) if (item) items.push(item);
+      }
+      const app = data.type === "Film" ? "RADARR" : "SONARR";
+      if (has(app + "_URL", app + "_KEY")) {
+        const owned = await safe(arr(app, kind === "movie" ? "/movie" : "/series"), []);
+        for (const item of items) item.inLibrary = owned.some((x: any) => (kind === "movie" ? x.tmdbId : x.tvdbId) === item.id);
+      }
+      return { configured: true, providers, items, hasMore: data.page < response.total_pages, error: "" };
+    } catch (e) {
+      return { configured: true, providers: [] as Provider[], items: [] as MediaItem[], hasMore: false, error: e instanceof Error && e.message.startsWith("A TMDB") ? e.message : "A streaming kínálat most nem érhető el." };
+    }
   });
 
 export const getMediaDetail = createServerFn({ method: "GET" })
