@@ -66,6 +66,18 @@ export function db() {
       CREATE TABLE IF NOT EXISTS child_profiles(id TEXT PRIMARY KEY, display_name TEXT NOT NULL, icon TEXT NOT NULL DEFAULT 'child', created_by TEXT NOT NULL REFERENCES users(id), disabled INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
       INSERT OR IGNORE INTO family_meta(key,value) SELECT 'owner',id FROM users WHERE role='admin' AND disabled=0 ORDER BY created_at,id LIMIT 1;
       COMMIT;`);
+    const scenesBackup = `${dataDir()}/backups/pre-scenes-phase2a.db`;
+    if (!fs.existsSync(scenesBackup)) d.exec(`VACUUM INTO '${scenesBackup.replaceAll("'", "''")}'`);
+    d.exec(`BEGIN IMMEDIATE;
+      CREATE TABLE IF NOT EXISTS scenes(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL, version INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS scene_device_acl(user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, device_key TEXT NOT NULL, allowed INTEGER NOT NULL, PRIMARY KEY(user_id,device_key));
+      CREATE TABLE IF NOT EXISTS scene_runs(id TEXT PRIMARY KEY, request_id TEXT NOT NULL UNIQUE, scene_id TEXT NOT NULL, user_id TEXT NOT NULL, started_at INTEGER NOT NULL, finished_at INTEGER, status TEXT NOT NULL, results TEXT NOT NULL DEFAULT '[]');
+      CREATE UNIQUE INDEX IF NOT EXISTS scene_one_running ON scene_runs(scene_id) WHERE status='running';
+      COMMIT;`);
+    // A process restart never resumes or repeats physical commands.
+    d.prepare(
+      "UPDATE scene_runs SET status='interrupted',finished_at=? WHERE status='running'",
+    ).run(Date.now());
     conn = d;
     return d;
   } catch (e) {

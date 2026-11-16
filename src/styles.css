@@ -856,3 +856,24 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 }
 
 @media (max-width: 640px) { .family-head > select { max-width: 100%; } .family-head > button { min-height: 44px; } }
+
+/* Manual scenes, using the existing home palette and controls. */
+.scene-centre { display: grid; gap: 20px; min-width: 0; }
+.scene-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,280px),1fr)); gap: 16px; }
+.scene-card { display: grid; gap: 20px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+.scene-symbol { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: var(--radius); background: var(--secondary); color: var(--primary); }
+.scene-energy .scene-symbol { color: var(--home-energy); }
+.scene-success .scene-symbol { color: var(--home-success); }
+.scene-empty { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 48px 16px; }
+.scene-editor { width: min(720px,calc(100% - 24px)); max-width: 720px; max-height: 90dvh; overflow-y: auto; }
+.scene-field { display: grid; min-width: 0; gap: 6px; font-size: 14px; }
+.scene-field select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--input); border-radius: var(--radius); background: var(--background); color: var(--foreground); padding: 8px; }
+.scene-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,160px),1fr)); gap: 12px; }
+.scene-step { display: grid; gap: 12px; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.scene-step legend { font-size: 14px; font-weight: 600; padding: 0 6px; }
+.scene-run { display: grid; gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.scene-run li { font-size: 13px; line-height: 1.6; }
+.scene-acl summary { cursor: pointer; min-height: 44px; font-weight: 600; }
+.scene-history { border-top: 1px solid var(--border); padding-top: 16px; }
+.scene-centre button, .scene-editor button { min-height: 44px; }
+@media (max-width: 1023px) { .hd-nav { grid-template-columns: repeat(6,minmax(0,1fr)); padding-left: 2px; padding-right: 2px; } }

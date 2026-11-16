@@ -4,6 +4,7 @@ import { getMe } from "@/lib/auth.functions";
 import { Shell } from "@/components/Shell";
 import { SmartSection as Card, SensorDetails } from "@/components/SmartHomeUI";
 import { SmartEnergy } from "@/components/SmartEnergy";
+import { Scenes } from "@/components/Scenes";
 import { Button } from "@/components/ui/button";
 import {
   Blinds as BlindsIcon,
@@ -29,6 +30,7 @@ import {
   Lightbulb,
   Wifi,
   WifiOff,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -645,6 +647,7 @@ function Home() {
     { id: "overview", name: "Otthon", icon: House },
     { id: "rooms", name: "Szobák", icon: DoorOpen },
     { id: "devices", name: "Eszközök", icon: LayoutGrid },
+    { id: "scenes", name: "Jelenetek", icon: Sparkles },
     { id: "energy", name: "Energia", icon: Sun },
     { id: "more", name: "Több", icon: Settings2 },
   ];
@@ -751,6 +754,7 @@ function Home() {
           </header>
 
           <div id="home-panel" role="tabpanel" aria-labelledby={`tab-${view}`} className="hd-panel">
+            {view === "scenes" && <Scenes />}
             {view === "overview" && (
               <div className="hd-overview">
                 <section className="hd-hero" aria-label="Otthoni körülmények">
