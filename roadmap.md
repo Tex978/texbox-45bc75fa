@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [x] Klímák: egy kiválasztott részletes panel, kompakt gyorsvezérlők, böngészős szobabeosztás; Okosotthon/Energia elrendezés; 50 teszt és automatikus build sikeres, mobil/desktop panelváltás és szobamentés tesztadatokkal ellenőrizve. A teljes lint korábbi hibái nem érintett szerverfájlokban maradtak.
 - [x] Telefonközpontú Okosotthon: tömör fejléc, állandó alsó kategóriamenü, külön klíma/Bosch/Smart Life nézetek, olvasható hőmérősorok és alsó előzményablak; négy képernyőméreten ellenőrizve, élő hőmérő eszközkezelő és 7 napos előzményválasztás működik; öt regressziós teszt sikeres.
 - [x] Gree+ általános kapcsolati hiba szűkítése: belépés és eszközlekérés külön, biztonságos hibajelzése; időkorlátok és korlátozott párhuzamos lekérés az öt klímához; nyolc Python- és három vezérlési teszt sikeres.
 - [ ] Gree+ most jelzett hiba pontos élő oka: a Synology frissítése után kapott részletes hiba szükséges; az otthoni fiók és hálózat innen nem elérhető.
