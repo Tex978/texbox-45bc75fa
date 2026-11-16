@@ -366,7 +366,25 @@ export function requestToken(request: Request) {
 }
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  if (origin !== new URL(request.url).origin)
+  let host = "";
+  try {
+    host = origin ? new URL(origin).host.toLowerCase() : "";
+  } catch {
+    host = "";
+  }
+  // Behind a reverse proxy (Synology) request.url is the internal address, so
+  // accept the public host the proxy forwarded as well.
+  const allowed = new Set(
+    [
+      new URL(request.url).host,
+      request.headers.get("host"),
+      ...(request.headers.get("x-forwarded-host") ?? "").split(","),
+    ]
+      .map((h) => (h ?? "").trim().toLowerCase())
+      .filter(Boolean),
+  );
+  if (request.headers.get("sec-fetch-site") === "same-origin" && host) return;
+  if (!host || !allowed.has(host))
     throw new Error("A feltöltés csak a TexBox saját oldaláról engedélyezett.");
 }
 export function fileError(e: unknown) {

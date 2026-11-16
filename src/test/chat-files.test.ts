@@ -212,6 +212,20 @@ it("disabled account loses access, range validates suffix and rejects multipart,
       new Request("http://localhost/api/chat/upload", { headers: { origin: "https://evil.test" } }),
     ),
   ).toThrow();
+  expect(() =>
+    sameOrigin(
+      new Request("http://172.17.0.2:3000/api/chat/upload", {
+        headers: { origin: "https://tb.texbox.synology.me", host: "tb.texbox.synology.me" },
+      }),
+    ),
+  ).not.toThrow();
+  expect(() =>
+    sameOrigin(
+      new Request("http://localhost/api/chat/upload", {
+        headers: { origin: "https://evil.test", "x-forwarded-host": "tb.texbox.synology.me" },
+      }),
+    ),
+  ).toThrow();
 });
 it("no silent new attachment folder after missing NAS directory", async () => {
   await upload();
