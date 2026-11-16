@@ -4,13 +4,38 @@ type Fs = typeof import("node:fs");
 const fs = (): Fs | null => { try { return (globalThis as any).process?.getBuiltinModule?.("node:fs") ?? null; } catch { return null; } };
 const FILE = () => ((globalThis as any).process?.env?.DATA_FILE as string) || "/data/nas-state.json";
 let cache: Record<string, string> | null = null;
+// Optional at-rest encryption (AES-256-GCM) keyed by TEXBOX_SECRET_KEY; values keep working unencrypted when it is unset.
+const secretKey = (): Buffer | null => {
+  const raw = (globalThis as any).process?.env?.TEXBOX_SECRET_KEY as string | undefined;
+  if (!raw) return null;
+  const c = (globalThis as any).process.getBuiltinModule("node:crypto") as typeof import("node:crypto");
+  return c.createHash("sha256").update(raw).digest();
+};
+const ENC = "enc:v1:";
+export function encryptValue(v: string, key: Buffer): string {
+  const c = (globalThis as any).process.getBuiltinModule("node:crypto") as typeof import("node:crypto");
+  const iv = c.randomBytes(12); const ci = c.createCipheriv("aes-256-gcm", key, iv);
+  const ct = Buffer.concat([ci.update(v, "utf8"), ci.final()]);
+  return ENC + [iv, ci.getAuthTag(), ct].map((b) => b.toString("base64")).join(":");
+}
+export function decryptValue(v: string, key: Buffer | null): string {
+  if (!v.startsWith(ENC)) return v;
+  if (!key) throw new Error("A mentett kapcsolati adatok titkosítva vannak, de hiányzik a TEXBOX_SECRET_KEY. Add meg ugyanazt a kulcsot a docker-compose-ban.");
+  const c = (globalThis as any).process.getBuiltinModule("node:crypto") as typeof import("node:crypto");
+  const [iv, tag, ct] = v.slice(ENC.length).split(":").map((x) => Buffer.from(x, "base64"));
+  const d = c.createDecipheriv("aes-256-gcm", key, iv!); d.setAuthTag(tag!);
+  try { return Buffer.concat([d.update(ct!), d.final()]).toString("utf8"); }
+  catch { throw new Error("A TEXBOX_SECRET_KEY nem egyezik azzal, amivel a beállítások titkosítva lettek."); }
+}
 function load(): Record<string, string> | null {
   const f = fs(); if (!f) return null;
   if (cache) return cache;
   try {
     const parsed: unknown = JSON.parse(f.readFileSync(FILE(), "utf8"));
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || Object.values(parsed).some(v => typeof v !== "string")) throw new Error("invalid state");
-    cache = parsed as Record<string, string>;
+    const key = secretKey();
+    cache = Object.fromEntries(Object.entries(parsed as Record<string, string>).map(([k, v]) => [k, decryptValue(v, key)]));
+    if (key && Object.values(parsed as Record<string, string>).some((v) => !v.startsWith(ENC))) persist(f, cache); // migrate plaintext once
   } catch (error) {
     if ((error as { code?: string }).code !== "ENOENT") throw new Error("A Synology mentett beállításai nem olvashatók. Ellenőrizd a data mappát és a jogosultságokat.");
     cache = {};
@@ -23,12 +48,17 @@ export function storeGet(name: string): string | undefined | null {
 export function storeSet(name: string, value: string): boolean {
   const f = fs(); const s = load(); if (!f || !s) return false;
   const next = { ...s, [name]: value };
+  if (!persist(f, next)) return false;
+  cache = next;
+  return true;
+}
+function persist(f: Fs, data: Record<string, string>): boolean {
   try {
-    const p = FILE();
+    const key = secretKey(); const p = FILE();
+    const out = key ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, encryptValue(v, key)])) : data;
     f.mkdirSync(p.replace(/\/[^/]*$/, "") || "/", { recursive: true });
-    f.writeFileSync(`${p}.tmp`, JSON.stringify(next), { mode: 0o600 });
+    f.writeFileSync(`${p}.tmp`, JSON.stringify(out), { mode: 0o600 });
     f.renameSync(`${p}.tmp`, p);
-    cache = next;
     return true;
   } catch { return false; }
 }
