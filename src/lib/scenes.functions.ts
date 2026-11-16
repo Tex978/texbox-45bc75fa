@@ -6,6 +6,7 @@ import {
   SESSION_COOKIE,
   listUsers,
   isHostedAccountPreview,
+  userCan,
 } from "./auth.server";
 import { sceneSchema } from "./scene-schema";
 import {
@@ -31,7 +32,7 @@ export const scenesList = createServerFn({ method: "GET" }).handler(async () => 
   return {
     scenes: listScenes(u),
     userId: u.id,
-    canEdit: u.role !== "child" && (u.role === "admin" || u.permissions.rooms !== false),
+    canEdit: u.role !== "child" && userCan(u, "rooms"),
     admin: u.role === "admin",
     users:
       u.role !== "child"
@@ -42,13 +43,19 @@ export const scenesList = createServerFn({ method: "GET" }).handler(async () => 
   };
 });
 export const scenesDevices = createServerFn({ method: "GET" }).handler(async () => {
-  actor();
-  return sceneDevices();
+  const u = actor();
+  const result = await sceneDevices();
+  if (u.role === "child") {
+    const granted = new Set(listScenes(u).flatMap(s => s.steps.map(step => step.device)));
+    result.devices = result.devices.filter(d => granted.has(d.key));
+  }
+  return result;
 });
 export const scenesSave = createServerFn({ method: "POST" })
   .inputValidator((d) => sceneSchema.parse(d))
   .handler(async ({ data }) => {
     const u = actor();
+    if (u.role !== "admin") throw new Error("Eszközengedélyt csak admin adhat.");
     return saveScene(u, data, (await sceneDevices()).devices);
   });
 export const scenesDelete = createServerFn({ method: "POST" })
