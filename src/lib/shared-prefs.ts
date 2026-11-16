@@ -9,7 +9,8 @@ export const PREF_KEYS = {
   "hc-meta": "rooms",
 } as const satisfies Record<string, Permission>;
 export type PrefKey = keyof typeof PREF_KEYS;
-export const isPrefKey = (k: unknown): k is PrefKey => typeof k === "string" && k in PREF_KEYS;
+export const isPrefKey = (k: unknown): k is PrefKey =>
+  typeof k === "string" && Object.hasOwn(PREF_KEYS, k);
 export const PREF_STORE_KEY = "shared-prefs";
 export const MAX_PREF_BYTES = 32_000;
 
