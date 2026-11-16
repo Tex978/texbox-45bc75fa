@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth.server";
 import { getDashboard, saveDashboard } from "@/lib/dashboard.server";
 import { normalizePrefs, moveCard, CARD_IDS } from "@/lib/dashboard-schema";
-import { readStore, writeStore } from "@/lib/shared-store.server";
+import { readFileSync } from "node:fs";
 const context = vi.hoisted(() => ({ token: undefined as string | undefined }));
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => ({
@@ -101,13 +101,14 @@ describe("6b personal dashboard", () => {
     expect(getDashboard(kid).prefs.order).not.toContain("media");
   });
   it("reset restores defaults with a new version and keeps shared household prefs", async () => {
-    await writeStore?.({ "pref:home-favorites": ["gree"] } as never).catch?.(() => undefined);
-    const before = JSON.stringify(await readStore?.().catch?.(() => null));
+    const state = () =>
+      existsSync(join(dir, "nas-state.json")) ? readFileSync(join(dir, "nas-state.json"), "utf8") : null;
+    const before = state();
     saveDashboard(mom, { version: 0, prefs: { order, hidden: ["tasks"], scenes: [] } });
     const r = saveDashboard(mom, { version: 1, prefs: null, reset: true });
     expect(r.version).toBe(2);
     expect(r.prefs.hidden).toEqual([]);
-    expect(JSON.stringify(await readStore?.().catch?.(() => null))).toBe(before);
+    expect(state()).toBe(before);
     expect(
       (db()!.prepare("SELECT count(*) c FROM audit_log WHERE action LIKE 'dashboard.%'").get() as { c: number }).c,
     ).toBe(2);
