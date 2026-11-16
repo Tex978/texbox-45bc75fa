@@ -26,6 +26,11 @@ describe("family accounts", () => {
     endSession(r.token);
     expect(sessionUser(r.token)).toBeNull();
   });
+  it("changing the forwarded IP cannot bypass five failed logins", () => {
+    createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
+    for (let i = 0; i < 5; i++) login("apa", "rossz", `ip-${i}`, "");
+    expect(login("apa", "jelszo123", "another-ip", "")).toEqual({ error: "Túl sok hibás próbálkozás. Várj 5 percet." });
+  });
   it("child cannot reach connections, downloads or locks; admin can", () => {
     expect(can("child", "settings")).toBe(false);
     expect(can("child", "downloads")).toBe(false);

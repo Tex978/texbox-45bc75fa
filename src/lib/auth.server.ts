@@ -260,7 +260,7 @@ export function login(
   ip: string,
   ua: string,
 ): { token: string } | { error: string } {
-  const key = `${normUser(username)}|${ip}`;
+  const key = normUser(username); // A changed forwarded IP must not bypass the account lock.
   const a = attempts.get(key);
   const now = Date.now();
   if (a && a.until > now) return { error: "Túl sok hibás próbálkozás. Várj 5 percet." };

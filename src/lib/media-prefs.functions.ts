@@ -12,7 +12,7 @@ function read() {
   try {
     prefs = JSON.parse(stored || "{}");
   } catch {
-    /* retain a safe empty view */
+    throw new Error("A mentett keresési beállítások sérültek; nem írjuk felül őket.");
   }
   return { key, prefs };
 }
