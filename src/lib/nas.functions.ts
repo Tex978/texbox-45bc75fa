@@ -6,6 +6,8 @@ import {
 } from "@tanstack/react-start/server";
 import { storeGet, storeSet, storeAvailable, readStoredCookie } from "./shared-store.server";
 import { requirePermission, SESSION_COOKIE } from "./auth.server";
+import { assertDeviceAccess, withDeviceLock } from "./device-access.server";
+import { commandGree, commandBlind } from "./device-commands.server";
 import type { Permission } from "./permissions";
 // Family-account permission check (no-op until the first admin account exists).
 const guard = (perm?: Permission) => requirePermission(readBrowserCookie(SESSION_COOKIE), perm);
@@ -1534,14 +1536,15 @@ export const blindGroupAction = createServerFn({ method: "POST" })
     (d: { blinds: { mac: string; deviceType: string }[]; action: "open" | "close" | "stop" }) => d,
   )
   .handler(async ({ data }) => {
-    guard("home");
+    const user = guard("home");
+    for (const b of data.blinds) assertDeviceAccess(user, `blind:${b.mac}`);
     if (!has("BLINDS_IP")) return { ok: true, failed: 0 };
     const { writeBlind } = await import("./blinds.server");
     const operation = data.action === "open" ? 1 : data.action === "close" ? 0 : 2;
     let failed = 0;
     for (const b of data.blinds.slice(0, 50)) {
       try {
-        await writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), b.mac, b.deviceType, { operation });
+        await withDeviceLock(`blind:${b.mac}`, () => writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), b.mac, b.deviceType, { operation }));
       } catch {
         failed++;
       }
@@ -1559,14 +1562,10 @@ export const blindAction = createServerFn({ method: "POST" })
     }) => d,
   )
   .handler(async ({ data }) => {
-    guard("home");
+    const user = guard("home");
+    assertDeviceAccess(user, `blind:${data.mac}`);
     if (!has("BLINDS_IP")) return { ok: true };
-    const { writeBlind } = await import("./blinds.server");
-    const payload =
-      data.action === "position"
-        ? { targetPosition: Math.max(0, Math.min(100, Math.round(data.position ?? 0))) }
-        : { operation: data.action === "open" ? 1 : data.action === "close" ? 0 : 2 };
-    await writeBlind(env("BLINDS_IP"), env("BLINDS_KEY"), data.mac, data.deviceType, payload);
+    await withDeviceLock(`blind:${data.mac}`, () => commandBlind(env, data));
     return { ok: true };
   });
 
@@ -2182,11 +2181,12 @@ export const tuyaLogout = createServerFn({ method: "POST" }).handler(async () =>
 export const tuyaCommand = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; code: string; value: boolean | number | string }) => d)
   .handler(async ({ data }) => {
-    guard("home");
+    const user = guard("home");
+    assertDeviceAccess(user, `tuya:${data.id}`);
     try {
       const r = await tuyaReady();
       if (!r) return { ok: false, error: "Nincs összekötve" };
-      await r.t.sendTuya(r.s, data.id, data.code, data.value);
+      await withDeviceLock(`tuya:${data.id}`, () => r.t.sendTuya(r.s, data.id, data.code, data.value));
       return { ok: true, error: "" };
     } catch (e) {
       return { ok: false, error: (e as Error).message };
@@ -2232,25 +2232,8 @@ export const getGree = createServerFn({ method: "GET" }).handler(async () => {
 export const greeControl = createServerFn({ method: "POST" })
   .inputValidator(validateGreeCommand)
   .handler(async ({ data }) => {
-    guard("home");
-    if (has("GREE_USER", "GREE_PASS")) {
-      const { controlGreeCloud } = await import("./gree-cloud.server");
-      await controlGreeCloud(
-        {
-          user: env("GREE_USER"),
-          password: env("GREE_PASS"),
-          region: env("GREE_REGION") || "Europe",
-        },
-        data,
-      );
-      return { ok: true };
-    }
-    if (!parseGreeUnits(env("GREE_UNITS")).some((unit) => unit.ip === data.ip))
-      throw new Error("Ez a klíma nincs beállítva.");
-    const { withGree } = await import("./gree.server");
-    await withGree(data.ip, {
-      [data.property]: data.value,
-      ...(data.property === "temperature" ? { temperatureUnit: "celsius" } : {}),
-    });
+    const user = guard("home");
+    assertDeviceAccess(user, `gree:${data.ip}`);
+    await withDeviceLock(`gree:${data.ip}`, () => commandGree(env, data));
     return { ok: true };
   });
