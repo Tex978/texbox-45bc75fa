@@ -27,6 +27,7 @@ export function useSharedPref<T>(key: PrefKey, initial: T) {
   }, [q.data, key, qc]);
 
   const save = async (next: T) => {
+    await qc.cancelQueries({ queryKey: sharedPrefsQuery.queryKey });
     const prev = qc.getQueryData<{ prefs: Record<string, unknown>; shared: boolean }>(sharedPrefsQuery.queryKey);
     qc.setQueryData(sharedPrefsQuery.queryKey, { shared: true, ...prev, prefs: { ...prev?.prefs, [key]: next } });
     try {
