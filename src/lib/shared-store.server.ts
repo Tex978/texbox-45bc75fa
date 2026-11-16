@@ -64,7 +64,7 @@ export function storeSet(name: string, value: string): boolean {
 }
 function persist(f: Fs, data: Record<string, string>): boolean {
   try {
-    if (requireReady().status !== "ready" && f.existsSync && !f.existsSync(FILE())) return false;
+    requireReady();
     const key = secretKey(); const p = FILE();
     const out = key ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, encryptValue(v, key)])) : data;
     f.writeFileSync(`${p}.tmp`, JSON.stringify(out), { mode: 0o600 });
