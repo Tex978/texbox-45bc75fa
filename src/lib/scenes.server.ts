@@ -187,6 +187,12 @@ export async function runScene(
   }
   audit(u.id, "scene-run", sceneId);
   const results: StepResult[] = [];
+  const reauthorize = () => {
+    const latest = getScene(sceneId);
+    if (latest.version !== s.version)
+      throw new Error("A jelenet futás közben megváltozott; a további parancsok leálltak.");
+    canRun(current(user), latest);
+  };
   const persist = () =>
     d.prepare("UPDATE scene_runs SET results=? WHERE id=?").run(JSON.stringify(results), id);
   for (const step of s.steps) {
@@ -199,10 +205,8 @@ export async function runScene(
     results.push(result);
     persist();
     try {
-      canRun(current(user), getScene(sceneId));
-      await withDeviceLock(step.device, () =>
-        execute(step, () => canRun(current(user), getScene(sceneId))),
-      );
+      reauthorize();
+      await withDeviceLock(step.device, () => execute(step, reauthorize));
       result.status = "accepted";
       result.message =
         "A vezérlő elfogadta a parancsot; a fizikai állapotot az eszköznézetben ellenőrizd.";
