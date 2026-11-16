@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { getMe } from "@/lib/auth.functions";
 import { Shell } from "@/components/Shell";
 import { SmartSection as Card, SensorDetails } from "@/components/SmartHomeUI";
@@ -60,6 +60,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { buildHomeDevices, groupByRoom, type HomeDevice } from "@/lib/home-devices";
+import { RoomsManager, roomsQuery } from "@/components/RoomsManager";
+import { emptyRooms, resolveRoom } from "@/lib/rooms";
+import { meQuery } from "@/components/Shell";
 import { useGreeRooms } from "@/lib/gree-rooms";
 import { useSharedPref } from "@/lib/use-shared-pref";
 const tq = queryOptions({
@@ -522,9 +525,11 @@ const avg = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
 function DeviceTile({
   d,
   onOpen,
+  onRoom,
 }: {
   d: HomeDevice;
   onOpen: (c: CategoryId, deviceKey?: string) => void;
+  onRoom: (key: string) => void;
 }) {
   const Icon = catOf(d.category).icon;
   const { data: greeData } = useSuspenseQuery(greeQuery);
@@ -552,26 +557,33 @@ function DeviceTile({
       </span>
     </Button>
   );
-  return unit ? (
+  return (
     <div className="hd-climate-tile">
       {tile}
-      <GreeQuickControls unit={unit} />
+      {unit && <GreeQuickControls unit={unit} />}
+      <Button
+        variant="ghost"
+        className="h-11 w-full gap-2 text-xs text-muted-foreground"
+        onClick={() => onRoom(d.key)}
+      >
+        <DoorOpen size={14} /> Szoba módosítása
+      </Button>
     </div>
-  ) : (
-    tile
   );
 }
 function TileGrid({
   list,
   onOpen,
+  onRoom,
 }: {
   list: HomeDevice[];
   onOpen: (c: CategoryId, deviceKey?: string) => void;
+  onRoom: (key: string) => void;
 }) {
   return (
     <div className="hd-grid">
       {list.map((d) => (
-        <DeviceTile key={d.key} d={d} onOpen={onOpen} />
+        <DeviceTile key={d.key} d={d} onOpen={onOpen} onRoom={onRoom} />
       ))}
     </div>
   );
@@ -615,6 +627,9 @@ function Home() {
   const { data: tuya } = useSuspenseQuery(tuyaQuery);
   const { data: purifiers } = useSuspenseQuery(pq);
   const { data: locks } = useSuspenseQuery(lq);
+  const [roomSelection, setRoomSelection] = useState<string | null>(null);
+  const roomData = useQuery(roomsQuery);
+  const me = useQuery(meQuery).data;
   const [view, setView] = useState("overview");
   const [category, setCategory] = useState<CategoryId | "all">("all");
   const [greeIp, setGreeIp] = useState<string | null>(null);
@@ -663,9 +678,27 @@ function Home() {
     appliances: appliances.appliances,
     locks: locks.locks,
   });
-  const devices = vendorDevices.map((d) =>
-    d.category === "gree" ? { ...d, room: greeRooms.assignments[d.key.slice(5)] ?? "" } : d,
-  );
+  const legacyRoom = (d: HomeDevice) =>
+    d.category === "gree" ? { ...d, room: greeRooms.assignments[d.key.slice(5)] ?? "" } : d;
+  const withRoom = (d: HomeDevice) => {
+    const legacy = legacyRoom(d);
+    return { ...legacy, room: resolveRoom(roomData.data ?? emptyRooms, legacy) };
+  };
+  const devices = vendorDevices.map(withRoom);
+  const managedDevices = buildHomeDevices(
+    {
+      sensors: thermometers.demo ? [] : thermometers.sensors,
+      sensorMeta: thermometers.meta,
+      gree: gree.demo ? [] : gree.units,
+      purifiers: purifiers.demo ? [] : purifiers.purifiers,
+      blinds: blinds.demo ? [] : blinds.blinds,
+      tuya: tuya.demo ? [] : tuya.devices,
+      tuyaMeta: tuya.meta,
+      appliances: appliances.demo ? [] : appliances.appliances,
+      locks: locks.demo ? [] : locks.locks,
+    },
+    true,
+  ).map(legacyRoom);
   const online = devices.filter((d) => d.online).length;
   const offline = devices.length - online;
   const activeCount = devices.filter((d) => d.active && d.category !== "sensors").length;
@@ -776,6 +809,11 @@ function Home() {
             ))}
           </nav>
 
+          {(view === "rooms" || view === "devices") && (
+            <Button variant="outline" className="mb-3 h-11" onClick={() => setRoomSelection("all")}>
+              <DoorOpen /> Szobák kezelése
+            </Button>
+          )}
           <div id="home-panel" role="tabpanel" aria-labelledby={`tab-${view}`} className="hd-panel">
             {view === "scenes" && <Scenes />}
             {view === "overview" && (
@@ -867,7 +905,11 @@ function Home() {
                       Nincs kedvenc eszköz. A „Több” fülön csillaggal választhatsz.
                     </p>
                   ) : (
-                    <TileGrid list={favDevices.slice(0, desktop ? 12 : 8)} onOpen={openDevice} />
+                    <TileGrid
+                      list={favDevices.slice(0, desktop ? 12 : 8)}
+                      onOpen={openDevice}
+                      onRoom={setRoomSelection}
+                    />
                   )}
                 </section>
 
@@ -890,8 +932,8 @@ function Home() {
                   </SectionTitle>
                   {rooms.length === 0 ? (
                     <p className="hd-empty">
-                      Még nincs szoba megadva. A hőmérők, redőnyök és Smart Life eszközök
-                      beállításában adhatsz meg helyet.
+                      Még nincs szoba megadva. A Szobák kezelése gombbal rendelhetsz helyet az
+                      eszközökhöz.
                     </p>
                   ) : (
                     <div className="hd-room-row">
@@ -913,20 +955,20 @@ function Home() {
               <>
                 {rooms.length === 0 && (
                   <p className="hd-empty">
-                    Még nincs szoba megadva. A hőmérők, redőnyök és Smart Life eszközök
-                    beállításában adhatsz meg helyet.
+                    Még nincs szoba megadva. A Szobák kezelése gombbal rendelhetsz helyet az
+                    eszközökhöz.
                   </p>
                 )}
                 {rooms.map(([room, list]) => (
                   <section key={room} className="hd-block">
                     <RoomHeader room={room} list={list} />
-                    <TileGrid list={list} onOpen={openDevice} />
+                    <TileGrid list={list} onOpen={openDevice} onRoom={setRoomSelection} />
                   </section>
                 ))}
                 {other.length > 0 && (
                   <section className="hd-block">
                     <SectionTitle>Egyéb eszközök</SectionTitle>
-                    <TileGrid list={other} onOpen={openDevice} />
+                    <TileGrid list={other} onOpen={openDevice} onRoom={setRoomSelection} />
                   </section>
                 )}
               </>
@@ -986,7 +1028,7 @@ function Home() {
                               {name}
                             </SectionTitle>
                             {list.length > 0 ? (
-                              <TileGrid list={list} onOpen={openDevice} />
+                              <TileGrid list={list} onOpen={openDevice} onRoom={setRoomSelection} />
                             ) : (
                               <button
                                 type="button"
@@ -1098,6 +1140,12 @@ function Home() {
         </div>
       </div>
 
+      <RoomsManager
+        devices={managedDevices}
+        editable={me?.user?.can.rooms === true}
+        selected={roomSelection}
+        onClose={() => setRoomSelection(null)}
+      />
       <Sheet
         open={sheet != null}
         onOpenChange={(o) => {
