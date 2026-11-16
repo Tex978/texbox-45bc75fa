@@ -44,6 +44,7 @@ class Account:
         self.api = GreeCloudApi.for_server(cfg["region"], cfg["user"], cfg["password"])
         self.region = cfg["region"]
         self.mqtt = None
+        self.mqtt_lock = asyncio.Lock()
         self.gateway = GreeCloudGateway(self.api, timeout=8)
         self.records = {}
         self.devices = {}
@@ -65,8 +66,16 @@ class Account:
         if record.mac in self.devices:
             return self.devices[record.mac]
         if uses_mqtt(record.version) and self.mqtt is None:
-            self.mqtt = GreeMqttClient(self.api.user_id, self.api.token, server=GreeMqttClient.server_for_region(self.region))
-            await asyncio.wait_for(self.mqtt.connect(), 12)
+            async with self.mqtt_lock:
+                if self.mqtt is None:
+                    mqtt = GreeMqttClient(self.api.user_id, self.api.token, server=GreeMqttClient.server_for_region(self.region))
+                    try:
+                        await asyncio.wait_for(mqtt.connect(), 12)
+                    except Exception:
+                        with contextlib.suppress(Exception):
+                            await mqtt.disconnect()
+                        raise
+                    self.mqtt = mqtt
         info = DeviceInfo("", 7000, record.mac, record.name, model=record.model, version=record.version)
         device = CloudDevice(self.mqtt, info, record.key, gateway=self.gateway,
                              parent_mac=record.parent_mac, timeout=8, command_timeout=8)
