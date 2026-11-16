@@ -5,6 +5,7 @@ export const PREF_KEYS = {
   "home-favorites": "home",
   "home-theme": "home",
   "home-gree-rooms": "rooms",
+  "home-rooms": "rooms",
   "blinds-excluded": "rooms",
   "hc-meta": "rooms",
 } as const satisfies Record<string, Permission>;

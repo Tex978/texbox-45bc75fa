@@ -17,6 +17,7 @@ export const saveSharedPref = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     requirePermission(getCookie(SESSION_COOKIE), PREF_KEYS[data.key]);
+    if (data.key === "home-rooms") throw new Error("A szobákat a Szobák kezelése felületen módosíthatod.");
     const current = parsePrefs(storeGet(PREF_STORE_KEY));
     const next = applyPref(current, data.key, JSON.parse(data.value), data.onlyMissing === true);
     if (next !== current && !storeSet(PREF_STORE_KEY, JSON.stringify(next)))
