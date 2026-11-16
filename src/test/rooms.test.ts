@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createUser, createSession, resetAuthDb, updateUser } from "@/lib/auth.server";
+import { resetAuthDb } from "@/lib/auth.server";
 import { changeRooms, emptyRooms, resolveRoom } from "@/lib/rooms";
 import { buildHomeDevices, type HomeSources } from "@/lib/home-devices";
 let dir="";
