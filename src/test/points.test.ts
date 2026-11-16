@@ -111,7 +111,7 @@ describe("4a personal points", () => {
   it("children see only their own balance; disabled users are refused", () => {
     const view = pointsOverview(kid);
     expect(view.people.map((p) => p.key)).toEqual([`user:${kid.id}`]);
-    updateUser(dad, kid.id, { disabled: true });
+    updateUser(kid.id, { disabled: true });
     expect(() => pointsOverview(kid)).toThrow("Bejelentkezés");
   });
 });
