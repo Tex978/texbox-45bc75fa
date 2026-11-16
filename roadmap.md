@@ -9,6 +9,11 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [ ] Külön production Node/Docker image fordítás és bejelentkezett böngészős NAS-folyamat: ebben a környezetben nem igazolt; az automatikus `build OK` nem bizonyítja a NAS-image működését.
 - Opcionális 2.0 backlog (nem 1.0 akadály): 7b push, 2b/2 szenzortrigger, 1c admin/eszköz/szobajog-finomítás, 6c konkrét eszközkedvencek, 8b ügyemlékeztető/naptárkapcsolás, fájlfeltöltés, drag-drop és kozmetika.
 
+## TEXBOX 1.0 felületi QA – aktuális kör
+- [x] Közös Shell öt fő területtel az Otthonon is; belső Otthon/Szervező fülek, kompakt Főoldal, meglévő személyes beállítások megtartva.
+- [x] 244/244 Vitest / 54 fájl; célzott lint: 0 hiba, 5 meglévő export/fast-refresh figyelmeztetés; automatikus típus/fordítás `build OK`. 14 URL × 360/390/768/1280: nincs kilógás vagy pageerror; Otthonon is pontosan 5 közös főtab, saját tabjai nem fixek, Szervező tabjai nyilakkal is válthatók. Izolált SQLite UI: személyes elrendezés mentése és bevásárláspipa megmarad.
+- [ ] Bejelentkezett éles NAS ellenőrzése: innen nem elérhető.
+
 ## Korábbi fázisok részletes, történeti ellenőrzési naplója
 - [x] 1. fázis: stabil profilmenü, felnőtt meghívás, tulajdonosi védelem, külön gyermekprofil; 98 teszt sikeres, automatikus build OK; 390/1280 px publikus állapot ellenőrizve, izolált valódi SQLite + UI mentés/újranyitás tesztelve. Érintett lint hibamentes egy figyelmeztetéssel; teljes lint korábbi 671 hibája nyitott.
 - [ ] NAS elfogadás: meglévő admin/session, két eszközös mentés, felnőtt aktiválás/reset, Docker-frissítés; helyi NAS nem érhető el innen.

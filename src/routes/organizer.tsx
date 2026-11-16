@@ -24,7 +24,7 @@ export const Route = createFileRoute("/organizer")({
 function OrganizerPage() {
   return (
     <Shell>
-      <PageHeader title="Családi szervező" subtitle="Bevásárlás, receptek és heti menü" />
+      <PageHeader title="Családi szervező" />
       <Organizer />
     </Shell>
   );

@@ -13,6 +13,12 @@
 
 ## Változatlan alap és minden fázis kapuja
 
+### TexBox 1.0 felületi lezárás – 2026-11-16
+- Közös öt fő terület minden tartalmi oldalon, az Otthon kivétel megszüntetve. Otthon és Szervező alfülei egy sorban, a tartalomban; billentyűzetes nyílbillentyű/Home/End kezelés.
+- Kompakt köszöntő, szerkesztőikon, 3 feladat és legközelebbi esemény; kisebb kártyarács. Meglévő dashboard_prefs sorrend/láthatóság/jelenetlista és mentési szabály változatlan. Otthoni mérés csak nem-demo, hibamentes meglévő API-adatból; gyorsgombok nem álkapcsolók, feladatnál részletes oldal linkje.
+- Bevásárlás listaváltóval és újlista-plusszal, kinyitható termékmezőkkel és frissítési információval; meglévő CRUD/checkbox/15mp frissítés megmarad.
+- 244 teszt / 54 fájl; célzott lint 0 hiba + 5 meglévő exportfigyelmeztetés; automatikus build/typecheck OK. 14 URL négy szélességen (360/390/768/1280), közös nav és alfülek ellenőrizve. Nincs NAS/production Docker-image igazolás vagy publikálás. 2.0 backlog változatlan.
+
 - Synology Docker / TanStack Start / Node 22, `/data/texbox.db` és `/data/nas-state.json`. Nincs automatikus Cloud-migráció, fizetős szolgáltatás vagy Home Assistant függőség.
 - Meglévő fiókok, titkok, eszközök és beállítások megőrzése. Minden sémafejlesztés additív, tranzakciós és frissítés előtti konzisztens mentéssel védett. A titkosítási kulcs nem változhat; külön kell megőrizni.
 - A hosted előnézet nem a NAS: nincs NAS-fiókmentés, hardveres ellenőrzés vagy valódi kapcsolatállapot állítása. Sikertelen mentés nem lehet sikernek feltüntetve.

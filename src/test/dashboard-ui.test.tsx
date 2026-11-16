@@ -40,6 +40,8 @@ vi.mock("@/lib/scenes.functions", () => ({
   scenesRuns: vi.fn(),
 }));
 vi.mock("@/lib/nas.functions", () => ({
+  getThermometers: async () => ({ demo: true, error: "", meta: {}, sensors: [] }),
+  getSolar: async () => ({ demo: true, error: "", currentW: 3420 }),
   getOverview: async () => ({ demo: true, volumes: [], streams: [], recent: [], watched: [] }),
 }));
 vi.mock("@/lib/use-shared-pref", () => ({
@@ -56,7 +58,9 @@ vi.mock("@/lib/dashboard.functions", async () => {
       srv.saveDashboard(need(), data),
   };
 });
-vi.mock("@/lib/notifications.functions", () => ({ notificationsUnread: async () => ({ unread: 0 }) }));
+vi.mock("@/lib/notifications.functions", () => ({
+  notificationsUnread: async () => ({ unread: 0 }),
+}));
 import { Dashboard } from "@/components/Dashboard";
 const view = () =>
   render(
@@ -119,8 +123,10 @@ describe("6a dashboard", () => {
     me = parent;
     view();
     expect(await screen.findByText("1 gyermekfeladat vár jóváhagyásra")).toBeTruthy();
-    expect(await screen.findByText("Úszás")).toBeTruthy();
-    expect(await screen.findByText("Anya fogorvos")).toBeTruthy();
+    const next = calendarRange(parent, { from: budapestToday(), to: budapestToday() })
+      .occurrences[0];
+    if (!next) throw new Error("Expected a saved event");
+    expect(await screen.findByText(next.title)).toBeTruthy();
     expect(await screen.findByText("1 tétel vár")).toBeTruthy();
     expect(await screen.findByText("Klímák")).toBeTruthy();
     expect(await screen.findByText(/Bemutató adat/)).toBeTruthy();

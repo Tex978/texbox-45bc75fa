@@ -35,6 +35,10 @@ describe("6a navigation", () => {
     const linked = new Set<string>([...primaryNav.map((n) => n.to), ...moreNav.map((n) => n.to)]);
     for (const p of old.filter((p) => p !== "/streaming")) expect(linked.has(p), p).toBe(true);
   });
+  it("secondary menu never duplicates a primary destination", () => {
+    const primary = new Set<string>(primaryNav.map((n) => n.to));
+    expect(moreNav.every((n) => !primary.has(n.to))).toBe(true);
+  });
   it("highlights the owning area for sub-pages", () => {
     const media = primaryNav.find((n) => n.label === "Média")!.match;
     const family = primaryNav.find((n) => n.label === "Család")!.match;
