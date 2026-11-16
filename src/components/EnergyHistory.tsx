@@ -11,7 +11,7 @@ const MONTHS = ["jan.", "febr.", "márc.", "ápr.", "máj.", "jún.", "júl.", "
 const SERIES: { k: SeriesKey; name: string; color: string }[] = [
   { k: "pv", name: "Termelés", color: "var(--en-solar)" }, { k: "load", name: "Fogyasztás", color: "var(--en-load)" },
   { k: "fromGrid", name: "Vételezés", color: "var(--en-grid)" }, { k: "toGrid", name: "Visszatáplálás", color: "var(--home-success)" },
-  { k: "charge", name: "Akku töltés", color: "var(--en-battery)" }, { k: "discharge", name: "Akku merítés", color: "var(--primary)" },
+  { k: "charge", name: "Akku töltés", color: "var(--en-battery)" }, { k: "discharge", name: "Akku merítés", color: "var(--chart-5)" },
 ];
 const f = (n: number) => n.toLocaleString("hu-HU", { maximumFractionDigits: 1 });
 
