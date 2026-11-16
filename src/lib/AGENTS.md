@@ -7,4 +7,5 @@
 - Family phase 1 adds only independent SQLite tables after a mandatory pre-upgrade snapshot; the first existing active admin is tagged as owner without rewriting users/sessions, and child_profiles never become login credentials. Keep owner-only security administration separate from parent family permissions.
 - Manual scenes use additive SQLite tables with a mandatory pre-upgrade snapshot, and plain shared device transports rather than nested server-function RPCs; scene and per-device ACL are checked again before each step. Never auto-resume interrupted physical commands.
 - Device locks are shared between scene and direct Gree/Tuya/blind handlers in the single NAS Node process; API acceptance is not proof of physical state, and child login accounts need explicit scene and device grants.
+- Storage opens only through data-guard.server: never create the data dir or an empty DB/state silently; the marker tracks created files, empty folders need explicit gated confirmation, and diagnostics stay stat-only so a wrong mount is visible instead of looking like a first start.
 <!-- AGENT-MEMORY:END -->

@@ -17,6 +17,7 @@ import {
   userCount,
   audit,
 } from "./auth.server";
+import { ensureReady, initializeNewInstall, NEW_INSTALL_PHRASE } from "./data-guard.server";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const html = (body: string, status = 200, headers: Record<string, string> = {}) =>
@@ -54,6 +55,13 @@ const setupNoticePage = (reason: "storage" | "password") =>
     reason === "storage"
       ? `<form><h1>Az első admin fiók a NAS-on hozható létre</h1><p>Ez a cím nem a saját NAS-odon fut, ezért itt nem tudunk fiókot menteni. Nyisd meg a TexBoxot a saját NAS-címeden (pl. <code>http://NAS-IP:3050</code>), és ott hozd létre az admin fiókodat a közös jelszó (APP_PASSWORD) megadásával.</p></form>`
       : `<form><h1>Hiányzó közös jelszó</h1><p>A fiókok mentése itt elérhető, de a közös jelszó (APP_PASSWORD) nincs beállítva, ezért az admin fiók nem hozható létre. Írd be a docker-compose.yml <code>environment</code> részébe, indítsd újra a projektet, majd nyisd meg újra ezt az oldalt.</p></form>`,
+  );
+const initPage = (e?: string, hasPassword = true) =>
+  html(
+    hasPassword
+      ? `<form method="post" action="/__init"><h1>Új TexBox-telepítés?</h1><p>A csatolt data mappa üres: nincs benne fiókadatbázis, beállításfájl és telepítésjelző. Ha korábban már használtad a TexBoxot, <b>ne folytasd</b> – valószínűleg rossz mappa van csatolva. Állítsd le a konténert, és ellenőrizd a kötet forrását.</p>${err(e)}${field("legacy", "Közös jelszó (APP_PASSWORD)", "password", "required")}${field("confirm", `Írd be: ${NEW_INSTALL_PHRASE}`, "text", 'autocapitalize="characters" required')}<button>Új, üres telepítés indítása</button></form>`
+      : `<form><h1>Üres data mappa</h1><p>A csatolt data mappa üres. Új telepítéshez állítsd be az APP_PASSWORD értékét a docker-compose-ban; ha korábban már használtad a TexBoxot, ellenőrizd a kötet forrását.</p></form>`,
+    e ? 400 : 503,
   );
 const invitePage = (t: string, name: string, e?: string) =>
   html(
@@ -98,6 +106,30 @@ export async function gate(request: Request): Promise<Response | null> {
   const url = new URL(request.url);
   const path = url.pathname;
   const post = request.method === "POST";
+  const guard = ensureReady();
+  if (guard.status === "blocked")
+    return html(
+      `<form><h1>A TexBox biztonsági okból nem indult el</h1><p>${esc(guard.message)}</p><p>Semmit nem töröltünk és nem hoztunk létre. Ne regisztrálj új admint.</p></form>`,
+      503,
+    );
+  if (guard.status === "new-install") {
+    const legacyPw = process.env["APP_PASSWORD"];
+    if (path === "/__init" && post && legacyPw) {
+      const o = request.headers.get("origin");
+      const exp = `${https(request) ? "https" : "http"}://${request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host}`;
+      if (o && o !== exp) return new Response("Nem engedélyezett kérés.", { status: 403 });
+      const f = await request.formData();
+      if (!same(String(f.get("legacy") || ""), legacyPw))
+        return initPage("A közös jelszó nem egyezik.");
+      try {
+        initializeNewInstall(String(f.get("confirm") || ""));
+      } catch (e) {
+        return initPage((e as Error).message);
+      }
+      return new Response(null, { status: 303, headers: { location: "/__setup" } });
+    }
+    return initPage(undefined, !!legacyPw);
+  }
   if (authStorageUnavailable())
     return html(
       "<form><h1>A belépés átmenetileg nem elérhető</h1><p>A fiókok tárolója nem olvasható. Ellenőrizd a NAS data mappáját.</p></form>",

@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Shell, Card, PageHeader } from "@/components/Shell";
+import { StorageStatus } from "@/components/StorageStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -96,6 +97,7 @@ export function Family() {
           subtitle="Önálló felnőtt fiókok és szülők által kezelt gyermekprofilok."
         />
         {isLoading && <p className="text-muted-foreground">Betöltés…</p>}
+        {data && <StorageStatus />}
         {error && (
           <Card>
             <p role="alert">{(error as Error).message}</p>
