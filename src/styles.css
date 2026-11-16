@@ -1157,3 +1157,7 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .hd-hero { min-height: 138px; }
   .hd-overview .hd-quick-block .hd-section-title { margin: 0 0 10px; }
 }
+
+.dash-error-detail { min-width: 0; flex: 1; }
+.dash-error-detail summary { cursor: pointer; display: flex; align-items: center; font-size: 12px; }
+.dash-error-detail p { overflow-wrap: anywhere; padding: 4px 0; }

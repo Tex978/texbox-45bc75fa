@@ -87,7 +87,12 @@ function Widget({
             <summary>Nem elérhető</summary>
             <p>{q.error.message}</p>
           </details>
-          <Button variant="ghost" size="icon" aria-label={`${title}: újrapróbálás`} onClick={() => void q.refetch()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`${title}: újrapróbálás`}
+            onClick={() => void q.refetch()}
+          >
             <RefreshCw size={14} />
           </Button>
         </div>

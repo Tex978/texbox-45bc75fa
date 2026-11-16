@@ -123,7 +123,8 @@ describe("6a dashboard", () => {
     me = parent;
     view();
     expect(await screen.findByText("1 gyermekfeladat vár jóváhagyásra")).toBeTruthy();
-    const next = calendarRange(parent, { from: budapestToday(), to: budapestToday() }).occurrences[0];
+    const next = calendarRange(parent, { from: budapestToday(), to: budapestToday() })
+      .occurrences[0];
     if (!next) throw new Error("Expected a saved event");
     expect(await screen.findByText(next.title)).toBeTruthy();
     expect(await screen.findByText("1 tétel vár")).toBeTruthy();

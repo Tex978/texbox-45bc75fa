@@ -263,6 +263,14 @@ function Shopping() {
           </div>
         )}
       </form>
+      {q.error && (
+        <p className="task-error" role="status">
+          A lista frissítése sikertelen. Az utolsó ismert állapot látható.{" "}
+          <Button variant="ghost" onClick={() => void q.refetch()}>
+            Újrapróbálás
+          </Button>
+        </p>
+      )}
       {status}
       {d.frequent.length > 0 && (
         <div className="shop-frequent" aria-label="Gyakran vásárolt">
