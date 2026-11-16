@@ -24,6 +24,7 @@ import {
   LogOut,
   MoreHorizontal,
   UserRound,
+  KeyRound,
   RefreshCw,
   AlertCircle,
   Gift,

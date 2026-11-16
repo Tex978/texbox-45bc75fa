@@ -17,6 +17,7 @@ import { Route as LibraryRouteImport } from './routes/library'
 import { Route as MediaRouteImport } from './routes/media'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OrganizerRouteImport } from './routes/organizer'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -64,6 +65,11 @@ const OrganizerRoute = OrganizerRouteImport.update({
   path: '/organizer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RewardsRoute = RewardsRouteImport.update({
   id: '/rewards',
   path: '/rewards',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/media': typeof MediaRoute
   '/notifications': typeof NotificationsRoute
   '/organizer': typeof OrganizerRoute
+  '/profile': typeof ProfileRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/media': typeof MediaRoute
   '/notifications': typeof NotificationsRoute
   '/organizer': typeof OrganizerRoute
+  '/profile': typeof ProfileRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/media': typeof MediaRoute
   '/notifications': typeof NotificationsRoute
   '/organizer': typeof OrganizerRoute
+  '/profile': typeof ProfileRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/media'
     | '/notifications'
     | '/organizer'
+    | '/profile'
     | '/rewards'
     | '/search'
     | '/settings'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/media'
     | '/notifications'
     | '/organizer'
+    | '/profile'
     | '/rewards'
     | '/search'
     | '/settings'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/media'
     | '/notifications'
     | '/organizer'
+    | '/profile'
     | '/rewards'
     | '/search'
     | '/settings'
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   MediaRoute: typeof MediaRoute
   NotificationsRoute: typeof NotificationsRoute
   OrganizerRoute: typeof OrganizerRoute
+  ProfileRoute: typeof ProfileRoute
   RewardsRoute: typeof RewardsRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/rewards': {
       id: '/rewards'
       path: '/rewards'
@@ -324,6 +344,7 @@ const rootRouteChildren: RootRouteChildren = {
   MediaRoute: MediaRoute,
   NotificationsRoute: NotificationsRoute,
   OrganizerRoute: OrganizerRoute,
+  ProfileRoute: ProfileRoute,
   RewardsRoute: RewardsRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,

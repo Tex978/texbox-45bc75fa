@@ -84,7 +84,9 @@ export function ProfilePage() {
     <div className="grid gap-6">
       <ProfileCard p={profile.data} />
       <PasswordCard username={profile.data.username} displayName={profile.data.displayName} />
-      <SessionsCard />
+      <div id="eszkozok" className="scroll-mt-24">
+        <SessionsCard />
+      </div>
       <AuditCard />
     </div>
   );
