@@ -391,3 +391,91 @@
   .media-toolbar { gap: 12px; }
   .media-search-inputs { flex-basis: 100%; }
 }
+
+/* Smart-home v2: phone-first native-app layout, scoped to .smart-home. */
+.smart-home.home-light {
+  --background: oklch(0.975 0.004 240);
+  --foreground: oklch(0.22 0.01 250);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.56 0.13 235);
+  --primary-foreground: oklch(0.98 0.01 235);
+  --secondary: oklch(0.94 0.006 240);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--secondary);
+  --muted-foreground: oklch(0.5 0.015 250);
+  --accent: oklch(0.93 0.02 230);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.58 0.2 25);
+  --border: oklch(0.2 0.01 250 / 9%);
+  --input: oklch(0.2 0.01 250 / 15%);
+  --home-energy: oklch(0.7 0.15 70);
+  --home-success: oklch(0.6 0.14 160);
+  --home-shadow: 0 1px 2px oklch(0.2 0.01 250 / 6%), 0 6px 20px oklch(0.2 0.01 250 / 6%);
+}
+.smart-home { --home-radius: 18px; --state-on: var(--home-success); --state-off: var(--muted-foreground); --state-offline: var(--destructive); }
+.smart-home .app-main { max-width: 1180px; }
+.home-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.home-hero-kicker { font-size: 14px; color: var(--muted-foreground); }
+.home-hero-title { font-size: 30px; font-weight: 650; line-height: 1.15; letter-spacing: -0.01em; }
+.home-hero-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.home-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--secondary); color: var(--muted-foreground); font-size: 12px; font-weight: 500; }
+.home-pill-on { color: var(--state-on); background: color-mix(in oklab, var(--state-on) 14%, transparent); }
+.home-pill-off { color: var(--state-offline); background: color-mix(in oklab, var(--state-offline) 14%, transparent); }
+.home-hero-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.smart-home .home-round { width: 46px; height: 46px; min-height: 46px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--home-shadow); }
+.home-heading { font-size: 17px; font-weight: 600; margin: 26px 0 12px; }
+.home-heading-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.home-link { display: inline-flex; align-items: center; gap: 2px; color: var(--primary); font-size: 13px; font-weight: 500; min-height: 44px; }
+.home-chip-row { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.home-chip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 16px; min-height: 132px; text-align: left; border-radius: var(--home-radius); background: var(--card); border: 1px solid var(--border); box-shadow: var(--home-shadow); transition: transform .15s ease, border-color .15s ease; }
+.home-chip:active { transform: scale(.98); }
+.home-chip:hover { border-color: var(--home-tile-accent); }
+.home-chip-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; color: var(--home-tile-accent, var(--primary)); background: color-mix(in oklab, var(--home-tile-accent, var(--primary)) 15%, transparent); margin-bottom: 8px; }
+.home-chip-label { font-size: 12px; color: var(--muted-foreground); }
+.home-chip strong, .home-room-card strong { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.home-chip-detail { font-size: 11.5px; color: var(--muted-foreground); line-height: 1.4; }
+.home-quick-row, .home-room-strip, .home-filter-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 6px; scroll-snap-type: x proximity; }
+.home-quick-row::-webkit-scrollbar, .home-room-strip::-webkit-scrollbar, .home-filter-row::-webkit-scrollbar { display: none; }
+.home-quick { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 18px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); font-size: 14px; font-weight: 500; scroll-snap-align: start; box-shadow: var(--home-shadow); }
+.home-quick svg { color: var(--primary); }
+.home-room-card { flex: 0 0 150px; display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: var(--home-radius); background: var(--card); border: 1px solid var(--border); text-align: left; scroll-snap-align: start; box-shadow: var(--home-shadow); }
+.home-room-name { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.home-room-name svg { color: var(--primary); }
+.home-room-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 14px; }
+.home-room { border-radius: var(--home-radius); background: var(--card); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--home-shadow); }
+.home-room .home-room-card { border: 0; box-shadow: none; border-radius: 0; }
+.home-room-list { border-top: 1px solid var(--border); }
+.home-room-list li { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 16px; font-size: 14px; border-top: 1px solid var(--border); }
+.home-room-list li:first-child { border-top: 0; }
+.home-filter { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted-foreground); font-size: 13px; font-weight: 500; }
+.home-filter-active { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+.home-settings-list { display: flex; flex-direction: column; border-radius: var(--home-radius); background: var(--card); border: 1px solid var(--border); overflow: hidden; }
+.home-setting { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 14px; border-top: 1px solid var(--border); background: var(--card); font-size: 15px; width: 100%; }
+.home-setting:first-child { border-top: 0; }
+a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--border); }
+.home-setting .home-chip-icon { margin: 0; width: 34px; height: 34px; }
+.home-star-on { color: var(--home-energy); fill: var(--home-energy); }
+.home-segment { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--secondary); }
+.home-segment button { min-height: 44px; border-radius: 10px; font-size: 14px; color: var(--muted-foreground); }
+.home-segment .home-segment-active { background: var(--card); color: var(--foreground); box-shadow: var(--home-shadow); font-weight: 600; }
+.home-empty, .home-note { font-size: 13px; color: var(--muted-foreground); margin-top: 12px; }
+.smart-home .smart-device { border-radius: var(--home-radius); background: var(--card); box-shadow: var(--home-shadow); }
+.home-view-panel .smart-section { margin-top: 18px; }
+.home-tabbar { display: flex; gap: 4px; padding: 4px; margin: 0 0 4px; border-radius: 16px; background: var(--card); border: 1px solid var(--border); position: sticky; top: 8px; z-index: 30; order: -1; }
+.home-tabbar button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: 12px; font-size: 14px; color: var(--muted-foreground); }
+.home-tabbar .home-tab-active { background: var(--secondary); color: var(--primary); font-weight: 600; }
+.smart-home .app-main { display: flex; flex-direction: column; }
+.smart-home .home-hero { order: -2; }
+@media (min-width: 768px) { .home-tabbar { margin-bottom: 8px; } }
+@media (max-width: 767px) {
+  .home-chip-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .home-chip { min-height: 120px; padding: 14px; }
+  .home-hero-title { font-size: 26px; }
+  .home-tabbar { position: fixed; order: 0; top: auto; bottom: 0; left: 0; right: 0; margin: 0; border-radius: 0; border-width: 1px 0 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: color-mix(in oklab, var(--card) 92%, transparent); backdrop-filter: blur(14px); }
+  .home-tabbar button { flex-direction: column; gap: 3px; min-height: 54px; font-size: 10.5px; }
+  .home-tabbar .home-tab-active { background: transparent; }
+  .home-room-grid { grid-template-columns: minmax(0,1fr); }
+}
