@@ -121,7 +121,7 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 
 ## Tulajdonosi konkrét javítások – 2026-11-16
 - [x] 9a: Otthon Szobák/Eszközök → Szobák kezelése, minden eszközcsempén Szoba módosítása. Közös verzióvédett home-rooms; hét prefix, legacy fallback, rename/merge, unassigned; 12 ikon/6 szín avatár jól látható és mentett. 249 teszt/56 fájl, automatikus build/typecheck OK; célzott lint 0 hiba/5 exportfigyelmeztetés; 360/390/768/1280 publikus drawer ellenőrizve, bejelentkezett SQLite UI mentés tesztelve.
-- [ ] 9b/1 (aktuális): valódi NAS SQLite szöveges családi chat, fejlécikon, read receipts és deduplikált küldés.
-- [ ] 9b/2 (közvetlen következő chat-bővítés): képek/videók/fájlok, max 5 csatolmány/üzenet; tartós chat-attachments, védett streaming feltöltés/letöltés, kvóta és Range, rollback/restart tesztek. Nincs demó upload.
+- [x] 9b/1: valódi NAS SQLite szöveges családi chat a harang mellett, név/avatár/idő, lapozás, személyes monoton olvasási jelzés, deduplikált küldés és hibából újraküldés. Gyermekfiók read-only. Kötelező pre-chat-phase9b.db snapshot. 257 teszt/58 fájl; SQLite-backed UI send/read/restart sikeres. Éles NAS és chatpanel 360/390/768/1280 ellenőrzés még nyitott (előnézet nem ér el családi fiókot).
+- [ ] 9b/2 (közvetlen következő chat-bővítés): képek/videók/fájlok, max 5 csatolmány/üzenet; tartós chat-attachments, védett streaming feltöltés/letöltés, kvóta és Range, rollback/restart tesztek. Nincs demó upload. Részletes átadás: .lovable/CHAT-BOVITES.md.
 - [ ] Saját avatárkép: biztonságos feldolgozás és jogosult képkiadás külön körben; ikon/szín megmarad.
 - [ ] Éles NAS: többfiókos szobamentés, restart, avatar fejléc/család ellenőrzés.
