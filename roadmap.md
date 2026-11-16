@@ -74,4 +74,12 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] Heti menü: Budapest hét (hétfőtől), napi étkezések, recept vagy egyedi étel, előző hét átvétele megerősítéssel; felnőtt szerkeszt, mindenki lát.
 - [x] Recept → bevásárlólista adaghoz arányosítva, csak azonos név+egység nyitott tétellel összevonva, pipált tétel érintetlen, összevonás előtt megerősítés.
 - [ ] Nyitott: teljes bevásárlás/főzés opcionális Feladatok-feladatként, menü-bejegyzés szerkesztése (most törlés+új), képfeltöltés, élő NAS-teszt két telefonon.
-- [ ] Később: 5b naptár/ügyintézés/határidők; 6. fázis kiegyensúlyozott főoldal és öt fő menüpont; 2b időzített automatizálás.
+- [ ] Később: 6. fázis kiegyensúlyozott főoldal és öt fő menüpont; 2b időzített automatizálás.
+
+## 5b – Családi naptár (2026-11-16)
+- [x] Naptár fül a Családi szervezőben: Közelgő (30 nap) / Hét / Hónap nézet, családtag-szűrő, színes jelmagyarázat.
+- [x] Esemény CRUD: cím, leírás, 6 típus, helyszín, egész napos/többnapos, kezdés-vég, érintettek, családi/személyes láthatóság, emlékeztető-igény (csak mentett igény).
+- [x] Ismétlődés: egyszeri, napi/minden N nap, heti kiválasztott napok/minden N hét, havi (31. → hónap utolsó napja), évi (febr. 29 → 28); záró dátum; Budapest falióra-idő, DST-teszt; egy alkalom kihagyása/áthelyezése/visszaállítása.
+- [x] ACL: felnőttek egyenrangúan kezelik a családi eseményeket; személyes csak tulajdonos+érintett; gyerek csak érintett vagy egész családos eseményt lát, nem ír. Revízióütközés, audit, archiválás (nincs törlés), `pre-calendar-phase5b.db` mentés.
+- [x] Eseményből egyszeri feladat 0 ponttal, alkalmonként egyedi kulccsal (ismételt gomb ugyanazt adja).
+- [ ] Nyitott: valódi emlékeztető/push értesítés (nincs tartós NAS ütemező), családi jegyzetek/ügyek modul, egyetlen alkalom időpontjának (óra) módosítása, főoldali "következő program" kártya (6. fázis), élő NAS-teszt.

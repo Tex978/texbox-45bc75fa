@@ -969,3 +969,27 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .menu-entry { display: flex; align-items: center; gap: 6px; }
 .menu-add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
 .menu-add select, .menu-add input { min-width: 0; }
+
+/* Phase 5b: family calendar */
+.cal-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted-foreground); }
+.cal-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 999px; margin-right: 6px; vertical-align: middle; }
+.cal-chip { display: block; width: 100%; text-align: left; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 8px; padding: 6px 8px; background: var(--background); color: var(--foreground); font-size: 13px; min-height: 36px; overflow: hidden; text-overflow: ellipsis; }
+.cal-chip small { color: var(--muted-foreground); }
+.cal-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.cal-list li { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; }
+.cal-when { display: grid; font-size: 13px; text-transform: capitalize; }
+.cal-when small, .cal-remind { color: var(--muted-foreground); font-size: 12px; }
+.cal-remind { grid-column: 2; }
+.cal-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-head { font-size: 12px; color: var(--muted-foreground); text-align: center; }
+.cal-day { min-height: 92px; border: 1px solid var(--border); border-radius: 10px; padding: 4px; background: var(--card); display: grid; gap: 3px; align-content: start; min-width: 0; }
+.cal-out { opacity: 0.45; }
+.cal-num { font-size: 12px; color: var(--muted-foreground); text-transform: capitalize; }
+.cal-week { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cal-detail { border: 1px solid var(--primary); border-radius: 16px; padding: 14px; background: var(--card); display: grid; gap: 8px; }
+.cal-detail p { margin: 0; }
+@media (max-width: 640px) {
+  .cal-day { min-height: 64px; }
+  .cal-month .cal-chip { font-size: 0; padding: 0; min-height: 8px; border-width: 0 0 0 6px; }
+  .cal-month .cal-chip small { display: none; }
+}

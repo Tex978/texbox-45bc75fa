@@ -173,3 +173,6 @@ Nem szükséges új kulcs az első fázishoz. Később dönteni kell e-mailküld
 
 ## Állapot 2026-11-16 – 5a
 Kód és izolált tesztek kész: shop_lists, shop_items, recipes, menu_entries (pre-organizer-phase5.db mentés után, additív). Élő Synology-ellenőrzés nyitott. 5b naptár/ügyintézés, 6. főoldal + öt menüpont, 2b automatizálás változatlanul későbbi.
+
+## Állapot 2026-11-16 – 5b
+Naptár CRUD + ismétlődés + alkalom-kivétel + feladathivatkozás kész izolált tesztekkel (calendar_events, calendar_exceptions, calendar_task_links). Nyitott: push/emlékeztető ütemező, jegyzetek/ügyek, élő Synology-ellenőrzés. 2b automatizálás és 6. főoldal később.
