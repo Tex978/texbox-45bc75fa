@@ -75,7 +75,9 @@ export function db() {
       CREATE UNIQUE INDEX IF NOT EXISTS scene_one_running ON scene_runs(scene_id) WHERE status='running';
       COMMIT;`);
     // A process restart never resumes or repeats physical commands.
-    d.prepare("UPDATE scene_runs SET status='interrupted',finished_at=? WHERE status='running'").run(Date.now());
+    d.prepare(
+      "UPDATE scene_runs SET status='interrupted',finished_at=? WHERE status='running'",
+    ).run(Date.now());
     conn = d;
     return d;
   } catch (e) {
