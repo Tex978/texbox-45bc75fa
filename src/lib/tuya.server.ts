@@ -48,7 +48,7 @@ async function req(s: TuyaSess, method: string, path: string, params?: Record<st
   const signStr = ["X-appKey", "X-requestId", "X-sid", "X-time", "X-token"].filter((k) => h[k]).map((k) => `${k}=${h[k]}`).join("||") + q + b;
   h["X-sign"] = await hmac(hashKey, signStr);
   if (b) h["Content-Type"] = "application/json";
-  const r = await fetch(s.ep + path + (q ? `?encdata=${encodeURIComponent(q)}` : ""), { method, headers: h, body: b ? JSON.stringify({ encdata: b }) : null });
+  const r = await fetch(s.ep + path + (q ? `?encdata=${encodeURIComponent(q)}` : ""), { method, headers: h, body: b ? JSON.stringify({ encdata: b }) : null, signal: AbortSignal.timeout(10000) });
   if (!r.ok) throw new Error(`Tuya HTTP ${r.status}`);
   const j = await r.json() as { success: boolean; result?: unknown; msg?: string; code?: number; t?: number };
   if (!j.success) throw new Error(`Tuya: ${j.msg || "hiba"} (${j.code})`);

@@ -20,7 +20,10 @@ export async function sceneDevices(): Promise<{ devices: DeviceCapability[]; err
       if(r.error) errors.push(r.error);
       for (const u of r.units) devices.push({ key:`gree:${u.ip}`,name:u.name,online:u.online,actions:["power","temperature","mode","fanSpeed"] });
     } else for(const u of parseGreeUnits(env("GREE_UNITS"))) {
-      devices.push({ key:`gree:${u.ip}`,name:u.name,online:true,actions:["power","temperature","mode","fanSpeed"] });
+      const { withGree } = await import("./gree.server");
+      let online = false;
+      try { await withGree(u.ip); online = true; } catch { errors.push(`${u.name}: a klíma nem válaszolt.`); }
+      devices.push({ key:`gree:${u.ip}`,name:u.name,online,actions:["power","temperature","mode","fanSpeed"] });
     }
   } catch { errors.push("A Gree képességlista nem kérhető le."); }
   try { if(env("BLINDS_IP")) {
