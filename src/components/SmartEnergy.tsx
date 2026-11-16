@@ -1,46 +1,79 @@
-import { ArrowDownLeft, ArrowUpRight, BatteryCharging, BatteryFull, House, PlugZap, Sun, Zap, type LucideIcon } from "lucide-react";
+import { BatteryCharging, BatteryFull, Clock, House, PlugZap, Sun, Zap, type LucideIcon } from "lucide-react";
 import type { getSolar } from "@/lib/nas.functions";
 
 type Solar = Awaited<ReturnType<typeof getSolar>>;
 const f = (n: number, d = 1) => n.toLocaleString("hu-HU", { maximumFractionDigits: d });
-const power = (w: number) => `${f(w / 1000, 2)} kW`;
+const power = (w: number) => w >= 1000 ? `${f(w / 1000, 2)} kW` : `${f(w, 0)} W`;
 
-function FlowNode({ icon: Icon, label, value, detail, role, active }: { icon: LucideIcon; label: string; value: string; detail?: string; role: string; active?: boolean }) {
-  return <div className={`energy-node energy-${role} ${active ? "energy-active" : ""}`}>
-    <span className="energy-node-icon"><Icon size={24} strokeWidth={1.6} /></span>
-    <span className="text-xs text-muted-foreground">{label}</span>
-    <strong className="text-xl font-semibold tabular-nums">{value}</strong>
-    <span className="min-h-4 text-xs text-muted-foreground">{detail}</span>
+/** Self-sufficiency from current real readings only: share of the load not drawn from the grid. */
+export function selfSufficiency(load: number, fromGrid: number) { return load > 0 ? Math.max(0, Math.min(100, Math.round((1 - fromGrid / load) * 100))) : null; }
+
+function Node({ icon: Icon, label, value, detail, tone, active, className }: { icon: LucideIcon; label: string; value: string; detail: string; tone: string; active: boolean; className: string }) {
+  return <div className={`en-node en-${tone} ${active ? "en-node-on" : ""} ${className}`}>
+    <span className="en-node-icon"><Icon size={24} strokeWidth={1.7} /></span>
+    <span className="en-node-label">{label}</span><strong>{value}</strong><span className="en-node-detail">{detail}</span>
   </div>;
+}
+function Ring({ value, label, tone }: { value: number | null; label: string; tone: string }) {
+  const r = 34, c = 2 * Math.PI * r;
+  return <div className={`en-ring en-${tone}`}><svg viewBox="0 0 80 80" aria-hidden><circle cx="40" cy="40" r={r} className="en-ring-bg" /><circle cx="40" cy="40" r={r} className="en-ring-fg" strokeDasharray={c} strokeDashoffset={value == null ? c : c * (1 - value / 100)} /></svg>
+    <div><strong>{value == null ? "–" : `${value}%`}</strong><span>{label}</span></div></div>;
 }
 
 export function SmartEnergy({ data }: { data: Solar }) {
   const flow = data.flow;
-  return <section className="smart-energy">
-    <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3"><span className="smart-icon energy-heading-icon"><Sun size={22} /></span><div><h2 className="text-lg font-semibold">Energia</h2><p className="text-xs text-muted-foreground">Growatt · {data.plants.map((p) => p.name).join(", ") || "Napelem"}</p></div></div>
-      {!data.error && <span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><span className="status-dot bg-home-success" />{data.demo ? "Mintaadatok" : "Frissítés 15 percenként"}</span>}
-    </header>
-    {data.error ? <p className="break-words text-sm text-destructive">{data.error}</p> : <>
-      <div className="energy-layout">
-        <div className="energy-flow" aria-label="Energiaáramlás">
-          <FlowNode icon={Sun} label="Napelem" value={power(flow?.pv ?? data.currentW)} detail="Termelés" role="solar" active={(flow?.pv ?? data.currentW) > 0} />
-          <div className={`energy-line energy-line-top ${flow && flow.pv > 0 ? "flowing" : ""}`}><ArrowDownLeft size={16} /></div>
-          <FlowNode icon={flow && flow.charge > 0 ? BatteryCharging : BatteryFull} label="Akkumulátor" value={flow ? `${flow.soc}%` : "–"} detail={flow ? flow.charge > 0 ? `${power(flow.charge)} · töltés` : flow.discharge > 0 ? `${power(flow.discharge)} · merítés` : "Nyugalomban" : "Nincs adat"} role="battery" active={!!flow && (flow.charge > 0 || flow.discharge > 0)} />
-          <div className={`energy-line energy-line-left ${flow && (flow.charge > 0 || flow.discharge > 0) ? "flowing" : ""}`}><span>{flow && flow.charge > 0 ? "←" : "→"}</span></div>
-          <div className="energy-center"><House size={31} strokeWidth={1.5} /><span>Otthon</span></div>
-          <div className={`energy-line energy-line-right ${flow && (flow.toGrid > 0 || flow.fromGrid > 0) ? "flowing" : ""}`}>{flow && flow.fromGrid > 0 ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}</div>
-          <FlowNode icon={PlugZap} label="Hálózat" value={flow ? power(flow.toGrid > 0 ? flow.toGrid : flow.fromGrid) : "–"} detail={flow ? flow.toGrid > 0 ? "Betáplálás" : flow.fromGrid > 0 ? "Vételezés" : "Nincs forgalom" : "Nincs adat"} role="grid" active={!!flow && (flow.toGrid > 0 || flow.fromGrid > 0)} />
-          <div className={`energy-line energy-line-bottom ${flow && flow.load > 0 ? "flowing" : ""}`}><ArrowDownLeft size={16} /></div>
-          <FlowNode icon={Zap} label="Fogyasztás" value={flow ? power(flow.load) : "–"} detail="Jelenlegi felhasználás" role="load" active={!!flow && flow.load > 0} />
-        </div>
-        <div className="energy-totals">
-          <div><span className="text-xs text-muted-foreground">Jelenlegi termelés</span><p className="mt-2 text-4xl font-semibold tabular-nums text-home-energy">{data.currentW >= 1000 ? f(data.currentW / 1000, 2) : f(data.currentW, 0)}<span className="ml-2 text-base font-normal text-muted-foreground">{data.currentW >= 1000 ? "kW" : "W"}</span></p></div>
-          <div className="grid grid-cols-2 gap-4 border-t border-border pt-5"><div><p className="text-xs text-muted-foreground">Mai termelés</p><p className="mt-1 text-xl font-semibold tabular-nums">{f(data.todayKwh)} <span className="text-xs font-normal text-muted-foreground">kWh</span></p></div><div><p className="text-xs text-muted-foreground">Összes termelés</p><p className="mt-1 text-xl font-semibold tabular-nums">{f(data.totalKwh, 0)} <span className="text-xs font-normal text-muted-foreground">kWh</span></p></div></div>
-          {data.plants.map((p) => <div key={p.name} className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground"><span>{p.name}</span><span>{power(p.currentW)} · ma {f(p.todayKwh)} kWh</span>{p.online && <span className="w-full">{p.online}</span>}</div>)}
+  const pv = flow?.pv ?? data.currentW;
+  const grid = flow ? (flow.toGrid > 0 ? { w: flow.toGrid, t: "Visszatáplálás" } : flow.fromGrid > 0 ? { w: flow.fromGrid, t: "Vételezés" } : { w: 0, t: "Nincs forgalom" }) : null;
+  const batt = flow ? (flow.charge > 0 ? { w: flow.charge, t: "Töltés" } : flow.discharge > 0 ? { w: flow.discharge, t: "Merítés" } : { w: 0, t: "Nyugalomban" }) : null;
+  const self = flow ? selfSufficiency(flow.load, flow.fromGrid) : null;
+  const bars = flow ? [
+    { label: "Termelés", w: flow.pv, tone: "solar" }, { label: "Fogyasztás", w: flow.load, tone: "load" },
+    { label: grid!.t, w: grid!.w, tone: "grid" }, { label: `Akku · ${batt!.t.toLowerCase()}`, w: batt!.w, tone: "battery" },
+  ] : [];
+  const max = Math.max(1, ...bars.map((b) => b.w));
+  const plants = data.plants.map((p) => p.name).join(", ") || "Napelem";
+  if (data.error) return <section className="en"><div className="en-error"><PlugZap size={22} /><div><strong>A Growatt most nem elérhető</strong><p>{data.error}</p></div></div></section>;
+  return <section className="en" aria-label="Energiaközpont">
+    <div className="en-top">
+      <div className="en-hero">
+        <div className="en-hero-head"><span className="en-badge"><Sun size={14} />Growatt · {plants}</span><span className="en-live"><span className={`hd-dot ${pv > 0 ? "hd-dot-on" : ""}`} />{data.demo ? "Mintaadatok" : "Frissítés 15 percenként"}</span></div>
+        <span className="en-hero-label">Jelenlegi termelés</span>
+        <strong className="en-hero-value">{pv >= 1000 ? f(pv / 1000, 2) : f(pv, 0)}<small>{pv >= 1000 ? "kW" : "W"}</small></strong>
+        <div className="en-hero-stats">
+          <div><span>Mai termelés</span><strong>{f(data.todayKwh)} <small>kWh</small></strong></div>
+          <div><span>Összes termelés</span><strong>{f(data.totalKwh, 0)} <small>kWh</small></strong></div>
+          {flow && <div><span>Fogyasztás most</span><strong>{power(flow.load)}</strong></div>}
         </div>
       </div>
-      {!data.demo && <details className="smart-debug"><summary>Nyers adatok (hibakereséshez)</summary><pre>{data.raw}{"\n\n"}{data.plants.map((p) => p.raw).join("\n\n")}</pre></details>}
-    </>}
+      <div className="en-rings">
+        <Ring value={self} label="Önellátás most" tone="solar" />
+        <Ring value={flow ? flow.soc : null} label="Akkumulátor" tone="battery" />
+      </div>
+    </div>
+
+    <h2 className="en-title">Energiaáramlás</h2>
+    <div className="en-flow" aria-label="Energiaáramlás">
+      <svg className="en-lines" viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden>
+        <path d="M150 62 V128" className={`en-path en-solar ${pv > 0 ? "en-path-on" : ""}`} />
+        <path d="M150 172 V238" className={`en-path en-load ${flow && flow.load > 0 ? "en-path-on" : ""}`} />
+        <path d={flow && flow.charge > 0 ? "M128 150 H62" : "M62 150 H128"} className={`en-path en-battery ${batt && batt.w > 0 ? "en-path-on" : ""}`} />
+        <path d={flow && flow.toGrid > 0 ? "M172 150 H238" : "M238 150 H172"} className={`en-path en-grid ${grid && grid.w > 0 ? "en-path-on" : ""}`} />
+      </svg>
+      <Node className="en-pos-top" icon={Sun} label="Napelem" value={power(pv)} detail="Termelés" tone="solar" active={pv > 0} />
+      <Node className="en-pos-left" icon={flow && flow.charge > 0 ? BatteryCharging : BatteryFull} label="Akkumulátor" value={flow ? `${flow.soc}%` : "–"} detail={batt ? (batt.w ? `${power(batt.w)} · ${batt.t.toLowerCase()}` : batt.t) : "Nincs adat"} tone="battery" active={!!batt?.w} />
+      <div className="en-home"><House size={30} strokeWidth={1.6} /><span>Otthon</span></div>
+      <Node className="en-pos-right" icon={PlugZap} label="Hálózat" value={grid ? power(grid.w) : "–"} detail={grid?.t ?? "Nincs adat"} tone="grid" active={!!grid?.w} />
+      <Node className="en-pos-bottom" icon={Zap} label="Fogyasztás" value={flow ? power(flow.load) : "–"} detail="Jelenlegi felhasználás" tone="load" active={!!flow && flow.load > 0} />
+    </div>
+
+    <div className="en-bottom">
+      {bars.length > 0 && <div className="en-card"><h3>Pillanatnyi teljesítmények</h3>
+        <ul className="en-bars">{bars.map((b) => <li key={b.label} className={`en-${b.tone}`}><span>{b.label}</span><span className="en-bar"><i style={{ width: `${(b.w / max) * 100}%` }} /></span><strong>{power(b.w)}</strong></li>)}</ul></div>}
+      <div className="en-card"><h3>Erőművek</h3>
+        <ul className="en-plants">{data.plants.map((p) => <li key={p.name}><span className="en-node-icon en-solar"><Sun size={18} /></span><div className="min-w-0 flex-1"><strong>{p.name}</strong><span>{p.online || "Állapot nem ismert"}</span></div><div className="text-right"><strong>{power(p.currentW)}</strong><span>ma {f(p.todayKwh)} kWh</span></div></li>)}</ul>
+        <p className="en-note"><Clock size={13} />A Growatt jelenleg pillanatnyi és napi/összesített értékeket ad; idősoros grafikonhoz és havi bontáshoz nincs adat.</p>
+      </div>
+    </div>
+    {!data.demo && <details className="smart-debug"><summary>Nyers adatok (hibakereséshez)</summary><pre>{data.raw}{"\n\n"}{data.plants.map((p) => p.raw).join("\n\n")}</pre></details>}
   </section>;
 }
