@@ -164,39 +164,43 @@ export function itemHistory(user: User, id: string) {
       .all(id) as { actor: string; action: string; at: number }[]
   ).map((e) => ({ ...e, actorName: getUser(e.actor)?.displayName ?? "Ismeretlen" }));
 }
-/** Explicit, idempotent: one Feladatok task per matter (PRIMARY KEY note_id), 0 points, via the tasks ACL. */
-export async function matterToTask(user: User, id: string) {
-  const { saveTask } = await import("./tasks.server");
-  return tx(() => {
-    const u = current(user),
-      r = row(id);
-    if (r.kind !== "matter" || !canSee(u, r) || !canEdit(u, r)) throw new Error("Ebből az ügyből nem hozhatsz létre feladatot.");
-    const existing = store().prepare("SELECT template_id FROM matter_task_links WHERE note_id=?").get(id) as
-      | { template_id: string }
-      | undefined;
-    if (existing) return { taskId: existing.template_id, created: false };
-    const m = JSON.parse(r.body) as { title: string; content: string; assignee: string | null; due: string | null; priority: "low" | "normal" | "high" };
-    const start = m.due ?? budapestToday();
-    const taskId = saveTask(u, {
-      title: m.title.slice(0, 80),
-      description: m.content.slice(0, 1000),
-      category: "Ügyintézés",
-      points: 0,
-      visibility: r.visibility,
-      assignee: m.assignee,
-      start,
-      end: null,
-      time: "18:00",
-      priority: m.priority,
-      reminder: false,
-      recurrence: "once",
-      weekdays: [],
-      dates: [],
-    } as never);
-    store()
-      .prepare("INSERT INTO matter_task_links(note_id,template_id,created_by,at) VALUES(?,?,?,?)")
-      .run(id, taskId, u.id, Date.now());
-    audit(u, id, "task");
-    return { taskId, created: true };
-  });
+/** Explicit, idempotent: one Feladatok task per matter (PRIMARY KEY note_id), 0 points, via the tasks ACL.
+ * Fully synchronous, so two clicks in the single Node process cannot interleave. */
+export function matterToTask(user: User, id: string, saveTask: (u: User, input: never) => string) {
+  const u = current(user),
+    r = row(id);
+  if (r.kind !== "matter" || !canSee(u, r) || !canEdit(u, r))
+    throw new Error("Ebből az ügyből nem hozhatsz létre feladatot.");
+  const existing = store()
+    .prepare("SELECT template_id FROM matter_task_links WHERE note_id=?")
+    .get(id) as { template_id: string } | undefined;
+  if (existing) return { taskId: existing.template_id, created: false };
+  const m = JSON.parse(r.body) as {
+    title: string;
+    content: string;
+    assignee: string | null;
+    due: string | null;
+    priority: "low" | "normal" | "high";
+  };
+  const taskId = saveTask(u, {
+    title: m.title,
+    description: m.content.slice(0, 2000),
+    category: "Ügyintézés",
+    points: 0,
+    visibility: r.visibility,
+    assignee: m.assignee ?? (r.visibility === "personal" ? `user:${u.id}` : null),
+    start: m.due ?? budapestToday(),
+    end: null,
+    time: "18:00",
+    priority: m.priority,
+    reminder: false,
+    recurrence: "once",
+    weekdays: [],
+    dates: [],
+  } as never);
+  store()
+    .prepare("INSERT INTO matter_task_links(note_id,template_id,created_by,at) VALUES(?,?,?,?)")
+    .run(id, taskId, u.id, Date.now());
+  audit(u, id, "task");
+  return { taskId, created: true };
 }
