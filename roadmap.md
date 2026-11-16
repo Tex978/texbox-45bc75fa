@@ -1,6 +1,6 @@
 # Aktuális családi központ – 2026-11-16
 Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/TEXBOX-CSALADI-ROADMAP.md`.
-- [ ] 1. fázis: stabil profilmenü, felnőtt meghívás, tulajdonosi védelem, külön gyermekprofil, automata és telefon/PC ellenőrzés.
+- [x] 1. fázis: stabil profilmenü, felnőtt meghívás, tulajdonosi védelem, külön gyermekprofil; 98 teszt sikeres, automatikus build OK; 390/1280 px publikus állapot ellenőrizve, izolált valódi SQLite + UI mentés/újranyitás tesztelve. Érintett lint hibamentes egy figyelmeztetéssel; teljes lint korábbi 671 hibája nyitott.
 - [ ] NAS elfogadás: meglévő admin/session, két eszközös mentés, felnőtt aktiválás/reset, Docker-frissítés; helyi NAS nem érhető el innen.
 - [ ] 1b: saját profil, audit/munkamenet részletek, személyes kedvencek és ACL alap.
 - [ ] 2. fázis: szerkeszthető kézi jelenetek valós eszközképességekkel; 2b tartós automatizálás.

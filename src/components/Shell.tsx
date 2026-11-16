@@ -131,11 +131,24 @@ export function ProfileMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {error && <>
-          <DropdownMenuLabel className="max-w-72 whitespace-normal font-normal text-destructive">A munkamenet ellenőrzése sikertelen; az utolsó ismert profilt látod.</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => { void refetch(); }}><RefreshCw />Újraellenőrzés</DropdownMenuItem>
-          <DropdownMenuItem asChild><a href="/__login">Új belépés</a></DropdownMenuItem>
-        </>}
+        {error && (
+          <>
+            <DropdownMenuLabel className="max-w-72 whitespace-normal font-normal text-destructive">
+              A munkamenet ellenőrzése sikertelen; az utolsó ismert profilt látod.
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              onSelect={() => {
+                void refetch();
+              }}
+            >
+              <RefreshCw />
+              Újraellenőrzés
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href="/__login">Új belépés</a>
+            </DropdownMenuItem>
+          </>
+        )}
         {u.can.family && (
           <DropdownMenuItem asChild>
             <Link to="/family" className="min-h-11">
