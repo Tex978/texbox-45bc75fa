@@ -53,6 +53,7 @@ export const getMe = createServerFn({ method: "GET" }).handler(async (): Promise
 
 const familyAccess = () => {
   // Hosted previews (and any runtime without the NAS database) cannot see household accounts.
+  if (authStorageUnavailable()) throw new Error("A NAS fióktárolója nem olvasható. Próbáld újra a mentési jogosultságok ellenőrzése után.");
   if (isHostedAccountPreview() || db() === null)
     throw new Error(
       "A családi fiókok a Synology NAS-on kezelhetők; ez a nézet nem éri el a NAS felhasználóit. Nyisd meg a TexBoxot a saját NAS-címeden.",

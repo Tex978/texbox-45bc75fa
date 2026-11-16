@@ -54,7 +54,7 @@ export const Route = createFileRoute("/family")({
 });
 const listQuery = { queryKey: ["family"], queryFn: () => familyList(), retry: false } as const;
 
-function Family() {
+export function Family() {
   const { data, error, isLoading, refetch } = useQuery(listQuery);
   const qc = useQueryClient();
   const createChild = useServerFn(familyCreateChild),

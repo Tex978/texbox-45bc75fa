@@ -25,8 +25,8 @@ export function isHostedAccountPreview() {
   return globalThis.navigator?.userAgent === "Cloudflare-Workers";
 }
 const dataDir = () =>
-  (globalThis.process?.env?.DATA_DIR as string) ||
-  ((globalThis.process?.env?.DATA_FILE as string) || "/data/nas-state.json").replace(
+  (globalThis.process?.env?.["DATA_DIR"] as string) ||
+  ((globalThis.process?.env?.["DATA_FILE"] as string) || "/data/nas-state.json").replace(
     /\/[^/]*$/,
     "",
   ) ||
@@ -270,7 +270,7 @@ export function acceptInvite(t: string, pw: string): string {
 }
 
 const sessionDays = () =>
-  Math.min(365, Math.max(1, Number(globalThis.process?.env?.SESSION_DAYS) || 30));
+  Math.min(365, Math.max(1, Number(globalThis.process?.env?.["SESSION_DAYS"]) || 30));
 export const sessionMaxAge = () => sessionDays() * 86400;
 export function createSession(userId: string, ua: string): string {
   const t = token();
