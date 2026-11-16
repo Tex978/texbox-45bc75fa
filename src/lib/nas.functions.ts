@@ -9,7 +9,7 @@ const setCookie = (name: string, value: string, opts: Parameters<typeof writeBro
 };
 import { md5 } from "./md5";
 import { createSolarCache, SOLAR_SESSION_MS } from "./growatt-cache";
-import { parsePlantDetail, SPAN_TYPE, validHistoryDate, type HistoryPoint, type HistorySpan } from "./growatt-history";
+import { MIX_TYPE, parseMixHistory, parsePlantDetail, SPAN_TYPE, validHistoryDate, weekDays, type HistoryPoint, type HistorySpan, type MixRow } from "./growatt-history";
 import { parseGreeUnits, validateGreeCommand } from "./gree-rules";
 import { volumes, streams, recent, torrents, catalog, library } from "./mock";
 import { filterMedia, mapArrMedia, imdbIdentifier, imdbScore, type MediaType, type MediaCategory, type MediaItem, type MediaDetail } from "./media";
@@ -368,7 +368,7 @@ const cachedSolar = createSolarCache<SolarData>();
 // One Growatt login session per credential set, shared by live reads and history reads to avoid extra logins.
 const growattSessions = new Map<string, { cookie: string; userId: string; expiresAt: number }>();
 const validShared = (key: string) => { const x = growattSessions.get(key); return x && x.expiresAt > Date.now() ? x : undefined; };
-type HistoryResult = { demo: boolean; error: string; span: HistorySpan; date: string; plants: { name: string; points: HistoryPoint[] }[] };
+type HistoryResult = { demo: boolean; error: string; span: HistorySpan; date: string; plants: { name: string; points: HistoryPoint[]; rows?: MixRow[]; source: "inverter" | "plant" }[] };
 const cachedHistory = createSolarCache<HistoryResult>();
 async function growatt() {
   const base = (env("GROWATT_SERVER") || "https://server.growatt.com").replace(/\/+$/, "");
@@ -478,10 +478,32 @@ export const getSolarHistory = createServerFn({ method: "GET" })
         const list = ((pj?.back ?? pj)?.data ?? []) as { plantId?: string | number; plantName?: string }[];
         if (!Array.isArray(list) || !list.length) { growattSessions.delete(key); throw new Error("Growatt: a munkamenet lejárt vagy nincs erőmű. Egy órára szüneteltetjük az előzmény-lekérést."); }
         const plants = await Promise.all(list.map(async (x) => {
-          const q = new URLSearchParams({ plantId: String(x.plantId), type: String(SPAN_TYPE[data.span]), date: data.date });
+          const plantId = String(x.plantId);
+          // Inverter level first (SPH/"mix" hybrids): production, load, grid import/export and battery, as in the ShinePhone app.
+          const dj = await get(`${base}/newTwoPlantAPI.do?op=getAllDeviceList&plantId=${encodeURIComponent(plantId)}&pageNum=1&pageSize=20`);
+          const devs = (((dj?.back ?? dj)?.deviceList ?? []) as { deviceSn?: string; deviceType?: string }[]);
+          const sns = [...new Set([...devs.filter((d) => /mix|sph/i.test(String(d.deviceType ?? ""))).map((d) => String(d.deviceSn ?? "")), sn].filter(Boolean))];
+          const mix = async (mixId: string, span: keyof typeof MIX_TYPE, date: string) => {
+            const r = await fetch(`${base}/newMixApi.do?op=getEnergyProdAndCons_KW`, { method: "POST", headers: { "User-Agent": ua, Cookie: session!.cookie, "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({ plantId, mixId, type: String(MIX_TYPE[span]), date }), signal: AbortSignal.timeout(15000) });
+            return r.ok ? parseMixHistory(span, await r.json().catch(() => null)) : { ok: false, rows: [] as MixRow[] };
+          };
+          for (const id of sns) {
+            if (data.span === "week") {
+              const days = weekDays(data.date); const months = [...new Set(days.map((d) => d.slice(0, 7)))];
+              const res = await Promise.all(months.map((m) => mix(id, "month", `${m}-01`)));
+              if (!res.every((r) => r.ok)) continue;
+              const rows = days.map((d) => { const r = res[months.indexOf(d.slice(0, 7))]!.rows.find((x) => Number(x.label) === Number(d.slice(8))); return r ? { ...r, label: d } : { label: d, pv: null, load: null, fromGrid: null, toGrid: null, charge: null, discharge: null }; });
+              return { name: String(x.plantName ?? "Erőmű"), points: rows.map((r) => ({ label: r.label, value: r.pv })), rows, source: "inverter" as const };
+            }
+            const r = await mix(id, data.span, data.span === "month" ? `${data.date}-01` : data.span === "year" ? `${data.date}-01-01` : data.span === "total" ? `${new Date().getFullYear()}-01-01` : data.date);
+            if (r.ok && r.rows.length) return { name: String(x.plantName ?? "Erőmű"), points: r.rows.map((p) => ({ label: p.label, value: p.pv })), rows: r.rows, source: "inverter" as const };
+          }
+          if (data.span === "week") throw new Error("Growatt: heti bontás csak inverter-szintű adatból érhető el, ez az erőmű nem adott ilyet.");
+          const q = new URLSearchParams({ plantId, type: String(SPAN_TYPE[data.span]), date: data.date });
           const parsed = parsePlantDetail(await get(`${base}/newPlantDetailAPI.do?${q}`));
           if (!parsed.ok) throw new Error("Growatt: a szolgáltató nem adott előzményt ehhez az időszakhoz.");
-          return { name: String(x.plantName ?? "Erőmű"), points: parsed.points };
+          return { name: String(x.plantName ?? "Erőmű"), points: parsed.points, source: "plant" as const };
         }));
         return { demo: false, error: "", span: data.span, date: data.date, plants };
       });
