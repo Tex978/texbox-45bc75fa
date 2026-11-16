@@ -51,9 +51,9 @@ describe("saved manual NAS scenes", () => {
     const s = saveScene(admin, input(), devices);
     resetAuthDb();
     expect(sessionUser(token)?.id).toBe(admin.id);
-    expect(listScenes(admin)[0].name).toBe("Este");
+    expect(listScenes(admin)[0]?.name).toBe("Este");
     saveScene(admin, { ...s, name: "Jó éjszakát" }, devices);
-    expect(listScenes(admin)[0].name).toBe("Jó éjszakát");
+    expect(listScenes(admin)[0]?.name).toBe("Jó éjszakát");
     deleteScene(admin, s.id);
     expect(listScenes(admin)).toEqual([]);
   });
@@ -138,7 +138,7 @@ describe("saved manual NAS scenes", () => {
       setDeviceAcl(admin, adult.id, devices[0].key, false);
     });
     expect(count).toBe(1);
-    expect(readRuns(adult, s.id)[0].status).toBe("partial");
+    expect(readRuns(adult, s.id)[0]?.status).toBe("partial");
   });
   it("validates temperature and does not allow unsupported brightness", () => {
     expect(() =>

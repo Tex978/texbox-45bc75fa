@@ -469,7 +469,8 @@ export function Scenes() {
                           disabled={i + dir < 0 || i + dir >= draft.steps.length}
                           onClick={() => {
                             const steps = [...draft.steps];
-                            const a = steps[i], b = steps[i + dir];
+                            const a = steps[i],
+                              b = steps[i + dir];
                             if (!a || !b) return;
                             [steps[i], steps[i + dir]] = [b, a];
                             setDraft({ ...draft, steps });
