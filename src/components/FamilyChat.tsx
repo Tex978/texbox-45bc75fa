@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, Send, RefreshCw, Cat, Smile, Paperclip, X } from "lucide-react";
+import { MessageCircle, Send, RefreshCw, Cat, Smile, SmilePlus, Paperclip, X } from "lucide-react";
 import { ChatAttachments } from "./ChatAttachments";
 import { CHAT_ACCEPT, checkFileInfo, type ChatFile } from "@/lib/chat-files";
 import { uploadChatFileBrowser } from "@/lib/chat-upload";
 import { Button } from "./ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import { UserAvatar } from "./Avatar";
 import {
@@ -67,6 +68,7 @@ function ChatConversation({ userId }: { userId: string }) {
     reactFn = useServerFn(chatReactionSave);
   const [text, setText] = useState("");
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [reactionOpen, setReactionOpen] = useState<number | null>(null);
   const [emojiError, setEmojiError] = useState("");
   const textarea = useRef<HTMLTextAreaElement>(null);
   const selection = useRef({ start: 0, end: 0 });
@@ -264,7 +266,7 @@ function ChatConversation({ userId }: { userId: string }) {
                   >
                     {CAT_EMOJIS.map((emoji, i) => {
                       const votes = m.reactions.find((r) => r.emoji === emoji);
-                      if (!q.data?.canSend && !votes) return null;
+                      if (!votes) return null;
                       return (
                         <Button
                           key={emoji}
@@ -292,6 +294,55 @@ function ChatConversation({ userId }: { userId: string }) {
                         </Button>
                       );
                     })}
+                    {q.data?.canSend && (
+                      <Popover
+                        open={reactionOpen === m.id}
+                        onOpenChange={(isOpen) => setReactionOpen(isOpen ? m.id : null)}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            className="chat-reaction-trigger"
+                            aria-label={`Reakció hozzáadása: ${m.id}. üzenet`}
+                            title="Reakció hozzáadása"
+                            disabled={reaction.isPending}
+                          >
+                            <SmilePlus size={16} aria-hidden="true" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="chat-reaction-picker"
+                          align="start"
+                          side="top"
+                          aria-label="Reakcióválasztó"
+                        >
+                          {CAT_EMOJIS.map((emoji, i) => (
+                            <Button
+                              key={emoji}
+                              variant="ghost"
+                              size="icon"
+                              type="button"
+                              aria-label={`${CAT_LABELS[i]} reakció`}
+                              title={CAT_LABELS[i]}
+                              aria-pressed={m.myReaction === emoji}
+                              disabled={reaction.isPending}
+                              onClick={() => {
+                                setReactionOpen(null);
+                                reaction.mutate({
+                                  messageId: m.id,
+                                  emoji: m.myReaction === emoji ? null : emoji,
+                                  version: m.reactionVersion,
+                                });
+                              }}
+                            >
+                              <span aria-hidden="true">{emoji}</span>
+                            </Button>
+                          ))}
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
                   {reaction.isError && reaction.variables?.messageId === m.id && (
                     <div className="chat-error" role="alert">

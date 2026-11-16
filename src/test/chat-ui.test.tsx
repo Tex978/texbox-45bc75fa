@@ -86,9 +86,9 @@ it("sends and reads back SQLite messages through the authenticated chat UI", asy
   fireEvent.click(screen.getByRole("button", { name: "Üzenet küldése" }));
   await screen.findByText("Én is😺 indulok.");
   expect(chatList(dadToken).items.at(-1)).toMatchObject({ text: "Én is😺 indulok.", name: "Anya" });
-  const reactButton = screen.getAllByRole("button", { name: "Láttam / oké reakció, 0" })[0];
-  if (!reactButton) throw new Error("Missing reaction button");
-  fireEvent.click(reactButton);
+  const messageId = chatList(dadToken).items[0]?.id;
+  fireEvent.click(screen.getByRole("button", { name: `Reakció hozzáadása: ${messageId}. üzenet` }));
+  fireEvent.click(screen.getByRole("button", { name: "Láttam / oké reakció" }));
   await screen.findByRole("button", { name: "Láttam / oké reakció, 1" });
   expect(chatList(dadToken).items[0]?.reactions[0]?.people[0]?.name).toBe("Anya");
   fireEvent.click(screen.getByRole("button", { name: "Láttam / oké reakció, 1" }));
