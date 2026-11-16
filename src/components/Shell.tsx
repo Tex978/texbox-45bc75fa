@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/lib/auth.functions";
 import { ROLE_LABELS } from "@/lib/permissions";
-import { LayoutDashboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, Menu, Users, LogOut, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Clapperboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, Menu, Users, LogOut, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 const allNav = [
-  { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search },
+  { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search }, { to: "/streaming", label: "Streaming", icon: Clapperboard },
   { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/home", label: "Okosotthon", icon: House }, { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
