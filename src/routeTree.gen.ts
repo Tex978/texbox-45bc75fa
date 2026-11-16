@@ -16,6 +16,7 @@ import { Route as HomeRouteImport } from './routes/home'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StreamingRouteImport } from './routes/streaming'
 import { Route as ApiPlexThumbRouteImport } from './routes/api/plex-thumb'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StreamingRoute = StreamingRouteImport.update({
+  id: '/streaming',
+  path: '/streaming',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPlexThumbRoute = ApiPlexThumbRouteImport.update({
   id: '/api/plex-thumb',
   path: '/api/plex-thumb',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/streaming': typeof StreamingRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/streaming': typeof StreamingRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/streaming': typeof StreamingRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/search'
     | '/settings'
+    | '/streaming'
     | '/api/plex-thumb'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/search'
     | '/settings'
+    | '/streaming'
     | '/api/plex-thumb'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/search'
     | '/settings'
+    | '/streaming'
     | '/api/plex-thumb'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
+  StreamingRoute: typeof StreamingRoute
   ApiPlexThumbRoute: typeof ApiPlexThumbRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/streaming': {
+      id: '/streaming'
+      path: '/streaming'
+      fullPath: '/streaming'
+      preLoaderRoute: typeof StreamingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/plex-thumb': {
       id: '/api/plex-thumb'
       path: '/api/plex-thumb'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
+  StreamingRoute: StreamingRoute,
   ApiPlexThumbRoute: ApiPlexThumbRoute,
 }
 export const routeTree = rootRouteImport
