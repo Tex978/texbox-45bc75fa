@@ -128,6 +128,13 @@ export function db() {
         CREATE TABLE IF NOT EXISTS calendar_task_links(event_id TEXT NOT NULL REFERENCES calendar_events(id), orig_date TEXT NOT NULL, template_id TEXT NOT NULL REFERENCES task_templates(id), created_by TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY(event_id,orig_date));
         COMMIT;`);
     }
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='dashboard_prefs'").get()) {
+      const dashBackup = `${dataDir()}/backups/pre-dashboard-phase6b.db`;
+      if (!fs.existsSync(dashBackup)) d.exec(`VACUUM INTO '${dashBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS dashboard_prefs(person_key TEXT PRIMARY KEY, body TEXT NOT NULL, version INTEGER NOT NULL CHECK(version>=1), updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
+        COMMIT;`);
+    }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
     d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
       SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at
