@@ -63,7 +63,11 @@ export const GUARD_MESSAGES: Record<GuardCode, string> = {
   "not-writable":
     "A data mappába nem lehet írni, ezért a telepítésjelző nem menthető. Ellenőrizd a mappajogosultságokat.",
 };
-const blocked = (code: GuardCode): GuardState => ({ status: "blocked", code, message: GUARD_MESSAGES[code] });
+const blocked = (code: GuardCode): GuardState => ({
+  status: "blocked",
+  code,
+  message: GUARD_MESSAGES[code],
+});
 
 function readMarker(fs: Fs): Marker | null | "invalid" {
   let raw: string;
@@ -166,7 +170,9 @@ export function initializeNewInstall(phrase: string): void {
     throw new Error(`A megerősítéshez írd be pontosan: ${NEW_INSTALL_PHRASE}`);
   const g = inspectGuard();
   if (g.status !== "new-install")
-    throw new Error("Ez a data mappa nem üres vagy nem új telepítés; új telepítés itt nem indítható.");
+    throw new Error(
+      "Ez a data mappa nem üres vagy nem új telepítés; új telepítés itt nem indítható.",
+    );
   const fs = fsMod()!;
   try {
     writeMarker(fs, newMarker("new-install", false, false));
@@ -188,7 +194,14 @@ export function markCreated(kind: "db" | "state") {
   }
 }
 
-export type FileCheck = { path: string; exists: boolean; readable: boolean; writable: boolean; size: number | null; modified: string | null };
+export type FileCheck = {
+  path: string;
+  exists: boolean;
+  readable: boolean;
+  writable: boolean;
+  size: number | null;
+  modified: string | null;
+};
 export type StorageReport = {
   guard: GuardState["status"];
   guardCode: GuardCode | null;
@@ -197,16 +210,34 @@ export type StorageReport = {
   dataFile: string;
   dataFileInDataDir: boolean;
   instanceIdConfigured: boolean;
-  marker: null | { origin: Marker["origin"]; createdAt: string; envBound: boolean; tracksDb: boolean; tracksState: boolean };
+  marker: null | {
+    origin: Marker["origin"];
+    createdAt: string;
+    envBound: boolean;
+    tracksDb: boolean;
+    tracksState: boolean;
+  };
   dir: FileCheck;
   db: FileCheck;
   dbWal: FileCheck;
   state: FileCheck;
-  backups: { count: number; newest: string | null; newestAt: string | null; phaseBackups: string[] };
+  backups: {
+    count: number;
+    newest: string | null;
+    newestAt: string | null;
+    phaseBackups: string[];
+  };
   mount: { status: "separate-mount" | "container-filesystem" | "unknown"; detail: string };
 };
 function check(fs: Fs, p: string): FileCheck {
-  const r: FileCheck = { path: p, exists: false, readable: false, writable: false, size: null, modified: null };
+  const r: FileCheck = {
+    path: p,
+    exists: false,
+    readable: false,
+    writable: false,
+    size: null,
+    modified: null,
+  };
   try {
     const st = fs.statSync(p);
     r.exists = true;
@@ -215,18 +246,41 @@ function check(fs: Fs, p: string): FileCheck {
   } catch {
     return r;
   }
-  try { fs.accessSync(p, fs.constants.R_OK); r.readable = true; } catch { /* no */ }
-  try { fs.accessSync(p, fs.constants.W_OK); r.writable = true; } catch { /* no */ }
+  try {
+    fs.accessSync(p, fs.constants.R_OK);
+    r.readable = true;
+  } catch {
+    /* no */
+  }
+  try {
+    fs.accessSync(p, fs.constants.W_OK);
+    r.writable = true;
+  } catch {
+    /* no */
+  }
   return r;
 }
 /** Linux mountinfo: is the data folder its own bind mount, or part of the container's image layer? */
 export function mountOf(dir: string, mountinfo: string | null): StorageReport["mount"] {
-  if (!mountinfo) return { status: "unknown", detail: "A csatolási információ ebben a környezetben nem olvasható." };
-  const points = mountinfo.split("\n").map((l) => l.split(" ")[4]).filter((x): x is string => !!x);
-  const best = points.filter((m) => dir === m || dir.startsWith(m.endsWith("/") ? m : m + "/")).sort((a, b) => b.length - a.length)[0];
+  if (!mountinfo)
+    return {
+      status: "unknown",
+      detail: "A csatolási információ ebben a környezetben nem olvasható.",
+    };
+  const points = mountinfo
+    .split("\n")
+    .map((l) => l.split(" ")[4])
+    .filter((x): x is string => !!x);
+  const best = points
+    .filter((m) => dir === m || dir.startsWith(m.endsWith("/") ? m : m + "/"))
+    .sort((a, b) => b.length - a.length)[0];
   if (!best) return { status: "unknown", detail: "Nem található csatolási pont." };
   return best === "/"
-    ? { status: "container-filesystem", detail: "A data mappa a konténer saját fájlrendszerén van: konténerfrissítéskor elveszhet. Csatold a NAS egy mappáját /data-ként." }
+    ? {
+        status: "container-filesystem",
+        detail:
+          "A data mappa a konténer saját fájlrendszerén van: konténerfrissítéskor elveszhet. Csatold a NAS egy mappáját /data-ként.",
+      }
     : { status: "separate-mount", detail: `Külön csatolt kötet: ${best}` };
 }
 /** Strictly read-only diagnostics: stats and access checks only, no file is opened for writing or created. */
@@ -234,13 +288,28 @@ export function storageReport(): StorageReport {
   const g = inspectGuard();
   const fs = fsMod();
   const dir = dataDir();
-  const empty = (p: string): FileCheck => ({ path: p, exists: false, readable: false, writable: false, size: null, modified: null });
+  const empty = (p: string): FileCheck => ({
+    path: p,
+    exists: false,
+    readable: false,
+    writable: false,
+    size: null,
+    modified: null,
+  });
   const c = (p: string) => (fs ? check(fs, p) : empty(p));
   const m = fs ? readMarker(fs) : null;
-  let backups: StorageReport["backups"] = { count: 0, newest: null, newestAt: null, phaseBackups: [] };
+  let backups: StorageReport["backups"] = {
+    count: 0,
+    newest: null,
+    newestAt: null,
+    phaseBackups: [],
+  };
   if (fs) {
     try {
-      const names = fs.readdirSync(`${dir}/backups`).filter((n) => n.endsWith(".db")).sort();
+      const names = fs
+        .readdirSync(`${dir}/backups`)
+        .filter((n) => n.endsWith(".db"))
+        .sort();
       const daily = names.filter((n) => /^texbox-\d{8}\.db$/.test(n));
       const newest = daily.at(-1) ?? null;
       backups = {
@@ -249,10 +318,16 @@ export function storageReport(): StorageReport {
         newestAt: newest ? check(fs, `${dir}/backups/${newest}`).modified : null,
         phaseBackups: names.filter((n) => n.startsWith("pre-")),
       };
-    } catch { /* no backups folder */ }
+    } catch {
+      /* no backups folder */
+    }
   }
   let mi: string | null = null;
-  try { mi = fs ? fs.readFileSync("/proc/self/mountinfo", "utf8") : null; } catch { mi = null; }
+  try {
+    mi = fs ? fs.readFileSync("/proc/self/mountinfo", "utf8") : null;
+  } catch {
+    mi = null;
+  }
   return {
     guard: g.status,
     guardCode: g.status === "blocked" ? g.code : null,
@@ -261,12 +336,24 @@ export function storageReport(): StorageReport {
     dataFile: stateFile(),
     dataFileInDataDir: stateFile().replace(/\/[^/]*$/, "") === dir,
     instanceIdConfigured: !!env("TEXBOX_INSTANCE_ID"),
-    marker: m && m !== "invalid" ? { origin: m.origin, createdAt: m.createdAt, envBound: m.envBound, tracksDb: m.db, tracksState: m.state } : null,
+    marker:
+      m && m !== "invalid"
+        ? {
+            origin: m.origin,
+            createdAt: m.createdAt,
+            envBound: m.envBound,
+            tracksDb: m.db,
+            tracksState: m.state,
+          }
+        : null,
     dir: c(dir),
     db: c(dbPath()),
     dbWal: c(`${dbPath()}-wal`),
     state: c(stateFile()),
     backups,
-    mount: isHosted() || !fs ? { status: "unknown", detail: "Előnézet: nem a NAS tárolója." } : mountOf(dir, mi),
+    mount:
+      isHosted() || !fs
+        ? { status: "unknown", detail: "Előnézet: nem a NAS tárolója." }
+        : mountOf(dir, mi),
   };
 }

@@ -3,7 +3,14 @@ import { chmodSync, existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createUser, db, resetAuthDb, userCount, authStorageUnavailable } from "@/lib/auth.server";
-import { ensureReady, initializeNewInstall, inspectGuard, mountOf, storageReport, MARKER_NAME } from "@/lib/data-guard.server";
+import {
+  ensureReady,
+  initializeNewInstall,
+  inspectGuard,
+  mountOf,
+  storageReport,
+  MARKER_NAME,
+} from "@/lib/data-guard.server";
 import { gate } from "@/lib/app-gate";
 
 let dir: string;
@@ -19,7 +26,8 @@ beforeEach(() => {
   vi.resetModules();
 });
 afterEach(() => {
-  for (const k of ["TEXBOX_TEST_REQUIRE_INIT", "APP_PASSWORD", "DATA_FILE", "TEXBOX_INSTANCE_ID"]) delete process.env[k];
+  for (const k of ["TEXBOX_TEST_REQUIRE_INIT", "APP_PASSWORD", "DATA_FILE", "TEXBOX_INSTANCE_ID"])
+    delete process.env[k];
   resetAuthDb();
   vi.unstubAllGlobals();
 });
@@ -132,9 +140,12 @@ describe("data folder guard", () => {
     delete process.env["TEXBOX_SECRET_KEY"];
   });
   it("mount detection distinguishes a bind mount from the container layer", () => {
-    const mi = "22 1 0:1 / / rw - overlay overlay rw\n30 22 0:2 /volume1/docker/texbox/data /data rw - btrfs /dev/md2 rw";
+    const mi =
+      "22 1 0:1 / / rw - overlay overlay rw\n30 22 0:2 /volume1/docker/texbox/data /data rw - btrfs /dev/md2 rw";
     expect(mountOf("/data", mi).status).toBe("separate-mount");
-    expect(mountOf("/data", "22 1 0:1 / / rw - overlay overlay rw").status).toBe("container-filesystem");
+    expect(mountOf("/data", "22 1 0:1 / / rw - overlay overlay rw").status).toBe(
+      "container-filesystem",
+    );
     expect(mountOf("/data", null).status).toBe("unknown");
   });
 });
