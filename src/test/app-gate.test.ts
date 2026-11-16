@@ -30,15 +30,22 @@ describe("first-admin setup page", () => {
     const u = createUser({ username: "admin", displayName: "Admin", role: "admin" });
     const cookie = `${SESSION_COOKIE}=${createSession(u.id, "test")}`;
     for (const path of ["/__login", "/__invite", "/_serverFn/test"]) {
-      const r = await gate(new Request(`http://nas.local${path}`, {
-        method: "POST",
-        headers: { cookie, origin: "https://foreign.example" },
-      }));
+      const r = await gate(
+        new Request(`http://nas.local${path}`, {
+          method: "POST",
+          headers: { cookie, origin: "https://foreign.example" },
+        }),
+      );
       expect(r?.status).toBe(403);
     }
-    expect(await gate(new Request("http://nas.local/_serverFn/test", {
-      method: "POST", headers: { cookie, origin: "http://nas.local" },
-    }))).toBeNull();
+    expect(
+      await gate(
+        new Request("http://nas.local/_serverFn/test", {
+          method: "POST",
+          headers: { cookie, origin: "http://nas.local" },
+        }),
+      ),
+    ).toBeNull();
     expect((await get("/_serverFn/test"))?.status).toBe(401);
   });
   it("points to the NAS address when this runtime has no account storage", async () => {

@@ -5,19 +5,34 @@ import { join } from "node:path";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  createUser, createSession, resetAuthDb, getUser, updateOwnProfile,
-  changeOwnPassword, listOwnSessions, revokeOwnSession, sessionUser, listAudit,
+  createUser,
+  createSession,
+  resetAuthDb,
+  getUser,
+  updateOwnProfile,
+  changeOwnPassword,
+  listOwnSessions,
+  revokeOwnSession,
+  sessionUser,
+  listAudit,
   type User,
 } from "@/lib/auth.server";
 
 let user: User, token: string, dir: string;
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/auth.functions", () => ({
-  profileGet: async () => ({ ...getUser(user.id), owner: true, version: getUser(user.id)?.profileVersion }),
-  profileUpdate: async ({ data }: { data: Parameters<typeof updateOwnProfile>[1] }) => updateOwnProfile(user, data),
-  passwordChange: async ({ data }: { data: Parameters<typeof changeOwnPassword>[1] }) => changeOwnPassword(user, data, token),
+  profileGet: async () => ({
+    ...getUser(user.id),
+    owner: true,
+    version: getUser(user.id)?.profileVersion,
+  }),
+  profileUpdate: async ({ data }: { data: Parameters<typeof updateOwnProfile>[1] }) =>
+    updateOwnProfile(user, data),
+  passwordChange: async ({ data }: { data: Parameters<typeof changeOwnPassword>[1] }) =>
+    changeOwnPassword(user, data, token),
   sessionsList: async () => listOwnSessions(user.id, token),
-  sessionRevoke: async ({ data }: { data: { id: string } }) => revokeOwnSession(user, data.id, token),
+  sessionRevoke: async ({ data }: { data: { id: string } }) =>
+    revokeOwnSession(user, data.id, token),
   sessionsRevokeOthers: vi.fn(),
   auditList: async () => listAudit(user, "me"),
   getMe: vi.fn(),
@@ -36,9 +51,17 @@ it("saves own profile, changes password and revokes another device through the r
   user = createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
   token = createSession(user.id, "Chrome Android Mobile");
   const other = createSession(user.id, "Firefox Windows");
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  render(<QueryClientProvider client={qc}><ProfilePage /></QueryClientProvider>);
-  fireEvent.change(await screen.findByLabelText("Megjelenített név"), { target: { value: "Teszt szülő" } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={qc}>
+      <ProfilePage />
+    </QueryClientProvider>,
+  );
+  fireEvent.change(await screen.findByLabelText("Megjelenített név"), {
+    target: { value: "Teszt szülő" },
+  });
   fireEvent.click(screen.getByRole("button", { name: "Profil mentése" }));
   await screen.findByText("Profil mentve. Minden eszközön a következő frissítéskor megjelenik.");
   expect(getUser(user.id)?.displayName).toBe("Teszt szülő");
