@@ -1,4 +1,5 @@
 # Okosotthon megújítás
+- [ ] Telefonközpontú Okosotthon: tömör fejléc, hüvelykujjal elérhető állandó kategóriamenü, külön eszköznézetek és olvasható hőmérők; mobilos ellenőrzés.
 - [x] Gree+ általános kapcsolati hiba szűkítése: belépés és eszközlekérés külön, biztonságos hibajelzése; időkorlátok és korlátozott párhuzamos lekérés az öt klímához; nyolc Python- és három vezérlési teszt sikeres.
 - [ ] Gree+ most jelzett hiba pontos élő oka: a Synology frissítése után kapott részletes hiba szükséges; az otthoni fiók és hálózat innen nem elérhető.
 - [x] Hőmérők: közösen mentett elrejtés/visszaállítás, nevek átvétele és csak látható eszközök az összesítésben; kilenc teszt sikeres, telefonon élő hőmérő elrejtése, újratöltése és visszaállítása ellenőrizve.
