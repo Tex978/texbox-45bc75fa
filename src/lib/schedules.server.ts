@@ -53,6 +53,13 @@ const sceneOrNull = (id: string) => {
 };
 const hasLock = (steps: SceneStep[]) => steps.some((s) => /^lock/i.test(s.device));
 
+/** True only while a background scheduler process holds a fresh lease (heartbeat). */
+export function schedulerAlive(now = Date.now()) {
+  const r = store().prepare("SELECT expires_at FROM scheduler_lease WHERE id=1").get() as
+    | { expires_at: number }
+    | undefined;
+  return !!r && r.expires_at > now;
+}
 export function listSchedules(user: User, now = Date.now()) {
   const u = active(user);
   if (u.role === "child") return [];
@@ -129,6 +136,8 @@ export function setScheduleEnabled(
     const scene = getScene(r.scene_id);
     canRun(u, scene);
     if (hasLock(scene.steps)) throw new Error("Zárat tartalmazó jelenet nem időzíthető.");
+    if (!schedulerAlive(now))
+      throw new Error("A háttérütemező nem fut a NAS-on, ezért az időzítés nem kapcsolható be.");
     if (input.confirmSceneVersion !== scene.version)
       throw new Error("A jelenet közben változott. Nézd át újra az összefoglalót.");
   } else if (r.owner_id !== u.id && u.role !== "admin")

@@ -20,6 +20,7 @@ export function startScheduler(intervalMs = 20_000) {
       busy = false;
     }
   };
+  console.log(`TexBox scheduler started (worker ${worker})`);
   timer = setInterval(() => void run(), intervalMs);
   timer.unref?.();
   void run();

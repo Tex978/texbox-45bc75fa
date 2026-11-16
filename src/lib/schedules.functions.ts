@@ -3,7 +3,13 @@ import { getCookie } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requirePermission, SESSION_COOKIE, isHostedAccountPreview } from "./auth.server";
 import { scheduleSchema } from "./schedule-schema";
-import { deleteSchedule, listSchedules, saveSchedule, setScheduleEnabled } from "./schedules.server";
+import {
+  deleteSchedule,
+  listSchedules,
+  saveSchedule,
+  schedulerAlive,
+  setScheduleEnabled,
+} from "./schedules.server";
 const actor = () => {
   if (isHostedAccountPreview())
     throw new Error("Az időzítéseket a saját NAS-címeden kezelheted; az előnézet nem ütemez.");
@@ -12,7 +18,14 @@ const actor = () => {
   return u;
 };
 const id = z.string().min(1).max(100);
-export const schedulesList = createServerFn({ method: "GET" }).handler(async () => listSchedules(actor()));
+export const schedulesList = createServerFn({ method: "GET" }).handler(async () => {
+  const u = actor();
+  return {
+    rules: listSchedules(u),
+    schedulerAlive: schedulerAlive(),
+    canCreate: u.role !== "child",
+  };
+});
 export const scheduleSave = createServerFn({ method: "POST" })
   .inputValidator((v) => scheduleSchema.parse(v))
   .handler(async ({ data }) => ({ id: saveSchedule(actor(), data) }));

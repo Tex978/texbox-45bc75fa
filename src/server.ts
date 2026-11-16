@@ -5,8 +5,14 @@ import { renderErrorPage } from "./lib/error-page";
 import { gate } from "./lib/app-gate";
 
 // Self-hosted Node only: start the timed-scene scheduler once per process (DB lease keeps it single-instance).
-if (typeof process !== "undefined" && process.versions?.node && !process.env["VITEST"])
-  void import("./lib/scheduler.server").then((m) => m.startScheduler()).catch(() => undefined);
+// Started on module load and re-ensured on each request (idempotent) in case the bundle loads lazily.
+const ensureScheduler = () => {
+  if (typeof process !== "undefined" && process.versions?.node && !process.env["VITEST"])
+    void import("./lib/scheduler.server")
+      .then((m) => m.startScheduler())
+      .catch(() => undefined);
+};
+ensureScheduler();
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -55,6 +61,7 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      ensureScheduler();
       const blocked = await gate(request);
       if (blocked) return blocked;
       const handler = await getServerEntry();
