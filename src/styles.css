@@ -695,3 +695,14 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .en-bottom { grid-template-columns: 1fr 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .en-path-on { animation: none; } }
+.en-history-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.en-history-head h3 { margin: 0; }
+.en-span { grid-template-columns: repeat(4,minmax(0,1fr)); min-width: min(100%, 320px); }
+.en-date { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; font-size: 14px; font-weight: 600; text-transform: capitalize; }
+.en-history-sum { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 10px; }
+.en-history-sum span { font-size: 12px; color: var(--muted-foreground); }
+.en-history-sum strong { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.en-chart { height: 240px; min-width: 0; }
+.en-chart-state { display: grid; place-items: center; text-align: center; font-size: 13.5px; color: var(--muted-foreground); padding: 0 16px; }
+.en-chart-err { color: var(--destructive); }
+@media (min-width: 1024px) { .en-chart { height: 300px; } }

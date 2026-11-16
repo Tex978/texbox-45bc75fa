@@ -1,4 +1,5 @@
 import { BatteryCharging, BatteryFull, Clock, House, PlugZap, Sun, Zap, type LucideIcon } from "lucide-react";
+import { EnergyHistory } from "@/components/EnergyHistory";
 import type { getSolar } from "@/lib/nas.functions";
 
 type Solar = Awaited<ReturnType<typeof getSolar>>;
@@ -66,12 +67,15 @@ export function SmartEnergy({ data }: { data: Solar }) {
       <Node className="en-pos-bottom" icon={Zap} label="Fogyasztás" value={flow ? power(flow.load) : "–"} detail="Jelenlegi felhasználás" tone="load" active={!!flow && flow.load > 0} />
     </div>
 
+    <h2 className="en-title">Előzmények</h2>
+    <EnergyHistory />
+
     <div className="en-bottom">
       {bars.length > 0 && <div className="en-card"><h3>Pillanatnyi teljesítmények</h3>
         <ul className="en-bars">{bars.map((b) => <li key={b.label} className={`en-${b.tone}`}><span>{b.label}</span><span className="en-bar"><i style={{ width: `${(b.w / max) * 100}%` }} /></span><strong>{power(b.w)}</strong></li>)}</ul></div>}
       <div className="en-card"><h3>Erőművek</h3>
         <ul className="en-plants">{data.plants.map((p) => <li key={p.name}><span className="en-node-icon en-solar"><Sun size={18} /></span><div className="min-w-0 flex-1"><strong>{p.name}</strong><span>{p.online || "Állapot nem ismert"}</span></div><div className="text-right"><strong>{power(p.currentW)}</strong><span>ma {f(p.todayKwh)} kWh</span></div></li>)}</ul>
-        <p className="en-note"><Clock size={13} />A Growatt jelenleg pillanatnyi és napi/összesített értékeket ad; idősoros grafikonhoz és havi bontáshoz nincs adat.</p>
+        <p className="en-note"><Clock size={13} />A pillanatnyi értékek 15 percenként frissülnek.</p>
       </div>
     </div>
     {!data.demo && <details className="smart-debug"><summary>Nyers adatok (hibakereséshez)</summary><pre>{data.raw}{"\n\n"}{data.plants.map((p) => p.raw).join("\n\n")}</pre></details>}
