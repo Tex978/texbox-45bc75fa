@@ -4,6 +4,7 @@ import { z } from "zod";
 import { SESSION_COOKIE } from "./auth.server";
 import { chatPageSchema, chatSendSchema, chatReactionSchema } from "./chat-schema";
 import { chatList, chatMarkRead, chatSend, chatStatus, chatReact } from "./chat.server";
+import { draftFiles } from "./chat-files.server";
 const token = () => {
   setResponseHeader("Cache-Control", "no-store");
   return getCookie(SESSION_COOKIE);
@@ -11,6 +12,7 @@ const token = () => {
 export const chatUnread = createServerFn({ method: "GET" }).handler(async () =>
   chatStatus(token()),
 );
+export const chatDraftFiles = createServerFn({method:"GET"}).handler(async()=>draftFiles(token()));
 export const chatMessages = createServerFn({ method: "GET" })
   .inputValidator((v: unknown) => chatPageSchema.parse(v ?? {}))
   .handler(async ({ data }) => chatList(token(), data.before));

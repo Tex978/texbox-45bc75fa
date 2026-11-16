@@ -24,6 +24,8 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StreamingRouteImport } from './routes/streaming'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as ApiPlexThumbRouteImport } from './routes/api/plex-thumb'
+import { Route as ApiChatUploadRouteImport } from './routes/api/chat/upload'
+import { Route as ApiChatFileIdRouteImport } from './routes/api/chat/file/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +102,16 @@ const ApiPlexThumbRoute = ApiPlexThumbRouteImport.update({
   path: '/api/plex-thumb',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatUploadRoute = ApiChatUploadRouteImport.update({
+  id: '/api/chat/upload',
+  path: '/api/chat/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatFileIdRoute = ApiChatFileIdRouteImport.update({
+  id: '/api/chat/file/$id',
+  path: '/api/chat/file/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/streaming': typeof StreamingRoute
   '/tasks': typeof TasksRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
+  '/api/chat/upload': typeof ApiChatUploadRoute
+  '/api/chat/file/$id': typeof ApiChatFileIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +148,8 @@ export interface FileRoutesByTo {
   '/streaming': typeof StreamingRoute
   '/tasks': typeof TasksRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
+  '/api/chat/upload': typeof ApiChatUploadRoute
+  '/api/chat/file/$id': typeof ApiChatFileIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +168,8 @@ export interface FileRoutesById {
   '/streaming': typeof StreamingRoute
   '/tasks': typeof TasksRoute
   '/api/plex-thumb': typeof ApiPlexThumbRoute
+  '/api/chat/upload': typeof ApiChatUploadRoute
+  '/api/chat/file/$id': typeof ApiChatFileIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +189,8 @@ export interface FileRouteTypes {
     | '/streaming'
     | '/tasks'
     | '/api/plex-thumb'
+    | '/api/chat/upload'
+    | '/api/chat/file/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +208,8 @@ export interface FileRouteTypes {
     | '/streaming'
     | '/tasks'
     | '/api/plex-thumb'
+    | '/api/chat/upload'
+    | '/api/chat/file/$id'
   id:
     | '__root__'
     | '/'
@@ -205,6 +227,8 @@ export interface FileRouteTypes {
     | '/streaming'
     | '/tasks'
     | '/api/plex-thumb'
+    | '/api/chat/upload'
+    | '/api/chat/file/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,6 +247,8 @@ export interface RootRouteChildren {
   StreamingRoute: typeof StreamingRoute
   TasksRoute: typeof TasksRoute
   ApiPlexThumbRoute: typeof ApiPlexThumbRoute
+  ApiChatUploadRoute: typeof ApiChatUploadRoute
+  ApiChatFileIdRoute: typeof ApiChatFileIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +358,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPlexThumbRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chat/upload': {
+      id: '/api/chat/upload'
+      path: '/api/chat/upload'
+      fullPath: '/api/chat/upload'
+      preLoaderRoute: typeof ApiChatUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/file/$id': {
+      id: '/api/chat/file/$id'
+      path: '/api/chat/file/$id'
+      fullPath: '/api/chat/file/$id'
+      preLoaderRoute: typeof ApiChatFileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -351,6 +391,8 @@ const rootRouteChildren: RootRouteChildren = {
   StreamingRoute: StreamingRoute,
   TasksRoute: TasksRoute,
   ApiPlexThumbRoute: ApiPlexThumbRoute,
+  ApiChatUploadRoute: ApiChatUploadRoute,
+  ApiChatFileIdRoute: ApiChatFileIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
