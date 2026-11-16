@@ -108,7 +108,8 @@ export function saveItem(user: User, raw: ItemInput) {
     if (
       !store()
         .prepare("UPDATE shop_items SET list_id=?,name=?,norm=?,qty=?,unit=?,store=?,category=?,note=?,version=version+1,updated_at=? WHERE id=? AND version=? AND deleted=0")
-        .run(i.listId, i.name, normName(i.name), i.qty, i.unit, i.store, i.category, i.note, now, i.id, i.version ?? -1).changes
+        .run(i.listId, i.name, normName(i.name), i.qty, i.unit, i.store, i.category, i.note, now, i.id, i.version ?? -1).changes ||
+      (!isAdult(u) && (store().prepare("SELECT added_by FROM shop_items WHERE id=?").get(i.id) as { added_by: string } | undefined)?.added_by !== u.id)
     )
       throw new Error("A terméket közben módosították vagy törölték. Töltsd újra.");
     return i.id;
@@ -126,9 +127,17 @@ export function checkItem(user: User, input: { id: string; checked: boolean }) {
 }
 export function deleteItems(user: User, input: { ids: string[] }) {
   return tx(() => {
-    current(user);
-    const s = store().prepare("UPDATE shop_items SET deleted=1,updated_at=? WHERE id=?");
-    for (const id of input.ids.slice(0, 500)) s.run(Date.now(), id);
+    const u = current(user);
+    // Children may only remove what they added themselves.
+    const s = store().prepare(
+      isAdult(u)
+        ? "UPDATE shop_items SET deleted=1,updated_at=? WHERE id=? AND ?<>''"
+        : "UPDATE shop_items SET deleted=1,updated_at=? WHERE id=? AND added_by=?",
+    );
+    let n = 0;
+    for (const id of input.ids.slice(0, 500)) n += Number(s.run(Date.now(), id, u.id).changes);
+    if (!n) throw new Error("Nincs törölhető termék (gyerek csak a saját tételét törölheti).");
+    return n;
   });
 }
 
