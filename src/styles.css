@@ -1056,3 +1056,9 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .dash-edit-list button { min-width: 44px; min-height: 44px; }
 .dash-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .dash-editor label.dash-chip { cursor: pointer; min-height: 40px; display: inline-flex; align-items: center; gap: 6px; }
+
+/* 2b/1 timed scenes */
+.schedule-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.schedule-on, .schedule-off { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); }
+.schedule-on { color: var(--primary); border-color: var(--primary); }
+.schedule-off { color: var(--muted-foreground); }

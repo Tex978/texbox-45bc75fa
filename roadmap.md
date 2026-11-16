@@ -92,3 +92,6 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [ ] 6c: személyes konkrét kedvenc eszközök (klíma/lámpa) élő állapottal a főoldalon; addig közös eszközcsoportok látszanak.
 - [ ] 2b időzített jelenetek, valódi emlékeztető/ütemező, családi jegyzetek — külön fázisok.
 - [ ] Továbbra is nyitott: 2b időzített jelenetek, valódi emlékeztetők, családi jegyzetek, élő NAS-ellenőrzés.
+
+- [x] 2b/1 (fejlesztői környezetben): időzített kézi jelenetek — `scene_schedules`, `schedule_runs` (egyedi szabály+időpont), `scheduler_lease`; `pre-automation-phase2b.db` mentés. Kikapcsolva jön létre, bekapcsolás összefoglaló + megerősítés után, csak élő háttérütemezőnél. Nincs pótlás, nincs ismétlés megszakadás után. Élő NAS-on ellenőrizendő: a naplóban `TexBox scheduler started`, egy előre egyeztetett jelenettel próbafutás.
+- [ ] 2b/2 érzékelő/eseményalapú triggerek; telefonos értesítések.

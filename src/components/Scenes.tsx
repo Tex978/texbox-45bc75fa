@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "./ui/button";
+import { Schedules } from "./Schedules";
 import { Input } from "./ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import {
@@ -214,6 +215,12 @@ export function Scenes() {
           );
         })}
       </div>
+      {q.data && (
+        <Schedules
+          scenes={q.data.scenes}
+          deviceName={(k) => devices.data?.devices.find((d) => d.key === k)?.name ?? k}
+        />
+      )}
       {selected && (
         <section className="scene-history">
           <div className="flex justify-between gap-3">
