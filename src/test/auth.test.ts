@@ -29,8 +29,14 @@ describe("family accounts", () => {
     try {
       process.env["DATA_DIR"] = "/dev/null/texbox-unwritable";
       resetAuthDb();
-      expect(() => requirePermission(undefined, "settings")).toThrow("A fiókok tárolója nem elérhető");
-    } finally { process.env["DATA_DIR"] = old; resetAuthDb(); log.mockRestore(); }
+      expect(() => requirePermission(undefined, "settings")).toThrow(
+        "A fiókok tárolója nem elérhető",
+      );
+    } finally {
+      process.env["DATA_DIR"] = old;
+      resetAuthDb();
+      log.mockRestore();
+    }
   });
   it("stores scrypt hashes, never the raw password", () => {
     const h = hashPassword("titok12345");
