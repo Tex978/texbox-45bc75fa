@@ -84,14 +84,18 @@ describe("4a personal points", () => {
     actOnTask(mom, { id: o.id, version: o.version, action: "complete" });
     expect(ledgerCount()).toBe(0);
     const d = db()!;
-    d.prepare("INSERT INTO task_approvals VALUES(?,?,?,?,?)").run(o.id + "x", `profile:${profile}`, 100000, dad.id, 1);
-    d.prepare("DELETE FROM point_ledger").run();
+    const big = saveTask(mom, task({ assignee: `profile:${profile}`, points: 100000, title: "Nagy" }));
+    let b = occ(mom, big);
+    actOnTask(mom, { id: b.id, version: b.version, action: "complete" });
+    b = occ(mom, big);
+    actOnTask(dad, { id: b.id, version: b.version, action: "approve" });
+    d.prepare("DELETE FROM point_ledger").run(); // simulate a pre-phase-4 database
     resetAuthDb();
     resetAuthDb();
     expect(balanceOf(`profile:${profile}`).balance).toBe(100000);
     const rows = db()!.prepare("SELECT source,reason FROM point_ledger").all() as { source: string; reason: string }[];
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.source).toBe(`task:${o.id}x`);
+    expect(rows[0]?.source).toBe(`task:${b.id}`);
   });
   it("adjustments need reason, ACL, allow negative balance and are audited", () => {
     expect(() => adjustPoints(mom, { person: `profile:${profile}`, delta: -5, reason: "", requestId: rid() })).toThrow("indoklás");
