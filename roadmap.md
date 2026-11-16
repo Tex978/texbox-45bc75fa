@@ -12,7 +12,9 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [ ] 3. későbbi bővítés: értesítés-kiküldés, forgó kiosztás, teljes lezárt feladatarchívum felülete (adatok megőrizve).
 - [x] 3b adatmegőrzés (kód): fail-closed data-mappa őr (`.texbox-instance.json` jelző, opcionális TEXBOX_INSTANCE_ID), hiányzó texbox.db / nas-state.json / data mappa / írási jog esetén hibaoldal üres példány helyett, explicit „UJ TELEPITES” megerősítés új, üres mappánál, régi telepítések automatikus felismerése, admin-only csak olvasó tárolási állapotkártya, új compose minta (texbox, create_host_path:false, Watchtower tiltva) és mentés/visszaállítás leírás. 145 teszt sikeres (36 fájl), célzott lint hibamentes (a shared-store korábbi any-hibáin kívül).
 - [ ] 3b élő Synology elfogadás: új texbox compose mellett a régi adatok felismerése (nincs „Új telepítés” oldal), Adattárolás állapota kártya „Külön csatolt kötet”, konténer újraindítás/frissítés után változatlan fiókok és szobák, csak egy 3050-es példány; innen nem ellenőrizhető.
-- [ ] 4. fázis: kizárólag személyes pontszámla és jutalombolt.
+- [x] 4a: személyes pontnapló (user:/profile:, nincs közös számla), egyenleg/szerzett/elköltött/foglalt, feladat-jóváhagyással egy tranzakcióban egyszeri jóváírás (UNIQUE task:<occurrence>), visszamenőleges backfill, indoklásos auditált korrekció, `pre-points-phase4.db` mentés. Izolált SQLite-tesztek kész.
+- [x] 4b: Ajándékbolt (/rewards) – jutalom CRUD/archiválás, készlet, elérhetőség, https kép, kategóriaszűrő, kívánságlista, személyes cél, felnőtt azonnali beváltás + átadásra vár/átadva, gyermek pontfoglalás → szülői jóváhagyás/elutasítás/visszavonás, idempotens kérésazonosító, árváltozás-védelem.
+- [ ] 4 nyitott: élő NAS-ellenőrzés (újraindítás utáni megmaradás, két szülő párhuzamos döntése két telefonon), képfeltöltés helyett csak https link, értesítések, jutalom-kérés okának szerkeszthető előzménylistája.
 - [ ] 5. fázis: bevásárlás, receptek/menü, naptár.
 - [ ] 6. fázis: személyes kiegyensúlyozott főoldal és öt fő terület.
 - [ ] Opcionális energia-idősor: csak külön tárolási jóváhagyás után.

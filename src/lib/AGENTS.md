@@ -8,4 +8,5 @@
 - Manual scenes use additive SQLite tables with a mandatory pre-upgrade snapshot, and plain shared device transports rather than nested server-function RPCs; scene and per-device ACL are checked again before each step. Never auto-resume interrupted physical commands.
 - Device locks are shared between scene and direct Gree/Tuya/blind handlers in the single NAS Node process; API acceptance is not proof of physical state, and child login accounts need explicit scene and device grants.
 - Storage opens only through data-guard.server: never create the data dir or an empty DB/state silently; the marker tracks created files, empty folders need explicit gated confirmation, and diagnostics stay stat-only so a wrong mount is visible instead of looking like a first start.
+- Points are an append-only personal ledger keyed user:/profile: with UNIQUE source (task:/redeem:/adjust:); balance is always derived, child redemptions reserve via status='reserved' and deduct only on parent approval, and task credit runs inside the task approval transaction.
 <!-- AGENT-MEMORY:END -->
