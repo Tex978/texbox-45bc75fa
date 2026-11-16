@@ -49,8 +49,7 @@ describe("first-admin setup page", () => {
     expect(await signedOut.text()).not.toContain("Admin létrehozása");
 
     const signedIn = await get("/__setup", `${SESSION_COOKIE}=${token}`);
-    const body = await signedIn.text();
-    expect(body).not.toContain("Admin létrehozása");
-    expect(body).toContain("a saját NAS-címeden");
+    // Signed-in users are handed to the router, which has no /__setup page: the form is never served.
+    expect(signedIn).toBeNull();
   });
 });
