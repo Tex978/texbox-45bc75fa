@@ -91,7 +91,7 @@ describe("climate selection and commands", () => {
       target: { value: "Nappali" },
     });
     await waitFor(() => expect(vi.mocked(saveSharedPref)).toHaveBeenCalled());
-    expect((vi.mocked(saveSharedPref).mock.calls.at(-1)![0] as any)).toEqual({
+    expect(JSON.parse((vi.mocked(saveSharedPref).mock.calls.at(-1)![0] as any).data.value).assignments).toEqual({
       "192.168.1.60": "Nappali",
     });
   });
