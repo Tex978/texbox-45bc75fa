@@ -18,6 +18,10 @@ const crypto = () => builtin<typeof import("node:crypto")>("node:crypto");
 const validId = (id: string) => z.string().uuid().parse(id);
 export const filesDir = () => `${dataDir()}/chat-attachments`;
 export function filePath(id: string) {
+  if(fs().existsSync(filesDir())) {
+    const s=fs().lstatSync(filesDir());
+    if(s.isSymbolicLink()||!s.isDirectory())throw new Error("A chat fájlmappája nem biztonságos.");
+  }
   return `${filesDir()}/${validId(id)}`;
 }
 export function chatFileAccess(token: string | undefined, write = false) {
@@ -133,6 +137,7 @@ export async function uploadChatFile(
   let fd: number | undefined;
   let total = 0;
   const reader = body.getReader();
+  const deadline=Date.now()+10*60*1000;
   try {
     fd = f.openSync(
       filePath(id),
@@ -140,7 +145,11 @@ export async function uploadChatFile(
       0o600,
     );
     while (true) {
-      const { value, done } = await reader.read();
+      if(Date.now()>deadline)throw new Error("A feltöltés túllépte az időkorlátot.");
+      let timer:ReturnType<typeof setTimeout>|undefined;
+      let chunk:ReadableStreamReadResult<Uint8Array>;
+      try {chunk=await Promise.race([reader.read(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error("A feltöltés túl sokáig nem továbbított adatot.")),60000);})]);}finally{if(timer)clearTimeout(timer);}
+      const { value, done } = chunk;
       if (done) break;
       chatFileAccess(token, true);
       total += value.byteLength;
@@ -180,6 +189,7 @@ export async function uploadChatFile(
         throw new Error("A fájl tartalma nem egyezik a megadott típusával.");
     }
     chatFileAccess(token, true);
+    if(row(id)?.status!=="uploading")throw new Error("A feltöltést másik eszközön törölték.");
     d.prepare("UPDATE chat_attachments SET status='ready' WHERE id=? AND status='uploading'").run(
       id,
     );
@@ -349,10 +359,7 @@ export function sameOrigin(request: Request) {
 export function fileError(e: unknown) {
   return Response.json(
     {
-      error:
-        e instanceof Error && !/SQLITE|ENOENT|EACCES|\/data\//.test(e.message)
-          ? e.message
-          : "A NAS fájltárolója nem elérhető.",
+      error: e instanceof Error && e.name!=="ZodError" && !/SQLITE|ENOENT|EACCES|\/data\//.test(e.message) ? e.message : "Érvénytelen fájladatok vagy nem elérhető NAS-fájltároló.",
     },
     { status: 400, headers: { "Cache-Control": "no-store" } },
   );
