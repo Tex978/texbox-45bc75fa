@@ -615,7 +615,7 @@ export const getThermometers = createServerFn({ method: "GET" }).handler(async (
 });
 export const xiaomiSendCode = createServerFn({ method: "POST" }).inputValidator((d: { url: string }) => d)
   .handler(async ({ data }) => (await import("./xiaomi.server")).sendCode(env("XIAOMI_USER"), data.url));
-export const getThermometerHistory = createServerFn({ guard("settings"); method: "GET" })
+export const getThermometerHistory = createServerFn({ method: "GET" })
   .inputValidator((input: { did: string; days: number }) => {
     if (!input.did || ![1, 7].includes(input.days)) throw new Error("Érvénytelen időszak.");
     return input;
