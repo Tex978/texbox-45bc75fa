@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { applyPref, parsePrefs, PREF_KEYS } from "@/lib/shared-prefs";
+import { applyPref, parsePrefs, PREF_KEYS, isPrefKey } from "@/lib/shared-prefs";
 
 describe("shared prefs", () => {
+  it("rejects inherited property names", () => {
+    expect(isPrefKey("constructor")).toBe(false);
+    expect(isPrefKey("toString")).toBe(false);
+  });
   it("drops unknown keys", () => {
     expect(parsePrefs(JSON.stringify({ "home-theme": "dark", evil: 1 }))).toEqual({ "home-theme": "dark" });
   });

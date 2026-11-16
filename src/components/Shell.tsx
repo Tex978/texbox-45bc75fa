@@ -7,11 +7,11 @@ import { LayoutDashboard, Clapperboard, Search, Download, HardDrive, House, Cabl
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 const allNav = [
-  { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search }, { to: "/streaming", label: "Streaming", icon: Clapperboard },
+  { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search },
   { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/home", label: "Okosotthon", icon: House }, { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
-const primaryTabs: string[] = ["/", "/search", "/streaming", "/home"];
+const primaryTabs: string[] = ["/", "/search", "/downloads", "/home"];
 export const meQuery = { queryKey: ["me"], queryFn: () => getMe(), staleTime: 60_000 } as const;
 function ProfileMenu() {
   const { data } = useQuery(meQuery);
@@ -26,6 +26,7 @@ export function Shell({ children, demo, className = "" }: { children: ReactNode;
   const me = useQuery(meQuery).data;
   const nav = allNav.filter((n) => n.to !== "/settings" || !me?.user || me.user.can.settings);
   return <div className={`app-shell min-h-screen bg-background text-foreground ${className}`}>
+    <a href="#main-content" className="app-skip-link">Ugrás a tartalomra</a>
     <header className="app-header border-b border-border"><div className="app-header-inner">
       <div className="app-brand"><span className="app-brand-icon"><Server size={18} strokeWidth={1.7} /></span><span className="app-brand-name">NAS Vezérlő</span></div>
       {demo && <span className="app-demo">DEMÓ</span>}
@@ -33,10 +34,10 @@ export function Shell({ children, demo, className = "" }: { children: ReactNode;
       <div className="app-profile-slot"><ProfileMenu /></div>
       <nav className="app-nav" aria-label="Főmenü">{nav.map(({to, label, icon: Icon}) => <Link key={to} to={to} activeOptions={{exact: true}}><Icon size={17} strokeWidth={1.7} />{label}</Link>)}</nav>
     </div></header>
-    <main className="app-main">{children}</main>
+    <main id="main-content" tabIndex={-1} className="app-main">{children}</main>
     {!className.includes("smart-home") && <nav className="app-tabbar" aria-label="Gyors menü">
       {nav.filter((n) => primaryTabs.includes(n.to)).map(({ to, label, icon: Icon }) => <Link key={to} to={to} activeOptions={{ exact: true }}><Icon size={22} strokeWidth={1.8} /><span>{label}</span></Link>)}
-      <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="További oldalak"><MoreHorizontal size={22} strokeWidth={1.8} /><span>Több</span></button></DropdownMenuTrigger>
+      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" type="button" aria-label="További oldalak"><MoreHorizontal size={22} strokeWidth={1.8} /><span>Több</span></Button></DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="top" className="min-w-56">{nav.filter((n) => !primaryTabs.includes(n.to)).map(({ to, label, icon: Icon }) => <DropdownMenuItem key={to} asChild><Link to={to} className="min-h-12"><Icon />{label}</Link></DropdownMenuItem>)}
           {me?.user?.can.users && <DropdownMenuItem asChild><Link to="/family" className="min-h-12"><Users />Család</Link></DropdownMenuItem>}</DropdownMenuContent></DropdownMenu>
     </nav>}
@@ -50,7 +51,8 @@ export function Card({ title, children, className = "" }: { title?: string; chil
   </section>;
 }
 export function Bar({ value }: { value: number }) {
-  return <div className="h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} /></div>;
+  const percent = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
+  return <div role="progressbar" aria-label="Előrehaladás" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} className="h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} /></div>;
 }
 export function Poster({ src, title }: { src?: string; title: string; hue?: number }) {
   return src ? <img src={src} alt={title} loading="lazy" className="aspect-[2/3] w-full rounded-lg bg-secondary object-cover" />

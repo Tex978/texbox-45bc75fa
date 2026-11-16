@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 });
 const thumb = (t?: string) => (t ? `/api/plex-thumb?path=${encodeURIComponent(t)}` : "");
 const shortcuts = [
-  { to: "/search", label: "Keresés", icon: Search }, { to: "/streaming", label: "Streaming", icon: Clapperboard },
+  { to: "/search", label: "Filmek és sorozatok", icon: Search }, { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/home", label: "Okosotthon", icon: House },
 ] as const;
 function greeting() {

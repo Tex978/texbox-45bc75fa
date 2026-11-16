@@ -7,8 +7,8 @@ import { Poster } from "@/components/Shell";
 import { getMediaDetail } from "@/lib/nas.functions";
 import type { MediaItem } from "@/lib/media";
 
-export function MediaDetail({ item, onClose, request, requestState }: {
-  item: MediaItem; onClose: () => void; request: (item: MediaItem) => void; requestState?: string | undefined;
+export function MediaDetail({ item, onClose, request, requestState, canRequest = true }: {
+  item: MediaItem; onClose: () => void; request: (item: MediaItem) => void; requestState?: string | undefined; canRequest?: boolean;
 }) {
   const [video, setVideo] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -30,7 +30,7 @@ export function MediaDetail({ item, onClose, request, requestState }: {
             <span className="media-rating"><Star size={14} />IMDb {shown.imdbRating?.toFixed(1) || "–"}</span>
             {shown.imdbId && <Button asChild variant="outline" size="sm"><a href={`https://www.imdb.com/title/${shown.imdbId}/`} target="_blank" rel="noopener noreferrer"><ExternalLink size={14} />IMDb adatlap</a></Button>}
           </div>
-          <Button className="mt-4" disabled={data?.demo || shown.inLibrary || requestState === "busy" || requestState === "done"} onClick={() => request(shown)}>
+          <Button className="mt-4" disabled={!canRequest || data?.demo || shown.inLibrary || requestState === "busy" || requestState === "done"} onClick={() => request(shown)}>
             {shown.inLibrary ? "Már megvan" : requestState === "done" ? "Kérve" : requestState === "busy" ? "Kérés…" : "Kérés"}
           </Button>
           {requestState === "error" && <p role="alert" className="mt-2 text-sm text-destructive">Nem sikerült a kérés. Újra próbálhatod.</p>}
