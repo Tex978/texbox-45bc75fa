@@ -5,7 +5,7 @@
 // binds the folder to the deployment. A marker cannot prove the right disk is mounted, it only
 // makes a missing or swapped folder visible instead of looking like a first start.
 type Fs = typeof import("node:fs");
-const proc = () => (globalThis as any).process as NodeJS.Process | undefined;
+const proc = () => (globalThis as { process?: NodeJS.Process }).process;
 const fsMod = (): Fs | null => {
   try {
     return (proc()?.getBuiltinModule?.("node:fs") as Fs | undefined) ?? null;
