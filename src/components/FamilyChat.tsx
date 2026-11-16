@@ -71,28 +71,72 @@ function ChatConversation({ userId }: { userId: string }) {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const selection = useRef({ start: 0, end: 0 });
   const request = useRef<ChatSend | null>(null);
-  const fileInput=useRef<HTMLInputElement>(null);
-  const [uploads,setUploads]=useState<ChatFile[]>([]);
-  const [uploading,setUploading]=useState(false);
-  const [progress,setProgress]=useState(0);
-  const [uploadError,setUploadError]=useState("");
-  const uploadController=useRef<AbortController|null>(null);
-  const drafts=useQuery({queryKey:["chat-drafts",userId],queryFn:()=>chatDraftFiles(),retry:false});
-  useEffect(()=>()=>uploadController.current?.abort(),[]);
-  const allDrafts=[...(drafts.data??[]),...uploads].filter((f,i,a)=>a.findIndex(x=>x.id===f.id)===i);
-  const uploadFiles=async(files:File[])=>{
-    if(uploading)return;
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploads, setUploads] = useState<ChatFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [uploadError, setUploadError] = useState("");
+  const uploadController = useRef<AbortController | null>(null);
+  const drafts = useQuery({
+    queryKey: ["chat-drafts", userId],
+    queryFn: () => chatDraftFiles(),
+    retry: false,
+  });
+  useEffect(() => () => uploadController.current?.abort(), []);
+  const allDrafts = [...(drafts.data ?? []), ...uploads].filter(
+    (f, i, a) => a.findIndex((x) => x.id === f.id) === i,
+  );
+  const uploadFiles = async (files: File[]) => {
+    if (uploading) return;
     setUploadError("");
-    try{if(files.length+allDrafts.length>5)throw new Error("Egy üzenethez legfeljebb 5 fájl csatolható.");for(const f of files)checkFileInfo({name:f.name,size:f.size,mime:f.type});}catch(e){setUploadError((e as Error).message);return;}
-    const controller=new AbortController();uploadController.current=controller;setUploading(true);
-    const finished:ChatFile[]=[];
-    try{for(let i=0;i<files.length;i++){const f=files[i];if(!f)continue;const result=await uploadChatFileBrowser(f,p=>setProgress(Math.round((i+p/100)/files.length*100)),controller.signal);finished.push(result);}setUploads(v=>[...v,...finished]);}
-    catch(e){for(const f of finished)await fetch(`/api/chat/file/${f.id}`,{method:"DELETE"}).catch(()=>undefined);setUploadError((e as Error).message);void qc.invalidateQueries({queryKey:["chat-drafts",userId]});}
-    finally{setUploading(false);setProgress(0);uploadController.current=null;}
+    try {
+      if (files.length + allDrafts.length > 5)
+        throw new Error("Egy üzenethez legfeljebb 5 fájl csatolható.");
+      for (const f of files) checkFileInfo({ name: f.name, size: f.size, mime: f.type });
+    } catch (e) {
+      setUploadError((e as Error).message);
+      return;
+    }
+    const controller = new AbortController();
+    uploadController.current = controller;
+    setUploading(true);
+    const finished: ChatFile[] = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        if (!f) continue;
+        const result = await uploadChatFileBrowser(
+          f,
+          (p) => setProgress(Math.round(((i + p / 100) / files.length) * 100)),
+          controller.signal,
+        );
+        finished.push(result);
+      }
+      setUploads((v) => [...v, ...finished]);
+    } catch (e) {
+      for (const f of finished)
+        await fetch(`/api/chat/file/${f.id}`, { method: "DELETE" }).catch(() => undefined);
+      setUploadError((e as Error).message);
+      void qc.invalidateQueries({ queryKey: ["chat-drafts", userId] });
+    } finally {
+      setUploading(false);
+      setProgress(0);
+      uploadController.current = null;
+    }
   };
-  const deleteFile=async(id:string)=>{
-    try{const r=await fetch(`/api/chat/file/${id}`,{method:"DELETE"});if(!r.ok){const data=await r.json();throw new Error(data.error||"A fájl nem törölhető.");}setUploads(v=>v.filter(f=>f.id!==id));void qc.invalidateQueries({queryKey:["chat-drafts",userId]});void qc.invalidateQueries({queryKey:["chat-messages",userId]});}
-    catch(e){setUploadError((e as Error).message);}
+  const deleteFile = async (id: string) => {
+    try {
+      const r = await fetch(`/api/chat/file/${id}`, { method: "DELETE" });
+      if (!r.ok) {
+        const data = await r.json();
+        throw new Error(data.error || "A fájl nem törölhető.");
+      }
+      setUploads((v) => v.filter((f) => f.id !== id));
+      void qc.invalidateQueries({ queryKey: ["chat-drafts", userId] });
+      void qc.invalidateQueries({ queryKey: ["chat-messages", userId] });
+    } catch (e) {
+      setUploadError((e as Error).message);
+    }
   };
   const [cursor, setCursor] = useState<number | undefined>();
   const q = useQuery({
@@ -131,7 +175,7 @@ function ChatConversation({ userId }: { userId: string }) {
       request.current = null;
       setText("");
       setUploads([]);
-      void qc.invalidateQueries({queryKey:["chat-drafts",userId]});
+      void qc.invalidateQueries({ queryKey: ["chat-drafts", userId] });
       setCursor(undefined);
       void qc.invalidateQueries({ queryKey: ["chat-messages", userId] });
       void qc.invalidateQueries({ queryKey: ["chat-unread", userId] });
@@ -208,8 +252,11 @@ function ChatConversation({ userId }: { userId: string }) {
                       })}
                     </time>
                   </div>
-                  {m.text&&<p>{m.text}</p>}
-                  <ChatAttachments files={m.attachments} onDelete={m.mine&&q.data?.canSend?id=>void deleteFile(id):undefined}/>
+                  {m.text && <p>{m.text}</p>}
+                  <ChatAttachments
+                    files={m.attachments}
+                    onDelete={m.mine && q.data?.canSend ? (id) => void deleteFile(id) : undefined}
+                  />
                   <div
                     className="chat-reactions"
                     role="group"
@@ -266,10 +313,26 @@ function ChatConversation({ userId }: { userId: string }) {
         className="chat-composer"
         onSubmit={(e) => {
           e.preventDefault();
-          if (send.isPending || uploading || (!text.trim()&&!allDrafts.length) || allDrafts.some(f=>f.missing||f.deleted) || q.isError || !q.data?.canSend) return;
-          const attachmentIds=allDrafts.map(f=>f.id);
-          if (!request.current || request.current.text !== text.trim()||JSON.stringify(request.current.attachmentIds??[])!==JSON.stringify(attachmentIds))
-            request.current = { text: text.trim(), clientRequestId: crypto.randomUUID(),attachmentIds };
+          if (
+            send.isPending ||
+            uploading ||
+            (!text.trim() && !allDrafts.length) ||
+            allDrafts.some((f) => f.missing || f.deleted) ||
+            q.isError ||
+            !q.data?.canSend
+          )
+            return;
+          const attachmentIds = allDrafts.map((f) => f.id);
+          if (
+            !request.current ||
+            request.current.text !== text.trim() ||
+            JSON.stringify(request.current.attachmentIds ?? []) !== JSON.stringify(attachmentIds)
+          )
+            request.current = {
+              text: text.trim(),
+              clientRequestId: crypto.randomUUID(),
+              attachmentIds,
+            };
           send.mutate(request.current);
         }}
       >
@@ -286,10 +349,58 @@ function ChatConversation({ userId }: { userId: string }) {
             {emojiError}
           </p>
         )}
-        <input ref={fileInput} type="file" className="sr-only" tabIndex={-1} multiple accept={CHAT_ACCEPT} aria-label="Chat csatolmányok" onChange={e=>{const files=Array.from(e.target.files??[]);e.target.value="";void uploadFiles(files);}}/>
-        {!!allDrafts.length&&<div className="chat-drafts"><ChatAttachments files={allDrafts} onDelete={id=>void deleteFile(id)}/>{allDrafts.filter(f=>f.missing).map(f=><Button key={f.id} type="button" variant="ghost" size="sm" onClick={()=>void deleteFile(f.id)}>Hiányos piszkozat törlése: {f.name}</Button>)}</div>}
-        {uploadError&&<p className="chat-error" role="alert">{uploadError}</p>}
-        {uploading&&<div className="chat-upload-progress" role="status"><progress max={100} value={progress}/><span>Feltöltés {progress}%</span><Button type="button" variant="ghost" size="icon" aria-label="Feltöltés megszakítása" onClick={()=>uploadController.current?.abort()}><X size={18}/></Button></div>}
+        <input
+          ref={fileInput}
+          type="file"
+          className="sr-only"
+          tabIndex={-1}
+          multiple
+          accept={CHAT_ACCEPT}
+          aria-label="Chat csatolmányok"
+          onChange={(e) => {
+            const files = Array.from(e.target.files ?? []);
+            e.target.value = "";
+            void uploadFiles(files);
+          }}
+        />
+        {!!allDrafts.length && (
+          <div className="chat-drafts">
+            <ChatAttachments files={allDrafts} onDelete={(id) => void deleteFile(id)} />
+            {allDrafts
+              .filter((f) => f.missing)
+              .map((f) => (
+                <Button
+                  key={f.id}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void deleteFile(f.id)}
+                >
+                  Hiányos piszkozat törlése: {f.name}
+                </Button>
+              ))}
+          </div>
+        )}
+        {uploadError && (
+          <p className="chat-error" role="alert">
+            {uploadError}
+          </p>
+        )}
+        {uploading && (
+          <div className="chat-upload-progress" role="status">
+            <progress max={100} value={progress} />
+            <span>Feltöltés {progress}%</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Feltöltés megszakítása"
+              onClick={() => uploadController.current?.abort()}
+            >
+              <X size={18} />
+            </Button>
+          </div>
+        )}
         {emojiOpen && (
           <div
             id="chat-emojis"
@@ -320,20 +431,33 @@ function ChatConversation({ userId }: { userId: string }) {
             ))}
           </div>
         )}
-        <div className="chat-composer-tools"><Button type="button" variant="ghost" size="icon" aria-label="Fájl csatolása" title="Fájl csatolása" disabled={uploading||send.isPending||!q.data?.canSend} onClick={()=>fileInput.current?.click()}><Paperclip size={20}/></Button><Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Emojiválasztó"
-          title="Emojiválasztó"
-          aria-expanded={emojiOpen}
-          aria-controls="chat-emojis"
-          disabled={send.isPending || q.isError || !q.data?.canSend}
-          onPointerDown={rememberSelection}
-          onClick={() => setEmojiOpen((v) => !v)}
-        >
-          <Smile size={21} />
-        </Button></div>
+        <div className="chat-composer-tools">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Fájl csatolása"
+            title="Fájl csatolása"
+            disabled={uploading || send.isPending || !q.data?.canSend}
+            onClick={() => fileInput.current?.click()}
+          >
+            <Paperclip size={20} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Emojiválasztó"
+            title="Emojiválasztó"
+            aria-expanded={emojiOpen}
+            aria-controls="chat-emojis"
+            disabled={send.isPending || q.isError || !q.data?.canSend}
+            onPointerDown={rememberSelection}
+            onClick={() => setEmojiOpen((v) => !v)}
+          >
+            <Smile size={21} />
+          </Button>
+        </div>
         <label className="sr-only" htmlFor="chat-text">
           Üzenet
         </label>
@@ -359,7 +483,14 @@ function ChatConversation({ userId }: { userId: string }) {
           size="icon"
           aria-label="Üzenet küldése"
           title="Üzenet küldése"
-          disabled={send.isPending || uploading || (!text.trim()&&!allDrafts.length) || allDrafts.some(f=>f.missing) || q.isError || !q.data?.canSend}
+          disabled={
+            send.isPending ||
+            uploading ||
+            (!text.trim() && !allDrafts.length) ||
+            allDrafts.some((f) => f.missing) ||
+            q.isError ||
+            !q.data?.canSend
+          }
         >
           <Send size={18} />
         </Button>

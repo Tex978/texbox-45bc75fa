@@ -12,7 +12,9 @@ const token = () => {
 export const chatUnread = createServerFn({ method: "GET" }).handler(async () =>
   chatStatus(token()),
 );
-export const chatDraftFiles = createServerFn({method:"GET"}).handler(async()=>draftFiles(token()));
+export const chatDraftFiles = createServerFn({ method: "GET" }).handler(async () =>
+  draftFiles(token()),
+);
 export const chatMessages = createServerFn({ method: "GET" })
   .inputValidator((v: unknown) => chatPageSchema.parse(v ?? {}))
   .handler(async ({ data }) => chatList(token(), data.before));

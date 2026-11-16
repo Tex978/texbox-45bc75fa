@@ -225,7 +225,9 @@ export function db() {
         CREATE TABLE IF NOT EXISTS chat_reactions(message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, emoji TEXT CHECK(emoji IS NULL OR emoji IN ('😺','😸','😻','🙀','😿','😾','🐾')), version INTEGER NOT NULL CHECK(version>0), updated_at INTEGER NOT NULL, PRIMARY KEY(message_id,user_id), UNIQUE(message_id,user_id,emoji));
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chat_attachments'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chat_attachments'").get()
+    ) {
       const backup = `${dataDir()}/backups/pre-chat-attachments.db`;
       if (!fs.existsSync(backup)) d.exec(`VACUUM INTO '${backup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;

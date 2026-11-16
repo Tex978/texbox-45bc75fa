@@ -46,7 +46,7 @@ export function chatList(token: string | undefined, before?: number) {
     )
     .all(before ?? Number.MAX_SAFE_INTEGER) as MessageRow[];
   const slice = rows.slice(0, 100);
-  const attachments=attachmentsFor(slice.map(r=>r.id));
+  const attachments = attachmentsFor(slice.map((r) => r.id));
   const reactions = slice.length
     ? (d
         .prepare(
@@ -64,8 +64,8 @@ export function chatList(token: string | undefined, before?: number) {
     ...chatStatus(token),
     items: slice.reverse().map((r) => ({
       id: Number(r.id),
-      text: r.text === "\u200b" && attachments.some(a=>a.message_id===r.id) ? "" : r.text,
-      attachments:attachments.filter(a=>a.message_id===r.id).map(fileDto),
+      text: r.text === "\u200b" && attachments.some((a) => a.message_id === r.id) ? "" : r.text,
+      attachments: attachments.filter((a) => a.message_id === r.id).map(fileDto),
       createdAt: r.created_at,
       senderId: r.sender_id,
       name: r.name,
@@ -90,8 +90,8 @@ export function chatList(token: string | undefined, before?: number) {
 }
 export function chatSend(token: string | undefined, input: ChatSend) {
   const data = chatSendSchema.parse(input);
-  const ids=data.attachmentIds??[];
-  const storedText=data.text||"\u200b";
+  const ids = data.attachmentIds ?? [];
+  const storedText = data.text || "\u200b";
   const { user, d } = access(token);
   if (user.role === "child")
     throw new Error("Gyermekfiókkal a családi chat egyelőre csak olvasható.");
@@ -101,13 +101,15 @@ export function chatSend(token: string | undefined, input: ChatSend) {
       .prepare("SELECT id,text FROM chat_messages WHERE sender_id=? AND request_id=?")
       .get(user.id, data.clientRequestId) as { id: number; text: string } | undefined;
     if (old) {
-      const existing=attachmentsFor([old.id]).map(r=>r.id).sort();
-      if (old.text !== storedText||JSON.stringify(existing)!==JSON.stringify([...ids].sort()))
+      const existing = attachmentsFor([old.id])
+        .map((r) => r.id)
+        .sort();
+      if (old.text !== storedText || JSON.stringify(existing) !== JSON.stringify([...ids].sort()))
         throw new Error("Az üzenetazonosító már másik szöveghez tartozik.");
       d.exec("COMMIT");
       return { id: Number(old.id) };
     }
-    checkAttachments(user,ids);
+    checkAttachments(user, ids);
     const r = d
       .prepare(
         "INSERT INTO chat_messages(sender_id,request_id,text,sender_name,sender_icon,sender_color,created_at) VALUES(?,?,?,?,?,?,?)",
@@ -121,7 +123,11 @@ export function chatSend(token: string | undefined, input: ChatSend) {
         user.avatar.color,
         Date.now(),
       );
-    for(const id of ids)d.prepare("UPDATE chat_attachments SET message_id=? WHERE id=? AND message_id IS NULL").run(Number(r.lastInsertRowid),id);
+    for (const id of ids)
+      d.prepare("UPDATE chat_attachments SET message_id=? WHERE id=? AND message_id IS NULL").run(
+        Number(r.lastInsertRowid),
+        id,
+      );
     d.exec("COMMIT");
     return { id: Number(r.lastInsertRowid) };
   } catch (e) {
