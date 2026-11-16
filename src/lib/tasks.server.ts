@@ -1,5 +1,6 @@
 import { db, getUser, listUsers, listChildProfiles, userCan, type User } from "./auth.server";
 import { creditTask } from "./points.server";
+import { notifyTask } from "./notifications.server";
 import {
   addDays,
   budapestToday,
@@ -298,6 +299,18 @@ export function actOnTask(
         .run(o.id, assignee, o.body.points, u.id, Date.now());
     if (status === "approved" && assignee) creditTask(o.id);
     event(u, o.id, status, reason);
+    notifyTask(
+      u,
+      {
+        id: o.id,
+        title: o.body.title,
+        assignee,
+        version: input.version + 1,
+        points: o.body.points,
+      },
+      status,
+      reason,
+    );
     return occurrence(o.id);
   });
 }

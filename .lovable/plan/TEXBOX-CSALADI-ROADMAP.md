@@ -189,3 +189,8 @@ Naptár CRUD + ismétlődés + alkalom-kivétel + feladathivatkozás kész izol�
 - Kész: napi / kiválasztott napok / N hetente / egyszeri szabály, Europe/Budapest (tavaszi rés kimarad, őszi ismétlés csak elsőre), kikapcsolt alapállapot, megerősítő összefoglaló, szerkesztés = újra kikapcsol, jelenet módosítása/törlése leállítja.
 - Ütemező: Node szerverfolyamat, a szerverbelépő betöltésekor és minden kérésnél idempotensen indul; SQLite lease (90 s) biztosítja az egy példányt; UNIQUE(rule_id, slot) atomikus claim; 3 perces türelmi idő, utána „kimaradt”; félbehagyott futás „megszakadt”, nem ismétlődik. Zárat tartalmazó jelenet nem időzíthető. `TEXBOX_SCHEDULER=off` kikapcsolja.
 - Nyitott: élő NAS-ellenőrzés (indulási napló, valódi próbafutás egyeztetett jelenettel), 2b/2 érzékelő-triggerek, értesítések.
+
+## 7a – Értesítési központ (fejlesztői környezetben kész, NAS-on nyitott)
+- Kész: `notifications` (UNIQUE recipient+source+event), `notification_settings` (verzió); címzett csak bejelentkezési fiók; gyermekfeladat-teljesítés és gyermek-jutalomkérés minden más jogosult szülőnek külön; döntés az érintett fióknak, kezelt profilnál a másik szülőnek; bevásárlás nem értesít; értesítés hibája nem görgeti vissza az üzleti tranzakciót.
+- Emlékeztetők: csak „emlékeztetés” jelölésű naptáresemény/feladat, fiókonként választott előidő (15 p/1 ó/3 ó/1 nap), Europe/Budapest, 10 perces ablak, utólagos pótlás nincs; a 2b/1 ütemező lease-tulajdonosa futtatja.
+- Nyitott: 7b push, élő NAS-ellenőrzés.

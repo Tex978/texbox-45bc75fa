@@ -15,6 +15,7 @@ import { Route as FamilyRouteImport } from './routes/family'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as MediaRouteImport } from './routes/media'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OrganizerRouteImport } from './routes/organizer'
 import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as SearchRouteImport } from './routes/search'
@@ -51,6 +52,11 @@ const LibraryRoute = LibraryRouteImport.update({
 const MediaRoute = MediaRouteImport.update({
   id: '/media',
   path: '/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrganizerRoute = OrganizerRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/media': typeof MediaRoute
+  '/notifications': typeof NotificationsRoute
   '/organizer': typeof OrganizerRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/media': typeof MediaRoute
+  '/notifications': typeof NotificationsRoute
   '/organizer': typeof OrganizerRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/media': typeof MediaRoute
+  '/notifications': typeof NotificationsRoute
   '/organizer': typeof OrganizerRoute
   '/rewards': typeof RewardsRoute
   '/search': typeof SearchRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/library'
     | '/media'
+    | '/notifications'
     | '/organizer'
     | '/rewards'
     | '/search'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/library'
     | '/media'
+    | '/notifications'
     | '/organizer'
     | '/rewards'
     | '/search'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/library'
     | '/media'
+    | '/notifications'
     | '/organizer'
     | '/rewards'
     | '/search'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
   MediaRoute: typeof MediaRoute
+  NotificationsRoute: typeof NotificationsRoute
   OrganizerRoute: typeof OrganizerRoute
   RewardsRoute: typeof RewardsRoute
   SearchRoute: typeof SearchRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/media'
       fullPath: '/media'
       preLoaderRoute: typeof MediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/organizer': {
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
   MediaRoute: MediaRoute,
+  NotificationsRoute: NotificationsRoute,
   OrganizerRoute: OrganizerRoute,
   RewardsRoute: RewardsRoute,
   SearchRoute: SearchRoute,

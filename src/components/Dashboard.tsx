@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { meQuery } from "./Shell";
+import { unreadQuery } from "./NotificationBell";
 import { tasksQuery } from "./Tasks";
 import { pointsQuery } from "./Rewards";
 import { scenesList, scenesRun, scenesRuns } from "@/lib/scenes.functions";
@@ -55,7 +56,7 @@ function Widget({
 }: {
   title: string;
   icon: LucideIcon;
-  to: "/" | "/home" | "/tasks" | "/organizer" | "/rewards" | "/media";
+  to: "/" | "/home" | "/tasks" | "/organizer" | "/rewards" | "/media" | "/notifications";
   link: string;
   q?: Q;
   children?: ReactNode;
@@ -552,6 +553,7 @@ export function Dashboard() {
   const h = new Date().getHours();
   const qc = useQueryClient();
   const dash = useQuery({ ...dashboardQuery, enabled: !!me });
+  const unread = useQuery({ ...unreadQuery, enabled: !!me }).data?.unread ?? 0;
   const save = useServerFn(dashboardSave);
   const [editing, setEditing] = useState(false),
     [draft, setDraft] = useState<DashboardPrefs | null>(null),
@@ -633,6 +635,11 @@ export function Dashboard() {
             </Button>
           )}
         </div>
+        {unread > 0 && (
+          <Link to="/notifications" className="dash-alert">
+            {unread} olvasatlan értesítés
+          </Link>
+        )}
         {msg && (
           <p className={msg.bad ? "task-error" : "task-ok"} role="status">
             {msg.text}

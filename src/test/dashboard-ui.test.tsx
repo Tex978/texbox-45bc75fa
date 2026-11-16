@@ -56,6 +56,7 @@ vi.mock("@/lib/dashboard.functions", async () => {
       srv.saveDashboard(need(), data),
   };
 });
+vi.mock("@/lib/notifications.functions", () => ({ notificationsUnread: async () => ({ unread: 0 }) }));
 import { Dashboard } from "@/components/Dashboard";
 const view = () =>
   render(
