@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { getCookie, setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { SESSION_COOKIE } from "./auth.server";
-import { chatPageSchema, chatSendSchema } from "./chat-schema";
-import { chatList, chatMarkRead, chatSend, chatStatus } from "./chat.server";
+import { chatPageSchema, chatSendSchema, chatReactionSchema } from "./chat-schema";
+import { chatList, chatMarkRead, chatSend, chatStatus, chatReact } from "./chat.server";
 const token = () => {
   setResponseHeader("Cache-Control", "no-store");
   return getCookie(SESSION_COOKIE);
@@ -22,3 +22,6 @@ export const chatRead = createServerFn({ method: "POST" })
     z.object({ through: z.number().int().positive() }).strict().parse(v),
   )
   .handler(async ({ data }) => chatMarkRead(token(), data.through));
+export const chatReactionSave = createServerFn({ method: "POST" })
+  .inputValidator((v: unknown) => chatReactionSchema.parse(v))
+  .handler(async ({ data }) => chatReact(token(), data));
