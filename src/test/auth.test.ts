@@ -2,10 +2,25 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createUser, login, sessionUser, requirePermission, resetAuthDb, hashPassword, verifyPassword, createInviteToken, acceptInvite, updateUser, endSession } from "@/lib/auth.server";
+import {
+  createUser,
+  login,
+  sessionUser,
+  requirePermission,
+  resetAuthDb,
+  hashPassword,
+  verifyPassword,
+  createInviteToken,
+  acceptInvite,
+  updateUser,
+  endSession,
+} from "@/lib/auth.server";
 import { can } from "@/lib/permissions";
 
-beforeEach(() => { process.env["DATA_DIR"] = mkdtempSync(join(tmpdir(), "texbox-")); resetAuthDb(); });
+beforeEach(() => {
+  process.env["DATA_DIR"] = mkdtempSync(join(tmpdir(), "texbox-"));
+  resetAuthDb();
+});
 
 describe("family accounts", () => {
   it("stores scrypt hashes, never the raw password", () => {
@@ -16,8 +31,11 @@ describe("family accounts", () => {
   });
   it("rejects a wrong password and locks after 5 failures", () => {
     createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
-    for (let i = 0; i < 5; i++) expect(login("apa", "rossz", "1.1.1.1", "")).toHaveProperty("error");
-    expect(login("apa", "jelszo123", "1.1.1.1", "")).toEqual({ error: "Túl sok hibás próbálkozás. Várj 5 percet." });
+    for (let i = 0; i < 5; i++)
+      expect(login("apa", "rossz", "1.1.1.1", "")).toHaveProperty("error");
+    expect(login("apa", "jelszo123", "1.1.1.1", "")).toEqual({
+      error: "Túl sok hibás próbálkozás. Várj 5 percet.",
+    });
   });
   it("logout ends the session", () => {
     createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
@@ -29,7 +47,9 @@ describe("family accounts", () => {
   it("changing the forwarded IP cannot bypass five failed logins", () => {
     createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
     for (let i = 0; i < 5; i++) login("apa", "rossz", `ip-${i}`, "");
-    expect(login("apa", "jelszo123", "another-ip", "")).toEqual({ error: "Túl sok hibás próbálkozás. Várj 5 percet." });
+    expect(login("apa", "jelszo123", "another-ip", "")).toEqual({
+      error: "Túl sok hibás próbálkozás. Várj 5 percet.",
+    });
   });
   it("child cannot reach connections, downloads or locks; admin can", () => {
     expect(can("child", "settings")).toBe(false);
@@ -58,7 +78,12 @@ describe("family accounts", () => {
     expect(sessionUser(t)).toBeNull();
   });
   it("keeps at least one admin", () => {
-    const a = createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
+    const a = createUser({
+      username: "apa",
+      displayName: "Apa",
+      role: "admin",
+      password: "jelszo123",
+    });
     expect(() => updateUser(a.id, { role: "adult" })).toThrow("Legalább egy aktív admin");
   });
 });

@@ -69,7 +69,9 @@ function Index() {
           <p className="page-subtitle">
             {data.streams.length
               ? `${data.streams.length} lejátszás fut most a Plexen.`
-              : "Most senki nem néz semmit a Plexen."}
+              : data.errors?.length
+                ? "Egyes szolgáltatások adatai nem érhetők el."
+                : "Most senki nem néz semmit a Plexen."}
           </p>
         </div>
         <img
@@ -82,6 +84,11 @@ function Index() {
         />
       </section>
 
+      {!!data.errors?.length && (
+        <div role="alert" className="mb-4 text-sm text-destructive">
+          {data.errors.join(" ")}
+        </div>
+      )}
       <div className="ov-stats">
         <div className="ov-stat">
           <HardDrive size={18} />

@@ -38,7 +38,10 @@ export function useMediaPref<T>(key: MediaPrefKey) {
       setMigrationChecked(true);
       return;
     }
-    if (!raw) { setMigrationChecked(true); return; }
+    if (!raw) {
+      setMigrationChecked(true);
+      return;
+    }
     setMigrationPending(true);
     saveFn({ data: { key, value: raw, onlyMissing: true } })
       .then((r) => {
@@ -52,7 +55,10 @@ export function useMediaPref<T>(key: MediaPrefKey) {
       .catch(() =>
         setError("A korábbi keresési beállítás átvétele nem sikerült; a böngészőben megmaradt."),
       )
-      .finally(() => { setMigrationPending(false); setMigrationChecked(true); });
+      .finally(() => {
+        setMigrationPending(false);
+        setMigrationChecked(true);
+      });
   }, [q.data, key, qc, saveFn, queryKey]);
   const save = async (next: T) => {
     try {

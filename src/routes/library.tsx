@@ -88,6 +88,11 @@ function Library() {
   return (
     <Shell demo={data.demo}>
       <PageHeader title="Tárhely" />
+      {!!data.errors?.length && (
+        <p role="alert" className="mb-4 text-sm text-destructive">
+          {data.errors.join(" ")}
+        </p>
+      )}
       {message && (
         <p role="alert" className="mb-4 text-sm text-destructive">
           {message}

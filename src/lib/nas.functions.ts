@@ -284,11 +284,20 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
         .reverse()
         .map((r) => ({ ...r, thumb: "", who: "Apa" })),
     };
-  const dsm = has("DSM_URL") ? await safe(dsmVolumes(), []) : [];
+  const errors: string[] = [];
+  const read = async <T>(promise: Promise<T>, fallback: T, service: string): Promise<T> => {
+    try {
+      return await promise;
+    } catch {
+      errors.push(`${service} nem elérhető; az adatai hiányosak lehetnek.`);
+      return fallback;
+    }
+  };
+  const dsm = has("DSM_URL") ? await read(dsmVolumes(), [], "Synology") : [];
   const disks = dsm.length
     ? []
     : has("RADARR_URL")
-      ? await safe(arr("RADARR", "/diskspace"), [])
+      ? await read(arr("RADARR", "/diskspace"), [], "Radarr")
       : [];
   const seen = new Set<number>();
   const vols = (disks as { path: string; freeSpace: number; totalSpace: number }[])
@@ -310,7 +319,7 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
   let st: typeof streams = [],
     rc: { title: string; year: number; type: string; hue: number; thumb: string }[] = [];
   if (has("PLEX_URL")) {
-    const s = await safe(plex("/status/sessions"), { Metadata: [] });
+    const s = await read(plex("/status/sessions"), { Metadata: [] }, "Plex aktivitás");
     st = (s.Metadata || []).map((m: any) => ({
       user: m.User?.title || "?",
       title: m.grandparentTitle ? `${m.grandparentTitle} – ${m.title}` : m.title,
@@ -319,9 +328,10 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
       mode: m.TranscodeSession ? "Transcode" : "Direct Play",
       progress: m.duration ? Math.round((m.viewOffset / m.duration) * 100) : 0,
     }));
-    const r = await safe(
+    const r = await read(
       plex("/library/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size=12"),
       { Metadata: [] },
+      "Plex könyvtár",
     );
     rc = (r.Metadata || []).map((m: any, i: number) => ({
       title: m.parentTitle && m.type === "season" ? m.parentTitle : m.title,
@@ -330,11 +340,12 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
       hue: (i * 47) % 360,
       thumb: m.thumb || m.parentThumb || "",
     }));
-    const h = await safe(
+    const h = await read(
       plex(
         "/status/sessions/history/all?sort=viewedAt:desc&X-Plex-Container-Start=0&X-Plex-Container-Size=30",
       ),
       { Metadata: [] },
+      "Plex könyvtár",
     );
     const accts = await safe(plex("/accounts"), { Account: [] });
     const names = new Map((accts.Account || []).map((a: any) => [a.id, a.name]));
@@ -354,7 +365,7 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
       if (watched.length >= 12) break;
     }
   }
-  return { demo: false, volumes: vols, streams: st, recent: rc, watched };
+  return { demo: false, volumes: vols, streams: st, recent: rc, watched, errors };
 });
 
 export const getTorrents = createServerFn({ method: "GET" }).handler(async () => {
@@ -925,12 +936,22 @@ export const getRecommendations = createServerFn({ method: "GET" }).handler(asyn
 
 export const getLibrary = createServerFn({ method: "GET" }).handler(async () => {
   if (!has("RADARR_URL") && !has("SONARR_URL")) return { demo: true, items: library };
+  const errors: string[] = [];
+  const read = async (app: "RADARR" | "SONARR", path: string) => {
+    try {
+      return await arr(app, path);
+    } catch {
+      errors.push(`${app === "RADARR" ? "Radarr" : "Sonarr"} nem elérhető.`);
+      return [];
+    }
+  };
   const [m, s] = await Promise.all([
-    has("RADARR_URL") ? safe(arr("RADARR", "/movie"), []) : [],
-    has("SONARR_URL") ? safe(arr("SONARR", "/series"), []) : [],
+    has("RADARR_URL") ? read("RADARR", "/movie") : [],
+    has("SONARR_URL") ? read("SONARR", "/series") : [],
   ]);
   return {
     demo: false,
+    errors,
     items: [
       ...(m as any[])
         .filter((x) => x.sizeOnDisk > 0)
