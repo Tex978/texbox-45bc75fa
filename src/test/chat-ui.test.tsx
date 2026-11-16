@@ -30,7 +30,7 @@ it("sends and reads back SQLite messages through the authenticated chat UI", asy
   resetAuthDb();
   const dad = createUser({ username: "apa", displayName: "Apa", role: "admin" }),
     mom = createUser({ username: "anya", displayName: "Anya", role: "adult" });
-  updateOwnProfile(dad, { displayName: "Apa", avatar: { icon: "cat", color: "c2" }, version: 0 });
+  updateOwnProfile(dad, { displayName: "Apa", icon: "cat", color: "c2", version: 0 });
   token = createSession(mom.id, "test");
   const dadToken = createSession(dad.id, "test");
   chatSend(dadToken, { text: "Hazaértem!", clientRequestId: randomUUID() });
