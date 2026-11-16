@@ -3,7 +3,9 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] 1. fázis: stabil profilmenü, felnőtt meghívás, tulajdonosi védelem, külön gyermekprofil; 98 teszt sikeres, automatikus build OK; 390/1280 px publikus állapot ellenőrizve, izolált valódi SQLite + UI mentés/újranyitás tesztelve. Érintett lint hibamentes egy figyelmeztetéssel; teljes lint korábbi 671 hibája nyitott.
 - [ ] NAS elfogadás: meglévő admin/session, két eszközös mentés, felnőtt aktiválás/reset, Docker-frissítés; helyi NAS nem érhető el innen.
 - [ ] 1b: saját profil, audit/munkamenet részletek, személyes kedvencek és ACL alap.
-- [ ] 2. fázis: szerkeszthető kézi jelenetek valós eszközképességekkel; 2b tartós automatizálás.
+- [x] 2a: mentett/szerkeszthető kézi jelenetek, Gree/redőny/boolean Tuya-lámpa adapterek, eszköz-ACL, futtatási napló és duplaindítás-védelem; izolált tesztek, NAS éles ellenőrzés nélkül.
+- [ ] 2a élő NAS: frissítés és data-mentés után két eszközös jelenetmentés, gyermek ACL, valódi gyártói ACK és fizikai állapot ellenőrzése; innen az otthoni eszközök nem érhetők el.
+- [ ] 2b: tartós időzítés/automatizálás, DST/kiesési szabályok; még nincs scheduler.
 - [ ] 3. fázis: ismétlődő feladatok, vállalás és szülői jóváhagyás.
 - [ ] 4. fázis: kizárólag személyes pontszámla és jutalombolt.
 - [ ] 5. fázis: bevásárlás, receptek/menü, naptár.

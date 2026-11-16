@@ -61,6 +61,25 @@ Belépés: username+jelszó → szerver validál → hash-elt, lejáró session 
 
 ## 2. fázis – Okosotthon jelenetek, aztán automatizálás
 
+### 2a megvalósított állapot – 2026-11-16
+
+- [x] Otthon → Jelenetek fül, magyar szerkesztő: név/ikon/szín, személyes/családi láthatóság, több sorrendezhető eszközművelet, létrehozás/módosítás/törlés, revíziós ütközésvédelem.
+- [x] NAS SQLite additív `scenes`, `scene_device_acl`, `scene_runs` és egy aktív futtatást engedő index; kötelező `backups/pre-scenes-phase2a.db` snapshot. A régi fiókok/sessions/gyermekprofilok és JSON titkok változatlanok. Korábbi Docker-kód az új táblákat figyelmen kívül hagyja; rollbackhez nem kell adatot törölni.
+- [x] Képességkatalógus: Gree power on/off, célhőmérséklet egész 16–30 °C, a meglévő GREE_MODES/GREE_FANS validált értékei; redőny open/close/stop/position 0–100; Smart Life csak tényleges boolean switch_led. Helyi Gree olvashatósága és eszközök offline állapota ellenőrzött a katalógusban.
+- [x] Meglévő plain szervervezérlők használata, nem RPC-hívás másik RPC-ből. Gree és redőny közös parancsadapter; Tuya meglévő ensure/sendTuya. Tuya fetch 10 másodperces megszakítható korlát, meglévő Gree/UDP korlátok megtartva.
+- [x] Tulajdonos szerkeszti a saját jelenetét, admin a családiakat is; személyes jelenet más számára nem olvasható. Gyermek-login csak explicit jelenet és minden mögöttes eszközengedéllyel. Szülői gyermekprofil nem bejelentkezési szereplő. Admin eszközengedély szerkesztő mentett ACL-listával; explicit tiltás felnőttre is él, korábbi felnőtt parancs alapból kompatibilis.
+- [x] Eszköz-ACL és folyamaton belüli közös zárolás Gree, Tuya, egyedi/csoportos redőny közvetlen parancsokon is; jelenetben előtte és minden lépésnél újraellenőrzés. Egy jelenethez SQLite szinten egy aktív run, request UUID idempotencia, eszközönként napló és részleges hiba. Folyamat újraindításakor run megszakadtként lezárva; fizikai parancs nem ismétlődik automatikusan.
+- [x] Elfogadott parancs nem állított fizikai állapot: Gree cloud a meglévő readbacket használja; helyi Gree success event, redőny hub ACK, Tuya API success. Egységes UI „parancs elfogadva”, eszköznézetben fizikai állapot ellenőrzendő. Hiányzó kapcsolat/offline nem jelenetsiker.
+- [ ] Tuya fényerő és egyéb kódok: a jelenlegi API nem ad írható tartományt, ezért nem ajánljuk. Bosch/légtisztító/zár/szenzor csak a meglévő eszköznézetben marad, nem jelenetlépés. Modell-specifikus Gree mód/fan képességet a meglévő integráció nem ad; a támogatott szerverértékek a készüléken hibázhatnak, amit a napló jelez.
+- [ ] Szobaszintű ACL, főoldali opcionális gyorsindító, sablonok és tartós többprocesszes eszközlock későbbi bővítés; a jelenlegi Docker egy Node-folyamatára készült közös parancszár.
+- [ ] Élő NAS elfogadás: meglévő admin session, jelenet mentés másik telefonról visszaolvasva, gyermek explicit engedély és tiltott közvetlen hívás, Gree/UDP/Tuya valódi ACK és fizikai readback. Automatizált teszt éles készüléket nem indított.
+
+Automata tesztek: izolált SQLite CRUD/adatmegőrzés, személyes/családi ACL, gyermek kettős engedély, szerverfüggvény közvetlen signed-out tiltás, felnőtt szerkesztés, részleges API-hiba, revízió, párhuzamos run/device-lock/idempotencia, UI paraméteres mentés. Telefon/PC preview NAS-belépés hiányát jelzi, nem ment hamisan.
+
+### 2b változatlanul külön, még nem implementált
+
+Időzítés, hét napjai, érzékelőesemények, tartós NAS scheduler, DST/kiesés/pótlás és újraindítás utáni automatizmus nincs a 2a-ban. Feladatok/pontok/jutalmak/szervező sem készült ebben a körben.
+
 1. Valós eszközképességek katalógusa; támogatott műveletek adapterei a meglévő parancsokhoz. Gree on/off/mód/célhőfok/fan, fény on/off/fényerő és redőny csak ha tényleg támogatott.
 2. NAS-on szerkeszthető jelenetek: név, ikon, szín, családi/személyes láthatóság, engedélyezett indítók; több eszköz, sorrend és validálás. Jó reggelt/Elindulunk/Filmnézés/Jó éjszakát csak választható sablon, nem bekötött demó.
 3. Eszköz/szoba és jelenet ACL; futtatáskor minden mögöttes eszköz jogosultságát újra ellenőrizni. Per-eszköz zárolás, műveletnapló, részleges hiba/eredmény. Kézi indítás Otthon és Főoldal.
