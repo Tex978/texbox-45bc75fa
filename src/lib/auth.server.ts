@@ -125,7 +125,9 @@ export function userCount(): number {
   return d ? Number((d.prepare("SELECT count(*) c FROM users").get() as any).c) : 0;
 }
 export function listUsers(): User[] {
-  return (accountDb().prepare("SELECT * FROM users ORDER BY created_at").all() as any[]).map(rowToUser);
+  return (accountDb().prepare("SELECT * FROM users ORDER BY created_at").all() as any[]).map(
+    rowToUser,
+  );
 }
 export function getUser(id: string): User | null {
   const r = accountDb().prepare("SELECT * FROM users WHERE id=?").get(id);
@@ -165,7 +167,8 @@ export function createUser(input: {
   );
   const result = getUser(id);
   if (!result) throw new Error("A mentett fiók nem olvasható.");
-  if (input.role === "admin") d.prepare("INSERT OR IGNORE INTO family_meta(key,value) VALUES('owner',?)").run(id);
+  if (input.role === "admin")
+    d.prepare("INSERT OR IGNORE INTO family_meta(key,value) VALUES('owner',?)").run(id);
   return result;
 }
 function adminCount(exceptId?: string) {
@@ -190,7 +193,9 @@ export function updateUser(
   const u = getUser(id);
   if (!u) throw new Error("Nincs ilyen felhasználó.");
   if (isOwner(id) && ((patch.role && patch.role !== "admin") || patch.disabled))
-    throw new Error("Legalább egy aktív adminnak maradnia kell; a tulajdonosi fiók nem tiltható le és nem fokozható le.");
+    throw new Error(
+      "Legalább egy aktív adminnak maradnia kell; a tulajdonosi fiók nem tiltható le és nem fokozható le.",
+    );
   const demoting = (patch.role && patch.role !== "admin") || patch.disabled;
   if (u.role === "admin" && demoting && adminCount(id) === 0)
     throw new Error("Legalább egy aktív adminnak maradnia kell.");
@@ -293,7 +298,9 @@ export function login(
   const a = attempts.get(key);
   const now = Date.now();
   if (a && a.until > now) return { error: "Túl sok hibás próbálkozás. Várj 5 percet." };
-  const r = accountDb().prepare("SELECT * FROM users WHERE username=?").get(normUser(username)) as any;
+  const r = accountDb()
+    .prepare("SELECT * FROM users WHERE username=?")
+    .get(normUser(username)) as any;
   if (!r || r.disabled || !verifyPassword(pw, r.password_hash)) {
     const n = (a && a.until <= now && a.n >= 5 ? 0 : (a?.n ?? 0)) + 1;
     if (attempts.size > 10000) attempts.delete(attempts.keys().next().value ?? "");
@@ -339,30 +346,66 @@ function snapshot(fs: typeof import("node:fs"), d: import("node:sqlite").Databas
   }
 }
 
-
 export function isOwner(id: string) {
-  const row = accountDb().prepare("SELECT value FROM family_meta WHERE key='owner'").get() as { value: string } | undefined;
+  const row = accountDb().prepare("SELECT value FROM family_meta WHERE key='owner'").get() as
+    { value: string } | undefined;
   return row?.value === id;
 }
-export type ChildProfile = { id: string; displayName: string; icon: string; disabled: boolean; createdBy: string };
+export type ChildProfile = {
+  id: string;
+  displayName: string;
+  icon: string;
+  disabled: boolean;
+  createdBy: string;
+};
 export function listChildProfiles(): ChildProfile[] {
-  const rows = accountDb().prepare("SELECT * FROM child_profiles ORDER BY created_at,id").all() as unknown as { id: string; display_name: string; icon: string; disabled: number; created_by: string }[];
-  return rows.map(r => ({ id: r.id, displayName: r.display_name, icon: r.icon, disabled: !!r.disabled, createdBy: r.created_by }));
+  const rows = accountDb()
+    .prepare("SELECT * FROM child_profiles ORDER BY created_at,id")
+    .all() as unknown as {
+    id: string;
+    display_name: string;
+    icon: string;
+    disabled: number;
+    created_by: string;
+  }[];
+  return rows.map((r) => ({
+    id: r.id,
+    displayName: r.display_name,
+    icon: r.icon,
+    disabled: !!r.disabled,
+    createdBy: r.created_by,
+  }));
 }
 export function createChildProfile(parent: User, name: string, icon = "child") {
-  if (!userCan(parent, "family") || parent.role === "child") throw new Error("Csak szülő kezelhet gyermekprofilt.");
+  if (!userCan(parent, "family") || parent.role === "child")
+    throw new Error("Csak szülő kezelhet gyermekprofilt.");
   const displayName = name.trim();
-  if (!displayName || displayName.length > 60) throw new Error("A gyermek neve 1–60 karakter lehet.");
+  if (!displayName || displayName.length > 60)
+    throw new Error("A gyermek neve 1–60 karakter lehet.");
   if (!["child", "star", "cat"].includes(icon)) throw new Error("Érvénytelen profilikon.");
   const id = crypto().randomUUID();
-  accountDb().prepare("INSERT INTO child_profiles(id,display_name,icon,created_by,created_at) VALUES(?,?,?,?,?)").run(id, displayName, icon, parent.id, Date.now());
+  accountDb()
+    .prepare(
+      "INSERT INTO child_profiles(id,display_name,icon,created_by,created_at) VALUES(?,?,?,?,?)",
+    )
+    .run(id, displayName, icon, parent.id, Date.now());
   audit(parent.id, "child-create", id);
   return id;
 }
-export function updateChildProfile(parent: User, id: string, name: string, icon: string, disabled: boolean) {
-  if (!userCan(parent, "family") || parent.role === "child") throw new Error("Csak szülő kezelhet gyermekprofilt.");
-  if (!name.trim() || name.trim().length > 60 || !["child", "star", "cat"].includes(icon)) throw new Error("Érvénytelen gyermekprofil.");
-  const r = accountDb().prepare("UPDATE child_profiles SET display_name=?,icon=?,disabled=? WHERE id=?").run(name.trim(), icon, disabled ? 1 : 0, id);
+export function updateChildProfile(
+  parent: User,
+  id: string,
+  name: string,
+  icon: string,
+  disabled: boolean,
+) {
+  if (!userCan(parent, "family") || parent.role === "child")
+    throw new Error("Csak szülő kezelhet gyermekprofilt.");
+  if (!name.trim() || name.trim().length > 60 || !["child", "star", "cat"].includes(icon))
+    throw new Error("Érvénytelen gyermekprofil.");
+  const r = accountDb()
+    .prepare("UPDATE child_profiles SET display_name=?,icon=?,disabled=? WHERE id=?")
+    .run(name.trim(), icon, disabled ? 1 : 0, id);
   if (!r.changes) throw new Error("Nincs ilyen gyermekprofil.");
   audit(parent.id, "child-update", id);
 }
@@ -371,7 +414,14 @@ export function revokeUserSessions(id: string) {
 }
 export function familyAccountStatus(id: string) {
   const d = accountDb();
-  const invite = d.prepare("SELECT expires_at FROM invites WHERE user_id=?").get(id) as { expires_at: number } | undefined;
-  const sessions = d.prepare("SELECT count(*) count FROM sessions WHERE user_id=? AND expires_at>?").get(id, Date.now()) as { count: number };
-  return { owner: isOwner(id), inviteExpiresAt: invite?.expires_at ?? null, sessions: Number(sessions.count) };
+  const invite = d.prepare("SELECT expires_at FROM invites WHERE user_id=?").get(id) as
+    { expires_at: number } | undefined;
+  const sessions = d
+    .prepare("SELECT count(*) count FROM sessions WHERE user_id=? AND expires_at>?")
+    .get(id, Date.now()) as { count: number };
+  return {
+    owner: isOwner(id),
+    inviteExpiresAt: invite?.expires_at ?? null,
+    sessions: Number(sessions.count),
+  };
 }

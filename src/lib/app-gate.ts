@@ -143,7 +143,8 @@ export async function gate(request: Request): Promise<Response | null> {
 
   if (accounts > 0) {
     if (path === "/__login") {
-      if (!post) return loginPage();
+      if (!post)
+        return sessionUser(cookieOf(request, SESSION_COOKIE)) ? go(request, "/") : loginPage();
       const f = await request.formData();
       const r = login(
         String(f.get("username") || ""),
@@ -154,12 +155,16 @@ export async function gate(request: Request): Promise<Response | null> {
       return "token" in r ? go(request, "/", r.token) : loginPage(r.error);
     }
     if (sessionUser(cookieOf(request, SESSION_COOKIE))) return null;
+    // Return session status through its normal RPC shape instead of an HTML login form.
+    // getMe reveals no private data without a validated cookie; every other endpoint stays gated.
     if (path.startsWith("/_serverFn") || path.startsWith("/api/"))
       return new Response(JSON.stringify({ error: "Bejelentkezés szükséges." }), {
         status: 401,
         headers: { "content-type": "application/json" },
       });
-    return loginPage();
+    return loginPage(
+      cookieOf(request, SESSION_COOKIE) ? "A munkameneted lejárt. Jelentkezz be újra." : undefined,
+    );
   }
 
   // The first-admin page only exists where accounts can actually be saved (the NAS, with APP_PASSWORD set).
