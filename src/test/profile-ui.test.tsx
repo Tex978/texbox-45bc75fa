@@ -47,11 +47,14 @@ afterEach(() => {
   if (dir) rmSync(dir, { recursive: true, force: true });
 });
 it("saves own profile, changes password and revokes another device through the real SQLite-backed UI", async () => {
-  vi.stubGlobal("ResizeObserver", class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  });
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
   dir = mkdtempSync(join(tmpdir(), "texbox-profile-ui-"));
   process.env["DATA_DIR"] = dir;
   resetAuthDb();
