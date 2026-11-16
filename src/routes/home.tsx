@@ -13,11 +13,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
 import { Appliances, appliancesQuery } from "@/components/Appliances";
 import { Tuya, tuyaQuery } from "@/components/Tuya";
-import { Gree, greeQuery } from "@/components/Gree";
+import { Gree, GreeQuickControls, greeQuery } from "@/components/Gree";
 import { SOLAR_REFRESH_MS } from "@/lib/growatt-cache";
 import { ThermometerHistory } from "@/components/ThermometerHistory";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { buildHomeDevices, groupByRoom, type HomeDevice } from "@/lib/home-devices";
+import { useGreeRooms } from "@/lib/gree-rooms";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
@@ -160,9 +161,9 @@ const CATEGORIES = [
   { id: "locks", name: "Zárak", icon: LockKeyhole },
 ] as const;
 type CategoryId = typeof CATEGORIES[number]["id"];
-function CategoryPanel({ id }: { id: CategoryId }) {
+function CategoryPanel({ id, greeIp, onGreeSelect }: { id: CategoryId; greeIp?: string | null; onGreeSelect?: (ip: string) => void }) {
   if (id === "sensors") return <Thermometers />;
-  if (id === "gree") return <Gree />;
+  if (id === "gree") return <Gree selectedIp={greeIp} onSelect={onGreeSelect} />;
   if (id === "air") return <Purifiers />;
   if (id === "blinds") return <Blinds />;
   if (id === "tuya") return <Tuya />;
@@ -182,19 +183,22 @@ function useMedia(query: string) {
   return match;
 }
 function greeting() { const h = new Date().getHours(); return h < 10 ? "Jó reggelt" : h < 18 ? "Szép napot" : "Jó estét"; }
-const catOf = (id: CategoryId) => CATEGORIES.find((c) => c.id === id)!;
+const catOf = (id: CategoryId) => CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[0];
 const fmt = (n: number) => n.toLocaleString("hu-HU", { maximumFractionDigits: 1 });
 const avg = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
 
-function DeviceTile({ d, onOpen }: { d: HomeDevice; onOpen: (c: CategoryId) => void }) {
+function DeviceTile({ d, onOpen }: { d: HomeDevice; onOpen: (c: CategoryId, deviceKey?: string) => void }) {
   const Icon = catOf(d.category).icon;
-  return <button type="button" className={`hd-tile ${d.active ? "hd-tile-on" : ""} ${d.online ? "" : "hd-tile-offline"} hd-cat-${d.category}`} onClick={() => onOpen(d.category)} aria-label={`${d.name}: ${d.state}. Vezérlés megnyitása`}>
+  const { data: greeData } = useSuspenseQuery(greeQuery);
+  const unit = d.category === "gree" ? greeData.units.find((u) => `gree:${u.ip}` === d.key) : undefined;
+  const tile = <Button variant="ghost" type="button" className={`hd-tile ${d.active ? "hd-tile-on" : ""} ${d.online ? "" : "hd-tile-offline"} hd-cat-${d.category}`} onClick={() => onOpen(d.category, d.key)} aria-label={`${d.name}: ${d.state}. Vezérlés megnyitása`}>
     <span className="hd-tile-top"><span className="hd-tile-icon"><Icon size={22} strokeWidth={1.8} /></span>{d.value && <span className="hd-tile-value">{d.value}</span>}</span>
     <span className="hd-tile-name">{d.name}</span>
     <span className="hd-tile-state"><span className={`hd-dot ${d.online ? "hd-dot-on" : "hd-dot-off"}`} />{d.state}{d.room ? ` · ${d.room}` : ""}</span>
-  </button>;
+  </Button>;
+  return unit ? <div className="hd-climate-tile">{tile}<GreeQuickControls unit={unit} /></div> : tile;
 }
-function TileGrid({ list, onOpen }: { list: HomeDevice[]; onOpen: (c: CategoryId) => void }) {
+function TileGrid({ list, onOpen }: { list: HomeDevice[]; onOpen: (c: CategoryId, deviceKey?: string) => void }) {
   return <div className="hd-grid">{list.map((d) => <DeviceTile key={d.key} d={d} onOpen={onOpen} />)}</div>;
 }
 function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
@@ -215,6 +219,8 @@ function Home() {
   const { data: locks } = useSuspenseQuery(lq);
   const [view, setView] = useState("overview");
   const [category, setCategory] = useState<CategoryId | "all">("all");
+  const [greeIp, setGreeIp] = useState<string | null>(null);
+  const { state: greeRooms } = useGreeRooms();
   const [panel, setPanel] = useState<CategoryId>("sensors");
   const [sheet, setSheet] = useState<CategoryId | null>(null);
   const [favorites, setFavorites] = usePref<CategoryId[]>("home-favorites", ["sensors", "blinds"]);
@@ -226,7 +232,7 @@ function Home() {
   const light = theme === "light" || (theme === "system" && systemLight);
   useEffect(() => { document.body.classList.toggle("home-light-portal", light); return () => document.body.classList.remove("home-light-portal"); }, [light]);
   const selectView = (id: string) => { setView(id); window.scrollTo({ top: 0, behavior: "instant" }); };
-  const openDevice = (id: CategoryId) => { setPanel(id); if (!(desktop && view === "devices")) setSheet(id); };
+  const openDevice = (id: CategoryId, deviceKey?: string) => { if (id === "gree" && deviceKey) setGreeIp(deviceKey.slice(5)); setPanel(id); if (!(desktop && view === "devices")) setSheet(id); };
   const toggleFavorite = (id: CategoryId) => setFavorites(favorites.includes(id) ? favorites.filter((f) => f !== id) : [...favorites, id]);
   const sections = [
     { id: "overview", name: "Otthon", icon: House },
@@ -236,7 +242,8 @@ function Home() {
     { id: "more", name: "Több", icon: Settings2 },
   ];
   const shownThermometers = visibleThermometers(thermometers.sensors, thermometers.meta);
-  const devices = buildHomeDevices({ sensors: shownThermometers, sensorMeta: thermometers.meta, gree: gree.units, purifiers: purifiers.purifiers, blinds: blinds.blinds, tuya: tuya.devices, tuyaMeta: tuya.meta, appliances: appliances.appliances, locks: locks.locks });
+  const vendorDevices = buildHomeDevices({ sensors: shownThermometers, sensorMeta: thermometers.meta, gree: gree.units, purifiers: purifiers.purifiers, blinds: blinds.blinds, tuya: tuya.devices, tuyaMeta: tuya.meta, appliances: appliances.appliances, locks: locks.locks });
+  const devices = vendorDevices.map((d) => d.category === "gree" ? { ...d, room: greeRooms.assignments[d.key.slice(5)] ?? "" } : d);
   const online = devices.filter((d) => d.online).length; const offline = devices.length - online;
   const activeCount = devices.filter((d) => d.active && d.category !== "sensors").length;
   const temps = shownThermometers.flatMap((s) => s.temp == null ? [] : [s.temp]);
@@ -330,7 +337,7 @@ function Home() {
                     {list.length > 0 ? <TileGrid list={list} onOpen={openDevice} /> : <button type="button" className="hd-empty-card" onClick={() => openDevice(id)}>{errors[id] ? "Kapcsolati hiba vagy ellenőrzés szükséges – megnyitás" : "Nincs megjeleníthető eszköz – beállítások megnyitása"}<ChevronRight size={16} /></button>}
                   </section>; })}
                 </div>
-                {desktop && <aside className="hd-detail" aria-label={`${catOf(panel).name} vezérlés`}><CategoryPanel id={panel} /></aside>}
+                {desktop && <aside className="hd-detail" aria-label={`${catOf(panel).name} vezérlés`}><CategoryPanel id={panel} greeIp={greeIp} onGreeSelect={setGreeIp} /></aside>}
               </div>
             </>}
 
@@ -355,7 +362,7 @@ function Home() {
         <SheetContent side={desktop ? "right" : "bottom"} className={`smart-home hd hd-sheet ${light ? "home-light" : ""}`}>
           {sheetCat && <>
             <SheetHeader className="hd-sheet-header"><span className={`hd-tile-icon hd-cat-${sheetCat.id}`}><sheetCat.icon size={22} /></span><div><SheetTitle>{sheetCat.name}</SheetTitle><SheetDescription>{count(sheetCat.id)} eszköz · teljes vezérlés</SheetDescription></div></SheetHeader>
-            <div className="hd-sheet-body"><CategoryPanel id={sheetCat.id} /></div>
+            <div className="hd-sheet-body"><CategoryPanel id={sheetCat.id} greeIp={greeIp} onGreeSelect={setGreeIp} /></div>
           </>}
         </SheetContent>
       </Sheet>
@@ -363,7 +370,7 @@ function Home() {
   );
 }
 function roomStats(list: HomeDevice[]) {
-  const temps = list.filter((d) => d.category === "sensors" && d.value).map((d) => Number(d.value!.replace("°", "").replace(",", ".")));
+  const temps = list.filter((d) => d.category === "sensors" && d.value).map((d) => Number(d.value?.replace("°", "").replace(",", ".")));
   return { temp: temps.length ? `${fmt(avg(temps))}°` : null, active: list.filter((d) => d.active && d.category !== "sensors").length, offline: list.filter((d) => !d.online).length, cats: [...new Set(list.map((d) => d.category))] };
 }
 function RoomCard({ room, list, onClick }: { room: string; list: HomeDevice[]; onClick: () => void }) {
