@@ -204,7 +204,11 @@ export function db() {
         COMMIT;`);
     }
     // Mandatory snapshot before additive chat tables; no existing rows are rewritten.
-    if (["chat_messages", "chat_receipts"].some(name => !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name))) {
+    if (
+      ["chat_messages", "chat_receipts"].some(
+        (name) => !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name),
+      )
+    ) {
       const chatBackup = `${dataDir()}/backups/pre-chat-phase9b.db`;
       if (!fs.existsSync(chatBackup)) d.exec(`VACUUM INTO '${chatBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;

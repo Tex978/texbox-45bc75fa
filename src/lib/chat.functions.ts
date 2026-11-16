@@ -4,8 +4,21 @@ import { z } from "zod";
 import { SESSION_COOKIE } from "./auth.server";
 import { chatPageSchema, chatSendSchema } from "./chat-schema";
 import { chatList, chatMarkRead, chatSend, chatStatus } from "./chat.server";
-const token=()=>{setResponseHeader("Cache-Control","no-store");return getCookie(SESSION_COOKIE);};
-export const chatUnread=createServerFn({method:"GET"}).handler(async()=>chatStatus(token()));
-export const chatMessages=createServerFn({method:"GET"}).inputValidator((v:unknown)=>chatPageSchema.parse(v??{})).handler(async({data})=>chatList(token(),data.before));
-export const chatMessageSend=createServerFn({method:"POST"}).inputValidator((v:unknown)=>chatSendSchema.parse(v)).handler(async({data})=>chatSend(token(),data));
-export const chatRead=createServerFn({method:"POST"}).inputValidator((v:unknown)=>z.object({through:z.number().int().positive()}).strict().parse(v)).handler(async({data})=>chatMarkRead(token(),data.through));
+const token = () => {
+  setResponseHeader("Cache-Control", "no-store");
+  return getCookie(SESSION_COOKIE);
+};
+export const chatUnread = createServerFn({ method: "GET" }).handler(async () =>
+  chatStatus(token()),
+);
+export const chatMessages = createServerFn({ method: "GET" })
+  .inputValidator((v: unknown) => chatPageSchema.parse(v ?? {}))
+  .handler(async ({ data }) => chatList(token(), data.before));
+export const chatMessageSend = createServerFn({ method: "POST" })
+  .inputValidator((v: unknown) => chatSendSchema.parse(v))
+  .handler(async ({ data }) => chatSend(token(), data));
+export const chatRead = createServerFn({ method: "POST" })
+  .inputValidator((v: unknown) =>
+    z.object({ through: z.number().int().positive() }).strict().parse(v),
+  )
+  .handler(async ({ data }) => chatMarkRead(token(), data.through));

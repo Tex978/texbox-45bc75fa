@@ -1161,3 +1161,19 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .dash-error-detail { min-width: 0; flex: 1; }
 .dash-error-detail summary { cursor: pointer; display: flex; align-items: center; font-size: 12px; }
 .dash-error-detail p { overflow-wrap: anywhere; padding: 4px 0; }
+
+/* Authenticated family chat: no upload placeholder until durable attachments exist. */
+.family-chat { width: min(100%, 520px); max-width: 520px; height: 100dvh; display: flex; flex-direction: column; padding: 20px 16px max(16px,env(safe-area-inset-bottom)); gap: 12px; }
+.chat-title { padding-right: 32px; font-size: 20px; }
+.chat-messages { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 16px; }
+.chat-message { display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 8px; }
+.chat-message > div { min-width: 0; }
+.chat-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.chat-meta time { color: var(--muted-foreground); font-size: 11px; }
+.chat-message p { margin-top: 4px; padding: 10px 12px; background: var(--muted); border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.chat-mine p { background: var(--accent); }
+.chat-composer { border-top: 1px solid var(--border); padding-top: 12px; display: grid; grid-template-columns: minmax(0,1fr) 44px; align-items: end; gap: 8px; }
+.chat-composer textarea { width: 100%; min-width: 0; max-height: 160px; resize: vertical; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); font-size: 16px; }
+.chat-composer button { width: 44px; height: 44px; }
+.chat-error { grid-column: 1/-1; color: var(--muted-foreground); font-size: 13px; overflow-wrap: anywhere; }
+@media(max-width:390px) { .app-brand-icon { display: none; } .app-shell .app-header-inner { gap: 4px; } }

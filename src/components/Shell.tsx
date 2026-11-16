@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/lib/auth.functions";
 import { NotificationBell } from "./NotificationBell";
+import { FamilyChat } from "./FamilyChat";
 import { UserAvatar } from "./Avatar";
 import { ROLE_LABELS } from "@/lib/permissions";
 import {
@@ -276,7 +277,12 @@ export function Shell({
           </nav>
           <div className="app-header-more">{moreMenu("bottom")}</div>
           <div className="app-profile-slot">
-            {me?.user && <NotificationBell />}
+            {me?.user && (
+              <>
+                <FamilyChat userId={me.user.id} />
+                <NotificationBell />
+              </>
+            )}
             <ProfileMenu />
           </div>
         </div>
