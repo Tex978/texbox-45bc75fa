@@ -40,6 +40,8 @@ vi.mock("@/lib/scenes.functions", () => ({
   scenesRuns: vi.fn(),
 }));
 vi.mock("@/lib/nas.functions", () => ({
+  getThermometers: async () => ({ demo: true, error: "", meta: {}, sensors: [] }),
+  getSolar: async () => ({ demo: true, error: "", currentW: 3420 }),
   getOverview: async () => ({ demo: true, volumes: [], streams: [], recent: [], watched: [] }),
 }));
 vi.mock("@/lib/use-shared-pref", () => ({
@@ -56,7 +58,9 @@ vi.mock("@/lib/dashboard.functions", async () => {
       srv.saveDashboard(need(), data),
   };
 });
-vi.mock("@/lib/notifications.functions", () => ({ notificationsUnread: async () => ({ unread: 0 }) }));
+vi.mock("@/lib/notifications.functions", () => ({
+  notificationsUnread: async () => ({ unread: 0 }),
+}));
 import { Dashboard } from "@/components/Dashboard";
 const view = () =>
   render(

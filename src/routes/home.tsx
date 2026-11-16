@@ -730,31 +730,51 @@ function Home() {
             </div>
           </header>
 
-          <nav className="hd-nav" role="tablist" aria-label="Okosotthon nézetek" onKeyDown={(e) => {
-            const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
-            const i = tabs.indexOf(document.activeElement as HTMLButtonElement);
-            const next = e.key === "ArrowRight" ? (i + 1) % tabs.length : e.key === "ArrowLeft" ? (i - 1 + tabs.length) % tabs.length : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : -1;
-            if (next >= 0) { e.preventDefault(); tabs[next]?.focus(); tabs[next]?.click(); }
-          }}>
-          {sections.map(({ id, name, icon: Icon }) => (
-            <Button
-              variant="ghost"
-              role="tab"
-              tabIndex={view === id ? 0 : -1}
-              type="button"
-              key={id}
-              id={`tab-${id}`}
+          <nav
+            className="hd-nav"
+            role="tablist"
+            aria-label="Okosotthon nézetek"
+            onKeyDown={(e) => {
+              const tabs = Array.from(
+                e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+              );
+              const i = tabs.indexOf(document.activeElement as HTMLButtonElement);
+              const next =
+                e.key === "ArrowRight"
+                  ? (i + 1) % tabs.length
+                  : e.key === "ArrowLeft"
+                    ? (i - 1 + tabs.length) % tabs.length
+                    : e.key === "Home"
+                      ? 0
+                      : e.key === "End"
+                        ? tabs.length - 1
+                        : -1;
+              if (next >= 0) {
+                e.preventDefault();
+                tabs[next]?.focus();
+                tabs[next]?.click();
+              }
+            }}
+          >
+            {sections.map(({ id, name, icon: Icon }) => (
+              <Button
+                variant="ghost"
+                role="tab"
+                tabIndex={view === id ? 0 : -1}
+                type="button"
+                key={id}
+                id={`tab-${id}`}
 
-              aria-selected={view === id}
-              aria-controls="home-panel"
-              className={view === id ? "hd-nav-active" : ""}
-              onClick={() => selectView(id)}
-            >
-              <Icon size={22} strokeWidth={view === id ? 2.3 : 1.7} />
-              <span>{name}</span>
-            </Button>
-          ))}
-        </nav>
+                aria-selected={view === id}
+                aria-controls="home-panel"
+                className={view === id ? "hd-nav-active" : ""}
+                onClick={() => selectView(id)}
+              >
+                <Icon size={22} strokeWidth={view === id ? 2.3 : 1.7} />
+                <span>{name}</span>
+              </Button>
+            ))}
+          </nav>
 
           <div id="home-panel" role="tabpanel" aria-labelledby={`tab-${view}`} className="hd-panel">
             {view === "scenes" && <Scenes />}

@@ -278,7 +278,7 @@ export function Shell({
       <main id="main-content" tabIndex={-1} className="app-main">
         {children}
       </main>
-      {(
+      {
         <nav className="app-tabbar" aria-label="Fő területek">
           {primaryNav.map(({ to, label, icon: Icon, match }) => (
             <Link
@@ -292,7 +292,7 @@ export function Shell({
             </Link>
           ))}
         </nav>
-      )}
+      }
     </div>
   );
 }

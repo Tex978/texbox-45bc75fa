@@ -115,12 +115,30 @@ const runLabels: Record<string, string> = {
 function HomeQuick({ favorites = [] }: { favorites?: string[] }) {
   const scenes = useQuery({ queryKey: ["scenes"], queryFn: () => scenesList(), retry: false });
   const prefs = useQuery(sharedPrefsQuery);
-  const thermo = useQuery({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000, retry: false });
-  const solar = useQuery({ queryKey: ["solar"], queryFn: () => getSolar(), staleTime: SOLAR_REFRESH_MS, refetchInterval: SOLAR_REFRESH_MS, refetchOnWindowFocus: false, retry: false });
-  const sensors = thermo.data && !thermo.data.demo && !thermo.data.error ? visibleThermometers(thermo.data.sensors, thermo.data.meta) : [];
-  const temps = sensors.flatMap(s => s.temp == null ? [] : [s.temp]);
-  const hums = sensors.flatMap(s => s.hum == null ? [] : [s.hum]);
-  const mean = (values: number[]) => (values.reduce((a,b) => a+b, 0) / values.length).toLocaleString("hu-HU", { maximumFractionDigits: 1 });
+  const thermo = useQuery({
+    queryKey: ["thermo"],
+    queryFn: () => getThermometers(),
+    refetchInterval: 120000,
+    retry: false,
+  });
+  const solar = useQuery({
+    queryKey: ["solar"],
+    queryFn: () => getSolar(),
+    staleTime: SOLAR_REFRESH_MS,
+    refetchInterval: SOLAR_REFRESH_MS,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const sensors =
+    thermo.data && !thermo.data.demo && !thermo.data.error
+      ? visibleThermometers(thermo.data.sensors, thermo.data.meta)
+      : [];
+  const temps = sensors.flatMap((s) => (s.temp == null ? [] : [s.temp]));
+  const hums = sensors.flatMap((s) => (s.hum == null ? [] : [s.hum]));
+  const mean = (values: number[]) =>
+    (values.reduce((a, b) => a + b, 0) / values.length).toLocaleString("hu-HU", {
+      maximumFractionDigits: 1,
+    });
   const run = useServerFn(scenesRun),
     runs = useServerFn(scenesRuns);
   const [busy, setBusy] = useState(""),
@@ -160,12 +178,38 @@ function HomeQuick({ favorites = [] }: { favorites?: string[] }) {
     : all.slice(0, 3);
   return (
     <Widget title="Otthon gyorsan" icon={House} to="/home" link="Okosotthon" className="dash-wide">
-      {(temps.length > 0 || hums.length > 0 || (solar.data && !solar.data.demo && !solar.data.error)) && <div className="dash-live-stats">
-        {temps.length > 0 && <div><strong>{mean(temps)}°C</strong><span>Benti átlag</span></div>}
-        {hums.length > 0 && <div><strong>{mean(hums)}%</strong><span>Pára</span></div>}
-        {solar.data && !solar.data.demo && !solar.data.error && <div><strong>{(solar.data.currentW / 1000).toLocaleString("hu-HU", { maximumFractionDigits: 1 })} kW</strong><span>Napelem</span></div>}
-      </div>}
-      {(thermo.error || solar.error || thermo.data?.error || solar.data?.error) && <p className="dash-note" role="status">Egyes otthoni adatok nem érhetők el. <Link to="/home">Állapot ellenőrzése →</Link></p>}
+      {(temps.length > 0 ||
+        hums.length > 0 ||
+        (solar.data && !solar.data.demo && !solar.data.error)) && (
+        <div className="dash-live-stats">
+          {temps.length > 0 && (
+            <div>
+              <strong>{mean(temps)}°C</strong>
+              <span>Benti átlag</span>
+            </div>
+          )}
+          {hums.length > 0 && (
+            <div>
+              <strong>{mean(hums)}%</strong>
+              <span>Pára</span>
+            </div>
+          )}
+          {solar.data && !solar.data.demo && !solar.data.error && (
+            <div>
+              <strong>
+                {(solar.data.currentW / 1000).toLocaleString("hu-HU", { maximumFractionDigits: 1 })}{" "}
+                kW
+              </strong>
+              <span>Napelem</span>
+            </div>
+          )}
+        </div>
+      )}
+      {(thermo.error || solar.error || thermo.data?.error || solar.data?.error) && (
+        <p className="dash-note" role="status">
+          Egyes otthoni adatok nem érhetők el. <Link to="/home">Állapot ellenőrzése →</Link>
+        </p>
+      )}
       <div className="dash-chips" aria-label="Kedvenc eszközcsoportok">
         {favs.length ? (
           favs.map((f) => (
@@ -254,7 +298,13 @@ function TodayCard({ child }: { child: boolean }) {
                 {o.assignee ? statusText[o.status] : "bárki elvállalhatja"}
                 {o.body.points ? ` · ${o.body.points} pont` : ""}
               </small>
-              <Link to="/tasks" className="dash-task-open" aria-label={`${o.body.title}: feladat megnyitása`}>Megnyitás →</Link>
+              <Link
+                to="/tasks"
+                className="dash-task-open"
+                aria-label={`${o.body.title}: feladat megnyitása`}
+              >
+                Megnyitás →
+              </Link>
             </li>
           ))}
         </ul>
@@ -609,12 +659,40 @@ export function Dashboard() {
       <section className="dash-hero">
         <div className="dash-greeting">
           <div className="min-w-0">
-            <h1 suppressHydrationWarning>{h < 10 ? "Jó reggelt" : h < 18 ? "Szia" : "Jó estét"}{me ? `, ${me.displayName.split(" ")[0]}` : ""}!</h1>
-            <p suppressHydrationWarning className="dash-date">{new Date().toLocaleDateString("hu-HU", { weekday: "long", month: "long", day: "numeric", timeZone: "Europe/Budapest" })}</p>
+            <h1 suppressHydrationWarning>
+              {h < 10 ? "Jó reggelt" : h < 18 ? "Szia" : "Jó estét"}
+              {me ? `, ${me.displayName.split(" ")[0]}` : ""}!
+            </h1>
+            <p suppressHydrationWarning className="dash-date">
+              {new Date().toLocaleDateString("hu-HU", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                timeZone: "Europe/Budapest",
+              })}
+            </p>
           </div>
-          {dash.data && !editing && <Button variant="ghost" size="icon" aria-label="Főoldal szerkesztése" title="Szerkesztés" onClick={() => { setDraft(prefs); setEditing(true); setMsg(null); }}><Pencil size={18} /></Button>}
+          {dash.data && !editing && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Főoldal szerkesztése"
+              title="Szerkesztés"
+              onClick={() => {
+                setDraft(prefs);
+                setEditing(true);
+                setMsg(null);
+              }}
+            >
+              <Pencil size={18} />
+            </Button>
+          )}
         </div>
-        {dash.error && <p className="task-error" role="status">{dash.error.message}</p>}
+        {dash.error && (
+          <p className="task-error" role="status">
+            {dash.error.message}
+          </p>
+        )}
         {unread > 0 && (
           <Link to="/notifications" className="dash-alert">
             {unread} olvasatlan értesítés

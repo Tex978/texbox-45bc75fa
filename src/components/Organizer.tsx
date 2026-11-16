@@ -168,11 +168,37 @@ function Shopping() {
   return (
     <section className="org-section">
       <div className="shop-list-switch">
-        <select aria-label="Kiválasztott lista" value={lid} onChange={(e) => setListId(e.target.value)}>
-          {d.lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+        <select
+          aria-label="Kiválasztott lista"
+          value={lid}
+          onChange={(e) => setListId(e.target.value)}
+        >
+          {d.lists.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
         </select>
-        {d.canManageLists && <Button variant="ghost" size="icon" aria-label="Új lista létrehozása" aria-expanded={creatingList} onClick={() => setCreatingList(!creatingList)}><Plus size={18} /></Button>}
-        <details className="shop-sync"><summary aria-label="Frissítési állapot"><Info size={18} /></summary><p>Frissítés 15 másodpercenként és visszatéréskor. Utoljára: {new Date(d.at).toLocaleTimeString("hu-HU")}</p></details>
+        {d.canManageLists && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Új lista létrehozása"
+            aria-expanded={creatingList}
+            onClick={() => setCreatingList(!creatingList)}
+          >
+            <Plus size={18} />
+          </Button>
+        )}
+        <details className="shop-sync">
+          <summary aria-label="Frissítési állapot">
+            <Info size={18} />
+          </summary>
+          <p>
+            Frissítés 15 másodpercenként és visszatéréskor. Utoljára:{" "}
+            {new Date(d.at).toLocaleTimeString("hu-HU")}
+          </p>
+        </details>
       </div>
       <form
         className="shop-add"
@@ -190,7 +216,17 @@ function Shopping() {
         <Button type="submit" disabled={busy || !name.trim()} aria-label="Hozzáadás">
           <Plus size={18} /> Hozzáad
         </Button>
-        <Button type="button" variant="ghost" size="icon" aria-label="Termék részletei" title="Részletek" aria-expanded={more} onClick={() => setMore(!more)}><SlidersHorizontal size={18} /></Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Termék részletei"
+          title="Részletek"
+          aria-expanded={more}
+          onClick={() => setMore(!more)}
+        >
+          <SlidersHorizontal size={18} />
+        </Button>
         {more && (
           <div className="shop-extra">
             <input
@@ -711,12 +747,32 @@ export function Organizer() {
   const [tab, setTab] = useState("Bevásárlás");
   return (
     <div className="tasks-area rewards-area organizer-area">
-      <div className="org-tabs" role="tablist" aria-label="Családi szervező nézetek" onKeyDown={(e) => {
-        const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
-        const i = tabs.indexOf(document.activeElement as HTMLButtonElement);
-        const next = e.key === "ArrowRight" ? (i + 1) % tabs.length : e.key === "ArrowLeft" ? (i - 1 + tabs.length) % tabs.length : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : -1;
-        if (next >= 0) { e.preventDefault(); tabs[next]?.focus(); tabs[next]?.click(); }
-      }}>
+      <div
+        className="org-tabs"
+        role="tablist"
+        aria-label="Családi szervező nézetek"
+        onKeyDown={(e) => {
+          const tabs = Array.from(
+            e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+          );
+          const i = tabs.indexOf(document.activeElement as HTMLButtonElement);
+          const next =
+            e.key === "ArrowRight"
+              ? (i + 1) % tabs.length
+              : e.key === "ArrowLeft"
+                ? (i - 1 + tabs.length) % tabs.length
+                : e.key === "Home"
+                  ? 0
+                  : e.key === "End"
+                    ? tabs.length - 1
+                    : -1;
+          if (next >= 0) {
+            e.preventDefault();
+            tabs[next]?.focus();
+            tabs[next]?.click();
+          }
+        }}
+      >
         {[
           ["Bevásárlás", ShoppingCart],
           ["Receptek", BookOpen],
@@ -736,23 +792,28 @@ export function Organizer() {
               variant="ghost"
               onClick={() => setTab(t as string)}
             >
-              <Icon size={16} /> {t === "Heti menü" ? "Menü" : t === "Jegyzetek és ügyek" ? "Jegyzetek" : t as string}
+              <Icon size={16} />{" "}
+              {t === "Heti menü"
+                ? "Menü"
+                : t === "Jegyzetek és ügyek"
+                  ? "Jegyzetek"
+                  : (t as string)}
             </Button>
           );
         })}
       </div>
       <div id="organizer-panel" role="tabpanel" aria-labelledby={`org-tab-${tab}`}>
-      {tab === "Bevásárlás" ? (
-        <Shopping />
-      ) : tab === "Receptek" ? (
-        <Recipes />
-      ) : tab === "Naptár" ? (
-        <Calendar />
-      ) : tab === "Jegyzetek és ügyek" ? (
-        <Notes />
-      ) : (
-        <Menu />
-      )}
+        {tab === "Bevásárlás" ? (
+          <Shopping />
+        ) : tab === "Receptek" ? (
+          <Recipes />
+        ) : tab === "Naptár" ? (
+          <Calendar />
+        ) : tab === "Jegyzetek és ügyek" ? (
+          <Notes />
+        ) : (
+          <Menu />
+        )}
       </div>
     </div>
   );
