@@ -2,7 +2,15 @@
 // Uses the Node fs module when available (Docker on the NAS); otherwise returns null and callers fall back to cookies.
 type Fs = typeof import("node:fs");
 const fs = (): Fs | null => { try { return (globalThis as any).process?.getBuiltinModule?.("node:fs") ?? null; } catch { return null; } };
-const FILE = () => ((globalThis as any).process?.env?.DATA_FILE as string) || "/data/nas-state.json";
+import { ensureReady, markCreated, stateFile, GUARD_MESSAGES } from "./data-guard.server";
+const FILE = stateFile;
+// Fail closed: a missing file is only "empty settings" on a confirmed, ready installation that never wrote one.
+const requireReady = () => {
+  const g = ensureReady();
+  if (g.status === "blocked") throw new Error(g.message);
+  if (g.status === "new-install") throw new Error("A TexBox új telepítése még nincs megerősítve; a beállítások nem menthetők.");
+  return g;
+};
 let cache: Record<string, string> | null = null;
 // Optional at-rest encryption (AES-256-GCM) keyed by TEXBOX_SECRET_KEY; values keep working unencrypted when it is unset.
 const secretKey = (): Buffer | null => {
@@ -37,7 +45,9 @@ function load(): Record<string, string> | null {
     cache = Object.fromEntries(Object.entries(parsed as Record<string, string>).map(([k, v]) => [k, decryptValue(v, key)]));
     if (key && Object.values(parsed as Record<string, string>).some((v) => !v.startsWith(ENC))) persist(f, cache); // migrate plaintext once
   } catch (error) {
-    if ((error as { code?: string }).code !== "ENOENT") throw new Error("A Synology mentett beállításai nem olvashatók. Ellenőrizd a data mappát és a jogosultságokat.");
+    if ((error as { code?: string }).code !== "ENOENT") throw error instanceof Error && error.message.includes("TEXBOX_SECRET_KEY") ? error : new Error("A Synology mentett beállításai nem olvashatók. Ellenőrizd a data mappát és a jogosultságokat.");
+    const g = requireReady();
+    if (g.status === "ready" && g.marker.state) throw new Error(GUARD_MESSAGES["state-missing"]);
     cache = {};
   }
   return cache;
@@ -54,11 +64,12 @@ export function storeSet(name: string, value: string): boolean {
 }
 function persist(f: Fs, data: Record<string, string>): boolean {
   try {
+    if (requireReady().status !== "ready" && f.existsSync && !f.existsSync(FILE())) return false;
     const key = secretKey(); const p = FILE();
     const out = key ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, encryptValue(v, key)])) : data;
-    f.mkdirSync(p.replace(/\/[^/]*$/, "") || "/", { recursive: true });
     f.writeFileSync(`${p}.tmp`, JSON.stringify(out), { mode: 0o600 });
     f.renameSync(`${p}.tmp`, p);
+    markCreated("state");
     return true;
   } catch { return false; }
 }

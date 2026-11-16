@@ -1,4 +1,5 @@
 // Family accounts on the NAS: SQLite in the data folder, scrypt password hashes, hashed random session tokens.
+import { ensureReady, markCreated, dataDir as guardDataDir, dbPath, type GuardState } from "./data-guard.server";
 import { can, ROLES, PERMISSIONS, type Permission, type Role } from "./permissions";
 type Sqlite = typeof import("node:sqlite");
 type Crypto = typeof import("node:crypto");
@@ -24,14 +25,12 @@ export const SESSION_COOKIE = "texbox-session";
 export function isHostedAccountPreview() {
   return globalThis.navigator?.userAgent === "Cloudflare-Workers";
 }
-const dataDir = () =>
-  (globalThis.process?.env?.["DATA_DIR"] as string) ||
-  ((globalThis.process?.env?.["DATA_FILE"] as string) || "/data/nas-state.json").replace(
-    /\/[^/]*$/,
-    "",
-  ) ||
-  "/data";
+const dataDir = guardDataDir;
 let conn: import("node:sqlite").DatabaseSync | null | undefined;
+let lastGuard: GuardState | null = null;
+/** Guard result from the last storage open attempt (null before any attempt). */
+export const storageGuard = () => lastGuard;
+export const authDbOpen = () => !!conn;
 export function resetAuthDb() {
   try {
     conn?.close();
@@ -39,6 +38,7 @@ export function resetAuthDb() {
     /* ignore */
   }
   conn = undefined;
+  lastGuard = null;
   attempts.clear();
 }
 export function db() {
@@ -47,9 +47,13 @@ export function db() {
   const sqlite = mod<Sqlite>("node:sqlite");
   const fs = mod<typeof import("node:fs")>("node:fs");
   if (!sqlite || !fs) return (conn = null);
+  // Never create the data folder or an empty account database on an unexpected mount.
+  const g = ensureReady();
+  lastGuard = g;
+  if (g.status !== "ready") return (conn = null);
   try {
-    fs.mkdirSync(dataDir(), { recursive: true });
-    const d = new sqlite.DatabaseSync(`${dataDir()}/texbox.db`);
+    const d = new sqlite.DatabaseSync(dbPath());
+    markCreated("db");
     d.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
       CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL, password_hash TEXT, role TEXT NOT NULL, disabled INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS sessions(id_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, user_agent TEXT, created_at INTEGER NOT NULL);
