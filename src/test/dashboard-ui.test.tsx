@@ -2,7 +2,8 @@ import { beforeEach, afterEach, it, expect, vi, describe } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { render, screen, cleanup, within } from "@testing-library/react";
+import { render, screen, cleanup, within, fireEvent, waitFor } from "@testing-library/react";
+import { getDashboard } from "@/lib/dashboard.server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createUser, createChildProfile, resetAuthDb, type User } from "@/lib/auth.server";
 import { saveTask, listTasks, actOnTask } from "@/lib/tasks.server";
@@ -143,5 +144,19 @@ describe("6a dashboard", () => {
       (await screen.findAllByText(/jelentkezz be a saját NAS-címeden/)).length,
     ).toBeGreaterThan(3);
     expect(screen.queryByText(/pont$/)).toBeNull();
+  });
+  it("6b: edits, hides and saves a personal layout on the server", async () => {
+    me = parent;
+    view();
+    fireEvent.click(await screen.findByRole("button", { name: /Főoldal szerkesztése/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Bevásárlás elrejtése" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mai feladatok feljebb" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mentés" }));
+    expect(await screen.findByText("Főoldal mentve a NAS-on.")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByLabelText("Bevásárlás")).toBeNull());
+    const saved = getDashboard(parent);
+    expect(saved.prefs.order[0]).toBe("tasks");
+    expect(saved.prefs.hidden).toEqual(["shopping"]);
+    expect(getDashboard(kid).saved).toBe(false);
   });
 });
