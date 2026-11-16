@@ -75,7 +75,7 @@ export function TrainGame() {
   function advance() {
     if (round >= ROUNDS) {
       setFinished(true);
-      setMsg("🎉 Ügyes vagy! Lejártad az összes vonatát!");
+      setMsg("🎉 Ügyes vagy! Megvan az összes vonat!");
       return;
     }
     setRound((r) => r + 1);
@@ -83,9 +83,10 @@ export function TrainGame() {
   }
 
   function tapStation(s: Station) {
-    if (!train || finished) return;
+    if (!train || locked) return;
     if (isCorrectStation(train, s)) {
       setWrong(false);
+      setLocked(true);
       setMsg(`Igen! A vonat ${TRAIN_COLORS[train.colorIndex]!.allative} ment! 👏`);
       setTimeout(advance, NEXT_DELAY_MS);
     } else {
@@ -95,11 +96,16 @@ export function TrainGame() {
   }
 
   function loadWagon() {
-    if (finished || isCargoFull(target, loaded)) return;
+    if (locked || isCargoFull(target, loaded)) return;
     const n = loaded + 1;
     setLoaded(n);
-    setMsg(isCargoFull(target, n) ? "Megvan a kocsik száma! 🚂" : `${n} ${WAGON_NAME} – még kell!`);
-    if (isCargoFull(target, n)) setTimeout(advance, NEXT_DELAY_MS);
+    if (isCargoFull(target, n)) {
+      setLocked(true);
+      setMsg("Megvan a kocsik száma! 🚂");
+      setTimeout(advance, NEXT_DELAY_MS);
+    } else {
+      setMsg(`${n} ${WAGON_NAME} – még kell!`);
+    }
   }
 
   const color = train ? TRAIN_COLORS[train.colorIndex]! : null;
@@ -170,7 +176,7 @@ export function TrainGame() {
               <span key={i} className={i < loaded ? "train-slot train-slot-full" : "train-slot"} />
             ))}
           </div>
-          <Button size="lg" disabled={isCargoFull(target, loaded)} onClick={loadWagon}>
+          <Button size="lg" disabled={locked} onClick={loadWagon}>
             📦 Rakj egy kocsit!
           </Button>
         </div>
