@@ -24,6 +24,12 @@ vi.mock("@/lib/organizer.functions", () => ({
   menuRemove: vi.fn(),
   menuCopy: vi.fn(),
 }));
+vi.mock("@/lib/calendar.functions", () => ({
+  calendarGet: vi.fn(),
+  calendarSave: vi.fn(),
+  calendarOccurrence: vi.fn(),
+  calendarToTask: vi.fn(),
+}));
 import { Organizer } from "@/components/Organizer";
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "org-ui-"));
