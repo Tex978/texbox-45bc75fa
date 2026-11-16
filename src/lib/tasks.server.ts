@@ -76,7 +76,7 @@ function templates(): TaskTemplate[] {
     archived: !!r.archived,
   }));
 }
-const visible = (u: User, t: TaskTemplate, assignee = t.assignee) =>
+const visible = (u: User, t: TaskInput & { owner: string }, assignee = t.assignee) =>
   t.owner === u.id ||
   assignee === personKey(u.id) ||
   (isParent(u) &&
