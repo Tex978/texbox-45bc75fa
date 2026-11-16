@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { HomeDevice } from "./home-devices";
-const name = z.string().trim().min(1).max(60).refine(v => !["__proto__", "constructor", "prototype"].includes(v));
+const name = z
+  .string()
+  .trim()
+  .min(1)
+  .max(60)
+  .refine((v) => !["__proto__", "constructor", "prototype"].includes(v));
 const key = z
   .string()
   .max(240)
