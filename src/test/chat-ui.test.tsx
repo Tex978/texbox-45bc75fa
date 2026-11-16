@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createUser, createSession, resetAuthDb, updateOwnProfile } from "@/lib/auth.server";
-import { chatSend, chatList, chatStatus, chatMarkRead } from "@/lib/chat.server";
+import { chatSend, chatList, chatStatus, chatMarkRead, chatReact } from "@/lib/chat.server";
 let token: string, dir: string;
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/chat.functions", () => ({
@@ -15,6 +15,7 @@ vi.mock("@/lib/chat.functions", () => ({
   chatMessageSend: async ({ data }: { data: Parameters<typeof chatSend>[1] }) =>
     chatSend(token, data),
   chatRead: async ({ data }: { data: { through: number } }) => chatMarkRead(token, data.through),
+  chatReactionSave: async ({data}:{data:Parameters<typeof chatReact>[1]})=>chatReact(token,data),
 }));
 import { FamilyChat } from "@/components/FamilyChat";
 afterEach(() => {
@@ -49,10 +50,20 @@ it("sends and reads back SQLite messages through the authenticated chat UI", asy
   fireEvent.click(await screen.findByRole("button", { name: "Családi chat, 1 olvasatlan" }));
   await screen.findByText("Hazaértem!");
   await waitFor(() => expect(chatStatus(token).unread).toBe(0));
-  fireEvent.change(screen.getByLabelText("Üzenet"), { target: { value: "Én is indulok." } });
+  const field=screen.getByLabelText("Üzenet") as HTMLTextAreaElement;
+  fireEvent.change(field, { target: { value: "Én is indulok." } });
+  field.setSelectionRange(5,5);fireEvent.select(field);
+  fireEvent.click(screen.getByRole("button",{name:"Emojiválasztó"}));
+  fireEvent.click(screen.getByRole("button",{name:"Beszúrás: Vidám cica"}));
+  expect(field.value).toBe("Én is😺 indulok.");
   fireEvent.click(screen.getByRole("button", { name: "Üzenet küldése" }));
-  await screen.findByText("Én is indulok.");
-  expect(chatList(dadToken).items.at(-1)).toMatchObject({ text: "Én is indulok.", name: "Anya" });
+  await screen.findByText("Én is😺 indulok.");
+  expect(chatList(dadToken).items.at(-1)).toMatchObject({ text: "Én is😺 indulok.", name: "Anya" });
+  fireEvent.click(screen.getAllByRole("button",{name:"Láttam / oké reakció, 0"})[0]);
+  await screen.findByRole("button",{name:"Láttam / oké reakció, 1"});
+  expect(chatList(dadToken).items[0].reactions[0].people[0].name).toBe("Anya");
+  fireEvent.click(screen.getByRole("button",{name:"Láttam / oké reakció, 1"}));
+  await waitFor(()=>expect(chatList(dadToken).items[0].reactions).toEqual([]));
   resetAuthDb();
   expect(chatList(dadToken).items).toHaveLength(2);
   qc.clear();
