@@ -13,6 +13,7 @@ import {
 import { Shell, Bar, Poster, EmptyState, meQuery } from "@/components/Shell";
 import { getOverview } from "@/lib/nas.functions";
 import childFullBody from "@/assets/child-full-body.png";
+import { TodayTasks } from "@/components/Tasks";
 const q = queryOptions({
   queryKey: ["overview"],
   queryFn: () => getOverview(),
@@ -118,6 +119,8 @@ function Index() {
           </Link>
         ))}
       </nav>
+
+      <TodayTasks />
 
       {data.streams.length > 0 && (
         <section className="ov-block">

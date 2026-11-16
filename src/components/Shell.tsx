@@ -18,6 +18,7 @@ import {
   Plus,
   Menu,
   Users,
+  ClipboardList,
   LogOut,
   MoreHorizontal,
   UserRound,
@@ -40,6 +41,7 @@ const allNav = [
   { to: "/downloads", label: "Letöltések", icon: Download },
   { to: "/library", label: "Tárhely", icon: HardDrive },
   { to: "/home", label: "Okosotthon", icon: House },
+  { to: "/tasks", label: "Feladatok", icon: ClipboardList },
   { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
 const primaryTabs: string[] = ["/", "/search", "/downloads", "/home"];

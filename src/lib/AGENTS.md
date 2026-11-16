@@ -1,4 +1,5 @@
 <!-- AGENT-MEMORY:BEGIN -->
+- Tasks use additive backed-up SQLite tables, civil Budapest dates and bounded read-time generation; unique approval snapshots are future personal-ledger sources, not balances. Parent ACL and revision checks run inside every task transaction.
 - Media filters use per-user keys in the existing NAS store; migrate legacy browser values only into missing keys so family preferences remain isolated.
 - Integration credentials remain server-only after durable writes; expire browser copies and require settings authorization for legacy imports.
 - Node account storage failures fail closed; detect hosted Workers by their runtime user agent before opening SQLite, since their virtual filesystem is not NAS storage. Hosted previews cannot manage NAS family accounts.

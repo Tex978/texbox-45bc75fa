@@ -78,6 +78,17 @@ export function db() {
     d.prepare(
       "UPDATE scene_runs SET status='interrupted',finished_at=? WHERE status='running'",
     ).run(Date.now());
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='task_templates'").get()) {
+      const tasksBackup = `${dataDir()}/backups/pre-tasks-phase3.db`;
+      if (!fs.existsSync(tasksBackup)) d.exec(`VACUUM INTO '${tasksBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS task_templates(id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL, version INTEGER NOT NULL, archived INTEGER NOT NULL DEFAULT 0, cursor TEXT NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS task_occurrences(id TEXT PRIMARY KEY, template_id TEXT NOT NULL REFERENCES task_templates(id), due_date TEXT NOT NULL, body TEXT NOT NULL, assignee TEXT, status TEXT NOT NULL, version INTEGER NOT NULL, reason TEXT NOT NULL DEFAULT '', UNIQUE(template_id,due_date));
+        CREATE INDEX IF NOT EXISTS task_due ON task_occurrences(due_date,status);
+        CREATE TABLE IF NOT EXISTS task_events(id INTEGER PRIMARY KEY AUTOINCREMENT, occurrence_id TEXT NOT NULL REFERENCES task_occurrences(id), actor TEXT NOT NULL, action TEXT NOT NULL, reason TEXT NOT NULL, at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS task_approvals(occurrence_id TEXT PRIMARY KEY REFERENCES task_occurrences(id), person_key TEXT NOT NULL, points INTEGER NOT NULL CHECK(points>=0), approved_by TEXT NOT NULL, approved_at INTEGER NOT NULL);
+        COMMIT;`);
+    }
     conn = d;
     return d;
   } catch (e) {
