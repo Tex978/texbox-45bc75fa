@@ -191,7 +191,7 @@ function DeviceTile({ d, onOpen }: { d: HomeDevice; onOpen: (c: CategoryId) => v
   return <button type="button" className={`hd-tile ${d.active ? "hd-tile-on" : ""} ${d.online ? "" : "hd-tile-offline"} hd-cat-${d.category}`} onClick={() => onOpen(d.category)} aria-label={`${d.name}: ${d.state}. Vezérlés megnyitása`}>
     <span className="hd-tile-top"><span className="hd-tile-icon"><Icon size={22} strokeWidth={1.8} /></span>{d.value && <span className="hd-tile-value">{d.value}</span>}</span>
     <span className="hd-tile-name">{d.name}</span>
-    <span className="hd-tile-state"><span className={`hd-dot ${d.online ? (d.active ? "hd-dot-on" : "") : "hd-dot-off"}`} />{d.state}{d.room ? ` · ${d.room}` : ""}</span>
+    <span className="hd-tile-state"><span className={`hd-dot ${d.online ? "hd-dot-on" : "hd-dot-off"}`} />{d.state}{d.room ? ` · ${d.room}` : ""}</span>
   </button>;
 }
 function TileGrid({ list, onOpen }: { list: HomeDevice[]; onOpen: (c: CategoryId) => void }) {

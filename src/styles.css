@@ -625,3 +625,6 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .hd-more .hd-section-title:first-child { margin-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .hd-tile, .hd-quick-icon, .hd-nav button svg { transition: none; } }
+.hd-detail .home-sensor-grid, .hd-sheet-body .home-sensor-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.hd-sheet-body .smart-section-heading .smart-icon { display: none; }
+@media (max-width: 420px) { .hd-sheet-body .home-sensor-grid { grid-template-columns: minmax(0,1fr); } }
