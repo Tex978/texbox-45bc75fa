@@ -31,15 +31,22 @@ export type Train = { colorIndex: number; wagons: number };
 /** Station option: which colour platform the child may tap. */
 export type Station = { colorIndex: number; label: string; hex: string };
 
+/** Clamps any rand() result into [0,1) so a 1 or a negative value cannot break the range. */
+function unit(rand: () => number): number {
+  const r = rand();
+  if (!(r >= 0) || r >= 1) return 0;
+  return r;
+}
+
 export function pickColor(count: number, rand: () => number): number {
   const n = Math.max(1, Math.min(count, TRAIN_COLORS.length));
-  return Math.min(TRAIN_COLORS.length - 1, Math.floor(rand() * n));
+  return Math.min(TRAIN_COLORS.length - 1, Math.floor(unit(rand) * n));
 }
 
 /** A train with a colour and 1..maxWagons wagons; the count drives the loading game. */
 export function makeTrain(rand: () => number, maxWagons = 4): Train {
   const max = Math.max(1, Math.min(maxWagons, 9));
-  return { colorIndex: pickColor(TRAIN_COLORS.length, rand), wagons: 1 + Math.floor(rand() * max) };
+  return { colorIndex: pickColor(TRAIN_COLORS.length, rand), wagons: 1 + Math.floor(unit(rand) * max) };
 }
 
 /**
@@ -56,7 +63,7 @@ export function pickStations(train: Train, count: number, rand: () => number): S
     hex: TRAIN_COLORS[i]!.hex,
   }));
   for (let i = list.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
+    const j = Math.floor(unit(rand) * (i + 1));
     [list[i], list[j]] = [list[j]!, list[i]!];
   }
   return list;
@@ -69,7 +76,7 @@ export function isCorrectStation(train: Train, station: Station): boolean {
 /** How many wagons the loading round asks for (never more than the train can show). */
 export function makeCargoTarget(rand: () => number, maxWagons = 4): number {
   const max = Math.max(1, Math.min(maxWagons, 9));
-  return 1 + Math.floor(rand() * max);
+  return 1 + Math.floor(unit(rand) * max);
 }
 
 export function isCargoFull(target: number, loaded: number): boolean {
