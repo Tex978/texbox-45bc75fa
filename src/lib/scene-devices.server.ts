@@ -86,11 +86,12 @@ export async function sceneDevices(): Promise<{ devices: DeviceCapability[]; err
   }
   return { devices, errors };
 }
-export async function executeSceneStep(step: SceneStep) {
+export async function executeSceneStep(step: SceneStep, reauthorize: () => void) {
   const { devices } = await sceneDevices();
   const d = devices.find((d) => d.key === step.device);
   if (!d || !d.online) throw new Error("Az eszköz offline vagy a kapcsolat nem érhető el.");
   validateStep(step, d);
+  reauthorize();
   if (step.device.startsWith("gree:"))
     return commandGree(env, {
       ip: step.device.slice(5),
@@ -102,7 +103,8 @@ export async function executeSceneStep(step: SceneStep) {
     const b = (await listBlinds(env("BLINDS_IP"), env("BLINDS_KEY"))).find(
       (b) => b.mac === step.device.slice(6),
     );
-    if (!b) throw new Error("A redőny nem érhető el.");
+    if (!b || b.position < 0) throw new Error("A redőny nem érhető el.");
+    reauthorize();
     return commandBlind(env, {
       mac: b.mac,
       deviceType: b.deviceType,
@@ -112,5 +114,6 @@ export async function executeSceneStep(step: SceneStep) {
   }
   const r = await tuya();
   if (!r) throw new Error("Nincs Smart Life kapcsolat.");
+  reauthorize();
   await r.t.sendTuya(r.s, step.device.slice(5), step.action, step.value);
 }

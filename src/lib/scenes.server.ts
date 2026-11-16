@@ -163,7 +163,7 @@ export async function runScene(
   user: User,
   sceneId: string,
   requestId: string,
-  execute: (step: SceneStep) => Promise<void>,
+  execute: (step: SceneStep, reauthorize: () => void) => Promise<void>,
 ) {
   const d = store(),
     u = current(user),
@@ -200,7 +200,7 @@ export async function runScene(
     persist();
     try {
       canRun(current(user), getScene(sceneId));
-      await withDeviceLock(step.device, () => execute(step));
+      await withDeviceLock(step.device, () => execute(step, () => canRun(current(user), getScene(sceneId))));
       result.status = "accepted";
       result.message =
         "A vezérlő elfogadta a parancsot; a fizikai állapotot az eszköznézetben ellenőrizd.";
