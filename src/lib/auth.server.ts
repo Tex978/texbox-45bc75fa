@@ -133,3 +133,12 @@ export function login(username: string, pw: string, ip: string, ua: string): { t
   return { token: createSession(r.id, ua) };
 }
 export function userCan(u: User, p: Permission) { return can(u.role, p, u.permissions); }
+
+/** Server-function guard. Legacy mode (no family accounts yet) keeps the old open/shared-password behaviour. */
+export function requirePermission(sessionToken: string | undefined, perm?: Permission): User | null {
+  if (db() === null || userCount() === 0) return null;
+  const u = sessionUser(sessionToken);
+  if (!u) throw new Error("Bejelentkezés szükséges.");
+  if (perm && !userCan(u, perm)) throw new Error("Ehhez nincs jogosultságod. Kérd meg az admint.");
+  return u;
+}
