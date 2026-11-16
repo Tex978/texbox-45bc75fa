@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { LayoutDashboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Search, Download, HardDrive, House, Cable, Server, Film, Play, History, Plus, Menu, type LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 const nav = [
   { to: "/", label: "Áttekintő", icon: LayoutDashboard }, { to: "/search", label: "Keresés", icon: Search },
   { to: "/downloads", label: "Letöltések", icon: Download }, { to: "/library", label: "Tárhely", icon: HardDrive },
@@ -11,6 +13,7 @@ export function Shell({ children, demo, className = "" }: { children: ReactNode;
     <header className="app-header border-b border-border"><div className="app-header-inner">
       <div className="app-brand"><span className="app-brand-icon"><Server size={18} strokeWidth={1.7} /></span><span className="app-brand-name">NAS Vezérlő</span></div>
       {demo && <span className="app-demo">DEMÓ</span>}
+      {className.includes("smart-home") && <div className="home-app-menu"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Alkalmazás menü" title="Alkalmazás menü"><Menu /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="min-w-52">{nav.map(({to, label, icon: Icon}) => <DropdownMenuItem key={to} asChild><Link to={to} className="min-h-12"><Icon />{label}</Link></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu></div>}
       <nav className="app-nav" aria-label="Főmenü">{nav.map(({to, label, icon: Icon}) => <Link key={to} to={to} activeOptions={{exact: true}}><Icon size={17} strokeWidth={1.7} />{label}</Link>)}</nav>
     </div></header>
     <main className="app-main">{children}</main>

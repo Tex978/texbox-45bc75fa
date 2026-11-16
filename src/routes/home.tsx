@@ -80,9 +80,8 @@ function Thermometers() {
   };
   const shown = visibleThermometers(data.sensors, data.meta);
   return (
-    <Card title="Hőmérők (Xiaomi)" className="mt-4">
-      {!data.verifyUrl && !data.error && data.sensors.length > 0 && <div className="-mt-2 mb-2 text-right">
-        <Button variant="outline" disabled={busy} onClick={() => edit ? void finish() : setEdit(true)} className="text-sm text-muted-foreground hover:text-foreground" aria-label={edit ? "Hőmérők mentése" : "Hőmérők eszközkezelője"}>{edit ? <Check /> : <Settings2 />}{busy ? "Mentés…" : edit ? "Kész" : "Eszközkezelő"}</Button></div>}
+    <Card title="Hőmérők (Xiaomi)" className="mt-4" action={!data.verifyUrl && !data.error && data.sensors.length > 0 ?
+        <Button variant="outline" size="icon" disabled={busy} onClick={() => edit ? void finish() : setEdit(true)} className="text-muted-foreground hover:text-foreground" title={edit ? "Mentés" : "Eszközkezelő"} aria-label={edit ? "Hőmérők mentése" : "Hőmérők eszközkezelője"}>{edit ? <Check /> : <Settings2 />}</Button> : undefined}>
       {data.verifyUrl ? <XiaomiVerify url={data.verifyUrl} /> : data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : <>
         {edit && <div className="mb-4 space-y-2 rounded-lg border border-border p-3">{data.sensors.map((t) => (
           <div key={t.did} className="grid grid-cols-2 gap-2 border-b border-border py-2 last:border-0">
@@ -93,9 +92,8 @@ function Thermometers() {
           </div>))}</div>}
         {!edit && <div className="home-sensor-grid">{shown.map((t) => (
           <div key={t.did} className="smart-device sensor-device">
-            <div className="flex min-w-0 items-center gap-2"><Thermometer size={17} className="shrink-0 text-home-water" /><div className="min-w-0 truncate text-sm font-medium">{names[t.did]?.name || t.name}</div></div>
-            {names[t.did]?.room && <div className="truncate text-xs text-muted-foreground">{names[t.did]?.room}</div>}
-            <div className="mt-5 text-3xl font-semibold tabular-nums">{t.temp != null ? `${t.temp.toLocaleString("hu-HU", { maximumFractionDigits: 1 })}°` : "–"}</div>
+            <div className="sensor-heading flex min-w-0 items-center gap-2"><Thermometer size={17} className="shrink-0 text-home-water" /><div className="min-w-0"><div className="truncate text-sm font-medium">{names[t.did]?.name || t.name}</div>{names[t.did]?.room && <div className="truncate text-xs text-muted-foreground">{names[t.did]?.room}</div>}</div></div>
+            <div className="sensor-reading mt-5 text-3xl font-semibold tabular-nums">{t.temp != null ? `${t.temp.toLocaleString("hu-HU", { maximumFractionDigits: 1 })}°` : "–"}</div>
              <SensorDetails humidity={t.hum} battery={t.battery} online={t.online} />
              <ThermometerHistory did={t.did} name={names[t.did]?.name || t.name} />
           </div>))}</div>}
@@ -120,9 +118,9 @@ function Purifiers() {
     <Card title="Légtisztító" className="mt-4">
       {data.error ? <p className="break-all font-mono text-sm text-destructive">● {data.error}</p> : data.purifiers.map((p) => (
         <div key={p.did} className="smart-device space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 font-medium"><Fan size={19} className="text-home-water" />{p.name}{!p.online && <span className="ml-2 text-xs text-muted-foreground">offline</span>}</span>
-            <Button variant="outline" className={b(!!p.on)} onClick={() => act(p.did, "on", !p.on)}><Power size={16} />{p.on ? "Bekapcsolva" : "Kikapcsolva"}</Button>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <span className="inline-flex min-w-0 items-center gap-2 font-medium"><Fan size={19} className="shrink-0 text-home-water" /><span className="truncate">{p.name}</span>{!p.online && <span className="text-xs text-muted-foreground">offline</span>}</span>
+            <Button variant="outline" size="icon" aria-label={`${p.name} ${p.on ? "kikapcsolás" : "bekapcsolás"}`} title={p.on ? "Kikapcsolás" : "Bekapcsolás"} className={b(!!p.on)} onClick={() => act(p.did, "on", !p.on)}><Power size={16} /></Button>
           </div>
           <div className="grid grid-cols-2 gap-3 border-y border-border py-4 xl:grid-cols-4">
             {[["PM2.5", p.pm25 != null ? `${p.pm25} µg/m³` : "–"], ["Pára", p.hum != null ? `${p.hum}%` : "–"], ["Hőmérséklet", p.temp != null ? `${p.temp}°` : "–"], ["Szűrő", p.filter != null ? `${p.filter}%` : "–"]].map(([l, v]) => (
@@ -161,6 +159,9 @@ function Home() {
   const { data: appliances } = useSuspenseQuery(appliancesQuery);
   const { data: tuya } = useSuspenseQuery(tuyaQuery);
   const [view, setView] = useState("overview");
+  const [climateTab, setClimateTab] = useState("sensors");
+  const [deviceTab, setDeviceTab] = useState("tuya");
+  const selectView = (id: string) => { setView(id); window.scrollTo({ top: 0, behavior: "instant" }); };
   const sections = [
     { id: "overview", name: "Áttekintés", icon: LayoutGrid },
     { id: "climate", name: "Klíma", icon: Thermometer },
@@ -184,17 +185,17 @@ function Home() {
         <img src={childFullBody} alt="A gyermek teljes alakos, körbevágott fotója" className="family-cutout" width={300} height={1024} />
         <Button variant="outline" size="icon" onClick={refresh} disabled={refreshing} className="shrink-0" title="Frissítés" aria-label="Okosotthon frissítése"><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button>
       </div>
-      <div className="home-status-grid">{summaries.map(({ id, title, value, detail, icon: Icon, tone }) => <Button key={id} variant="ghost" className={`home-status-tile home-tone-${tone}`} onClick={() => setView(id)}>
+      {view === "overview" && <div className="home-status-grid">{summaries.map(({ id, title, value, detail, icon: Icon, tone }) => <Button key={id} variant="ghost" className={`home-status-tile home-tone-${tone}`} onClick={() => selectView(id)}>
         <span className="home-status-top"><Icon size={20} strokeWidth={1.7} /><ChevronRight size={14} /></span>
         <span className="home-status-label">{title}</span><strong>{value}</strong><span className="home-status-detail">{detail}</span>
-      </Button>)}</div>
-      <div className="home-view-tabs" role="tablist" aria-label="Okosotthon nézetek">{sections.map(({ id, name, icon: Icon }) => <Button key={id} id={`tab-${id}`} role="tab" aria-selected={view === id} aria-controls="home-panel" variant="ghost" className={view === id ? "home-tab-active" : ""} onClick={() => setView(id)}><Icon size={17} />{name}</Button>)}</div>
+      </Button>)}</div>}
+      <div className="home-view-tabs" role="tablist" aria-label="Okosotthon nézetek">{sections.map(({ id, name, icon: Icon }) => <Button key={id} id={`tab-${id}`} role="tab" aria-selected={view === id} aria-controls="home-panel" variant="ghost" className={view === id ? "home-tab-active" : ""} onClick={() => selectView(id)}><Icon size={17} />{name}</Button>)}</div>
       <div id="home-panel" role="tabpanel" aria-labelledby={`tab-${view}`} className="home-view-panel">
-        {view === "overview" && <><div className="home-dashboard-grid"><Thermometers /><Blinds /></div><div className="home-comfort-grid"><Purifiers /><Locks /></div></>}
-        {view === "climate" && <><Thermometers /><Gree /><Purifiers /></>}
+        {view === "overview" && <div className="home-dashboard-grid"><Thermometers /><Blinds /></div>}
+        {view === "climate" && <><div className="home-subtabs" aria-label="Klíma eszköztípusok">{([["sensors", "Hőmérők"], ["gree", "Klímák"], ["air", "Légtisztító"]] as const).map(([id, label]) => <Button key={id} variant={climateTab === id ? "secondary" : "ghost"} aria-pressed={climateTab === id} onClick={() => setClimateTab(id)}>{label}</Button>)}</div>{climateTab === "sensors" ? <Thermometers /> : climateTab === "gree" ? <Gree /> : <Purifiers />}</>}
         {view === "blinds" && <Blinds />}
         {view === "energy" && <SmartEnergy data={data} />}
-        {view === "devices" && <><div className="home-dashboard-grid"><Tuya /><Appliances /></div><Locks /></>}
+        {view === "devices" && <><div className="home-subtabs" aria-label="Eszköztípusok">{([["tuya", "Smart Life"], ["bosch", "Bosch"], ["locks", "Zárak"]] as const).map(([id, label]) => <Button key={id} variant={deviceTab === id ? "secondary" : "ghost"} aria-pressed={deviceTab === id} onClick={() => setDeviceTab(id)}>{label}</Button>)}</div>{deviceTab === "tuya" ? <Tuya /> : deviceTab === "bosch" ? <Appliances /> : <Locks />}</>}
       </div>
     </Shell>
   );

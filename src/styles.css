@@ -244,6 +244,10 @@
 .home-section-nav a { font-weight: 500; }
 
 /* Category-based home dashboard; controls remain vendor-owned. */
+.home-app-menu { display: none; }
+.home-subtabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding: 4px; background: var(--card); border-radius: 8px; margin-top: 20px; }
+.smart-home .home-subtabs button { height: 44px; padding: 8px; font-size: 12px; }
+.blind-total { grid-column: 1 / -1; }
 .home-status-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin: 0 0 24px; }
 .smart-home .home-status-tile { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; height: auto; min-height: 156px; padding: 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); text-align: left; white-space: normal; }
 .home-tone-climate { --home-tile-accent: var(--home-water); }
@@ -311,6 +315,51 @@
  .app-main label.rounded-lg > .w-28 { width: 72px; }
 }
 @media (prefers-reduced-motion: reduce) { .app-shell *, .app-shell *::before { transition: none !important; animation: none !important; } }
+
+/* Phone-first home workspace: one compact header and one thumb-level navigation. */
+@media (max-width: 767px) {
+  .smart-home .app-header-inner { display: grid; grid-template-columns: minmax(0,1fr) auto; padding: 8px 16px; gap: 8px; }
+  .smart-home .app-brand { min-width: 0; }
+  .smart-home .app-brand-name { font-size: 13px; }
+  .smart-home .app-nav { display: none; }
+  .smart-home .app-demo { grid-row: 1; grid-column: 1; justify-self: end; margin-right: 8px; }
+  .home-app-menu { display: block; grid-column: 2; grid-row: 1; }
+  .home-app-menu button { width: 44px; height: 44px; }
+  .smart-home .app-main { padding: 16px 16px calc(100px + env(safe-area-inset-bottom)); }
+  .smart-home .home-title-row { margin-bottom: 16px; }
+  .smart-home .family-cutout { height: 48px; max-width: 19px; }
+  .smart-home .home-title-row h1 { font-size: 23px; }
+  .home-status-grid { gap: 8px; margin-bottom: 8px; }
+  .smart-home .home-status-tile { position: relative; min-height: 106px; padding: 12px; gap: 4px; }
+  .home-status-top { position: absolute; top: 12px; right: 12px; margin: 0; }
+  .home-status-top svg:last-child { display: none; }
+  .home-status-label { padding-right: 24px; font-size: 11px; }
+  .home-status-tile strong { font-size: 23px; margin-top: 4px; }
+  .home-status-detail { font-size: 10px; }
+  .home-view-tabs { position: fixed; z-index: 40; bottom: 0; left: 0; right: 0; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 4px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); margin: 0; background: var(--background); border-top: 1px solid var(--border); border-bottom: 0; }
+  .smart-home .home-view-tabs button { height: 52px; min-height: 52px; padding: 6px 0; gap: 5px; font-size: 10px; border-radius: 8px; }
+  .smart-home .home-view-tabs button svg { width: 20px; height: 20px; }
+  .smart-home .home-view-tabs .home-tab-active { color: var(--primary); background: var(--accent); }
+  .home-subtabs { margin-top: 4px; }
+  .home-view-panel .smart-section { margin-top: 20px; }
+  .home-view-panel .smart-section-heading { margin-bottom: 12px; }
+  .home-sensor-grid, .home-dashboard-grid .home-sensor-grid { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .home-view-panel .sensor-device { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; padding: 14px 14px 0; min-height: 0; }
+  .sensor-heading { grid-column: 1; grid-row: 1; }
+  .sensor-heading .truncate { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
+  .home-view-panel .sensor-device { column-gap: 12px; }
+  .home-view-panel .sensor-device .sensor-reading { grid-column: 2; grid-row: 1; margin: 0; font-size: 30px; line-height: 1.2; }
+  .sensor-device > .sensor-details { grid-column: 1 / -1; margin-top: 14px; display: flex; flex-wrap: nowrap; gap: 12px; }
+  .sensor-device > .sensor-details > span:last-child { width: auto; margin-left: auto; }
+  .sensor-device > button { grid-column: 1 / -1; margin-top: 12px; height: 44px; padding: 8px 0; color: var(--muted-foreground); }
+  .blind-toolbar > button { min-width: 44px; padding: 8px; }
+  .blind-room-controls { gap: 6px; }
+  .blind-room-controls > button:not(:first-child) { width: 44px; padding: 0; }
+  .smart-home input[type="range"] { height: 40px; }
+  .smart-home .smart-device select { font-size: 16px; }
+  .smart-home .smart-section > p { overflow-wrap: anywhere; }
+  .smart-home.history-dialog { position: fixed; top: auto; bottom: 0; left: 0; width: 100%; max-width: none; translate: none; transform: none; border-radius: 8px 8px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+}
 
 /* Film discovery shares the application palette. */
 .media-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin: 24px 0 20px; }
