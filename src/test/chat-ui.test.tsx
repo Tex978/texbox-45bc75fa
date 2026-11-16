@@ -7,10 +7,34 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createUser, createSession, resetAuthDb, updateOwnProfile } from "@/lib/auth.server";
 import { chatSend, chatList, chatStatus, chatMarkRead, chatReact } from "@/lib/chat.server";
+import { uploadChatFile, draftFiles } from "@/lib/chat-files.server";
 let token: string, dir: string;
+vi.mock("@/lib/chat-upload", () => ({
+  uploadChatFileBrowser: async (file: File, progress: (n: number) => void) => {
+    const bytes = await new Promise<Uint8Array>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+    progress(50);
+    const result = await uploadChatFile(
+      token,
+      { name: file.name, size: file.size, mime: file.type },
+      new ReadableStream<Uint8Array>({
+        start(c) {
+          c.enqueue(bytes);
+          c.close();
+        },
+      }),
+    );
+    progress(100);
+    return result;
+  },
+}));
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/chat.functions", () => ({
-  chatDraftFiles: async () => [],
+  chatDraftFiles: async () => draftFiles(token),
   chatUnread: async () => chatStatus(token),
   chatMessages: async ({ data }: { data: { before?: number } }) => chatList(token, data.before),
   chatMessageSend: async ({ data }: { data: Parameters<typeof chatSend>[1] }) =>
@@ -69,8 +93,28 @@ it("sends and reads back SQLite messages through the authenticated chat UI", asy
   expect(chatList(dadToken).items[0]?.reactions[0]?.people[0]?.name).toBe("Anya");
   fireEvent.click(screen.getByRole("button", { name: "Láttam / oké reakció, 1" }));
   await waitFor(() => expect(chatList(dadToken).items[0]?.reactions).toEqual([]));
+  const image = new File(
+    [
+      new Uint8Array(
+        Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4GQAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      ),
+    ],
+    "family.png",
+    { type: "image/png" },
+  );
+  fireEvent.change(screen.getByLabelText("Chat csatolmányok"), { target: { files: [image] } });
+  await screen.findByText("family.png");
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Üzenet küldése" })).not.toBeDisabled(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Üzenet küldése" }));
+  await waitFor(() => expect(chatList(dadToken).items).toHaveLength(3));
+  expect(chatList(dadToken).items.at(-1)?.attachments[0]?.name).toBe("family.png");
   resetAuthDb();
-  expect(chatList(dadToken).items).toHaveLength(2);
+  expect(chatList(dadToken).items).toHaveLength(3);
   qc.clear();
   vi.restoreAllMocks();
 });

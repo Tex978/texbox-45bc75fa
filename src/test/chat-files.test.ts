@@ -219,3 +219,15 @@ it("no silent new attachment folder after missing NAS directory", async () => {
   await expect(upload()).rejects.toThrow(/hiányzik/);
   expect(existsSync(filesDir())).toBe(false);
 });
+
+it("accepts a genuine WebM signature", async () => {
+  const data = new Uint8Array(
+    Buffer.from(
+      "GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAIwEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggElTbuMU6uEHFO7a1OsggIa7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjIuMTIuMTAyV0GNTGF2ZjYyLjEyLjEwMkSJiEBeAAAAAAAAFlSua8iuAQAAAAAAAD/XgQFzxYhQODLI1CPB+5yBACK1nIN1bmSIgQCGhVZfVlA4g4EBI+ODhAJiWgDgkLCBELqBEJqBAlWwhFW5gQESVMNn/HNzoGPAgGfImkWjh0VOQ09ERVJEh41MYXZmNjIuMTIuMTAyc3PWY8CLY8WIUDgyyNQjwftnyKFFo4dFTkNPREVSRIeUTGF2YzYyLjI4LjEwMiBsaWJ2cHhnyKFFo4hEVVJBVElPTkSHkzAwOjAwOjAwLjEyMDAwMDAwMAAfQ7Z17+eBAKO8gQAAgLACAJ0BKhAAEAAARwiFhYiFhIgCAgJ1qgP4Agz9KAD+/00S//xYV/FhX8WFf/FhX/z8zu3F/OYAo5WBACgAsQEABRCsABgAGFgv9AAIAACjlYEAUACxAQAFEKwAGAAYWC/0AAgAABxTu2uRu4+zgQC3iveBAfGCAabwgQM=",
+      "base64",
+    ),
+  );
+  const f = await upload(dad, "clip.webm", data, "video/webm");
+  expect(f.kind).toBe("video");
+  expect(f.mime).toBe("video/webm");
+});

@@ -86,14 +86,20 @@ export function ChatAttachments({
           )}
         </div>
       ))}
-      <Dialog open={!!expanded} onOpenChange={open=>{if(!open)setExpanded(null);}}>
+      <Dialog
+        open={!!expanded}
+        onOpenChange={(open) => {
+          if (!open) setExpanded(null);
+        }}
+      >
         <DialogContent className="chat-image-dialog" aria-describedby={undefined}>
           <DialogTitle className="sr-only">Kép teljes nézet</DialogTitle>
-          {expanded&&
-          <img
-            src={chatFileUrl(expanded)}
-            alt={files.find((f) => f.id === expanded)?.name ?? "Kép"}
-          />}
+          {expanded && (
+            <img
+              src={chatFileUrl(expanded)}
+              alt={files.find((f) => f.id === expanded)?.name ?? "Kép"}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
