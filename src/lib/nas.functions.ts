@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie as readBrowserCookie, setCookie as writeBrowserCookie, getRequest } from "@tanstack/react-start/server";
 import { storeGet, storeSet, storeAvailable, readStoredCookie } from "./shared-store.server";
+import { requirePermission, SESSION_COOKIE } from "./auth.server";
+import type { Permission } from "./permissions";
+// Family-account permission check (no-op until the first admin account exists).
+const guard = (perm?: Permission) => requirePermission(readBrowserCookie(SESSION_COOKIE), perm);
 // Shared server-side store first (same data on every device), browser cookie as fallback/migration source.
 const getCookie = (name: string): string | undefined => readStoredCookie(name, readBrowserCookie);
 const setCookie = (name: string, value: string, opts: Parameters<typeof writeBrowserCookie>[2]) => {
@@ -28,19 +32,19 @@ const env = (k: string) => {
   return k.endsWith("_URL") && t && !/^https?:\/\//i.test(t) ? `http://${t}` : t;
 };
 
-export const getConfig = createServerFn({ method: "GET" }).handler(async () => {
+export const getConfig = createServerFn({ method: "GET" }).handler(async () => { guard("settings");
   const out: Record<string, string> = {};
   for (const f of FIELDS) out[f] = SECRET.includes(f) ? (env(f) ? "__set__" : "") : env(f);
   return out;
 });
-export const getConnectionStorage = createServerFn({ method: "GET" }).handler(async () => {
+export const getConnectionStorage = createServerFn({ method: "GET" }).handler(async () => { guard("settings");
   getCookie(COOKIE);
   return { shared: storeAvailable(), saved: Boolean(storeGet(COOKIE)) };
 });
 
 export const saveConfig = createServerFn({ method: "POST" })
   .inputValidator((d: Record<string, string>) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("settings");
     const cur = readCfg(); const next: Record<string, string> = {};
     for (const f of FIELDS) {
       const v = SECRET.includes(f) ? data[f] ?? "" : (data[f] ?? "").trim();
@@ -142,7 +146,7 @@ export const getTorrents = createServerFn({ method: "GET" }).handler(async () =>
 
 export const torrentAction = createServerFn({ method: "POST" })
   .inputValidator((d: { hash: string; action: "pause" | "resume" | "delete" }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("downloads");
     if (!has("QBIT_URL")) return { ok: true };
     if (data.action === "delete") await qbit("/torrents/delete", { hashes: data.hash, deleteFiles: "false" });
     else {
@@ -173,7 +177,7 @@ export const searchMedia = createServerFn({ method: "GET" })
 
 export const requestMedia = createServerFn({ method: "POST" })
   .inputValidator((d: { id: number; type: string; profile: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("request");
     const app = data.type === "Film" ? "RADARR" : "SONARR";
     if (!has(app + "_URL")) return { ok: true };
     const [profiles, roots] = await Promise.all([arr(app, "/qualityprofile"), arr(app, "/rootfolder")]);
@@ -349,7 +353,7 @@ export const getLibrary = createServerFn({ method: "GET" }).handler(async () => 
 
 export const deleteMedia = createServerFn({ method: "POST" })
   .inputValidator((d: { id: number; type: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("downloads");
     const app = data.type === "Film" ? "RADARR" : "SONARR";
     if (!has(app + "_URL")) return { ok: true };
     const r = await fetch(`${env(app + "_URL")}/api/v3/${app === "RADARR" ? "movie" : "series"}/${data.id}?deleteFiles=true&addImportExclusion=false&addImportListExclusion=false`,
@@ -537,7 +541,7 @@ export const getBlinds = createServerFn({ method: "GET" }).handler(async (): Pro
 });
 export const saveBlindMeta = createServerFn({ method: "POST" })
   .inputValidator((d: { items: { mac: string; name: string; room: string }[] }) => ({ items: d.items.slice(0, 100).map((i) => ({ mac: String(i.mac).slice(0, 40), name: String(i.name).trim().slice(0, 40), room: String(i.room).trim().slice(0, 30) })) }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("rooms");
     const meta = readMeta();
     for (const i of data.items) meta[i.mac] = { ...(i.name ? { name: i.name } : {}), ...(i.room ? { room: i.room } : {}) };
     const https = getRequest().url.startsWith("https") || getRequest().headers.get("x-forwarded-proto") === "https";
@@ -547,7 +551,7 @@ export const saveBlindMeta = createServerFn({ method: "POST" })
   });
 export const blindGroupAction = createServerFn({ method: "POST" })
   .inputValidator((d: { blinds: { mac: string; deviceType: string }[]; action: "open" | "close" | "stop" }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("home");
     if (!has("BLINDS_IP")) return { ok: true, failed: 0 };
     const { writeBlind } = await import("./blinds.server");
     const operation = data.action === "open" ? 1 : data.action === "close" ? 0 : 2;
@@ -560,7 +564,7 @@ export const blindGroupAction = createServerFn({ method: "POST" })
   });
 export const blindAction = createServerFn({ method: "POST" })
   .inputValidator((d: { mac: string; deviceType: string; action: "open" | "close" | "stop" | "position"; position?: number }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("home");
     if (!has("BLINDS_IP")) return { ok: true };
     const { writeBlind } = await import("./blinds.server");
     const payload = data.action === "position" ? { targetPosition: Math.max(0, Math.min(100, Math.round(data.position ?? 0))) }
@@ -586,7 +590,7 @@ export const saveThermometerMeta = createServerFn({ method: "POST" })
     if (!input.items || typeof input.items !== "object" || Array.isArray(input.items) || Object.values(input.items).some(item => !item || typeof item !== "object")) throw new Error("Érvénytelen hőmérőbeállítások.");
     return input;
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("rooms");
     const meta = mergeThermometerMeta(readThermometerMeta(), data.items, data.onlyMissing === true);
     setCookie(THERMO_META, JSON.stringify(meta), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
     return meta;
@@ -610,7 +614,7 @@ export const getThermometers = createServerFn({ method: "GET" }).handler(async (
   }
 });
 export const xiaomiSendCode = createServerFn({ method: "POST" }).inputValidator((d: { url: string }) => d)
-  .handler(async ({ data }) => (await import("./xiaomi.server")).sendCode(env("XIAOMI_USER"), data.url));
+  .handler(async ({ data }) => { guard("settings"); return (await import("./xiaomi.server")).sendCode(env("XIAOMI_USER"), data.url); });
 export const getThermometerHistory = createServerFn({ method: "GET" })
   .inputValidator((input: { did: string; days: number }) => {
     if (!input.did || ![1, 7].includes(input.days)) throw new Error("Érvénytelen időszak.");
@@ -628,7 +632,7 @@ export const getThermometerHistory = createServerFn({ method: "GET" })
   });
 export const xiaomiVerify = createServerFn({ method: "POST" })
   .inputValidator((d: { url: string; ick: string; flag: number; code: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("settings");
     const x = await import("./xiaomi.server");
     const [u, p] = xmArgs();
     const s = await x.verifyCode(u, p, data.url, data.ick, data.flag, data.code);
@@ -647,7 +651,7 @@ export const getPurifiers = createServerFn({ method: "GET" }).handler(async () =
 });
 export const purifierAction = createServerFn({ method: "POST" })
   .inputValidator((d: { did: string; key: "on" | "mode"; value: boolean | number }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("home");
     const x = await import("./xiaomi.server");
     const [u, p] = xmArgs();
     const saved = getCookie(XM); if (saved) x.restoreSession(u, p, saved);
@@ -721,7 +725,7 @@ export const getAppliances = createServerFn({ method: "GET" }).handler(async ():
     return { linked: true, appliances: out, error: null };
   } catch (e) { return { linked: true, appliances: [], error: e instanceof Error && e.message.includes("[HC/") ? e.message : "A Home Connect nem érhető el. Ellenőrizd az internetkapcsolatot, és próbáld később. [HC/network]" }; }
 });
-export const hcStartLink = createServerFn({ method: "POST" }).handler(async () => {
+export const hcStartLink = createServerFn({ method: "POST" }).handler(async () => { guard("settings");
   const r = await fetch(`${HC}/security/oauth/device_authorization`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ client_id: hcClient(), scope: "IdentifyAppliance Monitor Control" }).toString() });
   const j = await r.json() as { device_code?: string; user_code?: string; verification_uri_complete?: string; verification_uri?: string; error_description?: string };
@@ -729,7 +733,7 @@ export const hcStartLink = createServerFn({ method: "POST" }).handler(async () =
   hcCookie(HC_DEV, j.device_code, 900);
   return { ok: true, error: "", code: j.user_code || "", url: j.verification_uri_complete || j.verification_uri || "" };
 });
-export const hcFinishLink = createServerFn({ method: "POST" }).handler(async () => {
+export const hcFinishLink = createServerFn({ method: "POST" }).handler(async () => { guard("settings");
   const dc = getCookie(HC_DEV); if (!dc) return { ok: false, error: "Lejárt, kezdd újra" };
   const r = await hcForm({ grant_type: "device_code", device_code: dc, client_id: hcClient() });
   const j = await r.json() as { access_token?: string; refresh_token?: string; expires_in?: number; error?: string; error_description?: string };
@@ -737,7 +741,7 @@ export const hcFinishLink = createServerFn({ method: "POST" }).handler(async () 
   hcCookie(HC_TOK, JSON.stringify({ a: j.access_token, r: j.refresh_token || "", e: Date.now() + (j.expires_in || 3600) * 1000 }), 60 * 60 * 24 * 60);
   return { ok: true, error: "" };
 });
-export const hcStop = createServerFn({ method: "POST" }).inputValidator((d: { haId: string }) => d).handler(async ({ data }) => {
+export const hcStop = createServerFn({ method: "POST" }).inputValidator((d: { haId: string }) => d).handler(async ({ data }) => { guard("home");
   const tok = await hcToken(); if (!tok) return { ok: false };
   const r = await fetch(`${HC}/api/homeappliances/${encodeURIComponent(data.haId)}/programs/active`, { method: "DELETE", headers: { Authorization: `Bearer ${tok}`, Accept: "application/vnd.bsh.sdk.v1+json" } });
   return { ok: r.ok };
@@ -755,7 +759,7 @@ export const hcPrograms = createServerFn({ method: "POST" }).inputValidator((d: 
 });
 export const hcControl = createServerFn({ method: "POST" })
   .inputValidator((d: { haId: string; action: "start" | "power"; program?: string; on?: boolean; type?: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("home");
     const tok = await hcToken(); if (!tok) return { ok: false, error: "Nincs összekötve" };
     const id = encodeURIComponent(data.haId);
     if (data.action === "start") return hcSend(tok, `/api/homeappliances/${id}/programs/active`, "PUT", { data: { key: data.program, options: [] } });
@@ -790,7 +794,7 @@ export const saveTuyaMeta = createServerFn({ method: "POST" })
     name: d.name != null ? String(d.name).trim().slice(0, 40) : undefined,
     room: d.room != null ? String(d.room).trim().slice(0, 30) : undefined,
     hidden: d.hidden === true ? true : d.hidden === false ? false : undefined }))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("rooms");
     const meta = readTuyaMeta();
     meta[data.id] = { ...meta[data.id],
       ...(data.name !== undefined ? { name: data.name } : {}),
@@ -799,24 +803,24 @@ export const saveTuyaMeta = createServerFn({ method: "POST" })
     setCookie(TUYA_META, JSON.stringify(meta), { httpOnly: true, path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" as const });
     return { ok: true };
   });
-export const tuyaQrStart = createServerFn({ method: "POST" }).inputValidator((d: { userCode: string }) => d).handler(async ({ data }) => {
+export const tuyaQrStart = createServerFn({ method: "POST" }).inputValidator((d: { userCode: string }) => d).handler(async ({ data }) => { guard("settings");
   try {
     const qr = await (await import("./tuya.server")).qrStart(data.userCode.trim());
     hcCookie(TQ, JSON.stringify({ qr, uc: data.userCode.trim() }), 600);
     return { ok: true, error: "", qr: `tuyaSmart--qrLogin?token=${qr}` };
   } catch (e) { return { ok: false, error: (e as Error).message, qr: "" }; }
 });
-export const tuyaQrFinish = createServerFn({ method: "POST" }).handler(async () => {
+export const tuyaQrFinish = createServerFn({ method: "POST" }).handler(async () => { guard("settings");
   let q: { qr: string; uc: string }; try { q = JSON.parse(getCookie(TQ) || ""); } catch { return { ok: false, error: "Lejárt, kérj új QR-kódot" }; }
   const s = await (await import("./tuya.server")).qrResult(q.qr, q.uc);
   if (!s) return { ok: false, error: "Még nincs jóváhagyva – olvasd be a kódot a Smart Life appban és nyomd meg a Megerősítést" };
   hcCookie(TS, JSON.stringify(s), 60 * 60 * 24 * 365);
   return { ok: true, error: "" };
 });
-export const tuyaLogout = createServerFn({ method: "POST" }).handler(async () => { hcCookie(TS, "", 0); return { ok: true }; });
+export const tuyaLogout = createServerFn({ method: "POST" }).handler(async () => { guard("settings"); hcCookie(TS, "", 0); return { ok: true }; });
 export const tuyaCommand = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; code: string; value: boolean | number | string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("home");
     try { const r = await tuyaReady(); if (!r) return { ok: false, error: "Nincs összekötve" };
       await r.t.sendTuya(r.s, data.id, data.code, data.value); return { ok: true, error: "" }; }
     catch (e) { return { ok: false, error: (e as Error).message }; }
@@ -843,7 +847,7 @@ export const getGree = createServerFn({ method: "GET" }).handler(async () => {
 });
 export const greeControl = createServerFn({ method: "POST" })
   .inputValidator(validateGreeCommand)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }) => { guard("home");
     if (has("GREE_USER", "GREE_PASS")) {
       const { controlGreeCloud } = await import("./gree-cloud.server");
       await controlGreeCloud({ user: env("GREE_USER"), password: env("GREE_PASS"), region: env("GREE_REGION") || "Europe" }, data);
