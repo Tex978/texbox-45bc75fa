@@ -102,7 +102,11 @@ export function setDeviceAcl(user: User, target: string, key: string, allowed: b
 }
 export function deviceAclList(user: User) {
   if (current(user).role !== "admin") return [];
-  return store().prepare("SELECT user_id,device_key,allowed FROM scene_device_acl").all() as { user_id: string; device_key: string; allowed: number }[];
+  return store().prepare("SELECT user_id,device_key,allowed FROM scene_device_acl").all() as {
+    user_id: string;
+    device_key: string;
+    allowed: number;
+  }[];
 }
 export type StepResult = {
   device: string;
