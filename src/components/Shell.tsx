@@ -20,6 +20,9 @@ import {
   Users,
   LogOut,
   MoreHorizontal,
+  UserRound,
+  RefreshCw,
+  AlertCircle,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,9 +43,15 @@ const allNav = [
   { to: "/settings", label: "Kapcsolatok", icon: Cable },
 ] as const;
 const primaryTabs: string[] = ["/", "/search", "/downloads", "/home"];
-export const meQuery = { queryKey: ["me"], queryFn: () => getMe(), staleTime: 60_000 } as const;
-function ProfileMenu() {
-  const { data } = useQuery(meQuery);
+export const meQuery = {
+  queryKey: ["me"],
+  queryFn: () => getMe(),
+  staleTime: 0,
+  refetchInterval: 60_000,
+  retry: false,
+} as const;
+export function ProfileMenu() {
+  const { data, error, isPending, refetch } = useQuery(meQuery);
   const u = data?.user;
   if (!u) {
     if (data?.mode === "accounts")
@@ -51,7 +60,54 @@ function ProfileMenu() {
           <a href="/__login">Belépés</a>
         </Button>
       );
-    return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="app-profile" aria-label="Fiók állapota">
+            <span className="app-avatar">
+              {error || data?.mode === "unavailable" ? (
+                <AlertCircle size={18} />
+              ) : (
+                <UserRound size={18} />
+              )}
+            </span>
+            <span className="app-profile-name">{isPending ? "Fiók betöltése…" : "Fiók"}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="max-w-80">
+          <DropdownMenuLabel className="whitespace-normal font-normal">
+            {error
+              ? "A munkamenet ellenőrzése sikertelen. Próbáld újra, vagy lépj be a NAS-címeden."
+              : data?.mode === "unavailable"
+                ? "A NAS fióktárolója nem olvasható. A hozzáférés biztonsági okból szünetel."
+                : data?.mode === "preview"
+                  ? "Az előnézet nem éri el a NAS családi fiókjait."
+                  : isPending
+                    ? "Munkamenet ellenőrzése…"
+                    : "Még nincs aktív családi belépés."}
+          </DropdownMenuLabel>
+          <DropdownMenuItem
+            onSelect={() => {
+              void refetch();
+            }}
+          >
+            <RefreshCw />
+            Újraellenőrzés
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/family">
+              <Users />
+              Család és fiókok
+            </Link>
+          </DropdownMenuItem>
+          {(error || data?.mode === "unavailable") && (
+            <DropdownMenuItem asChild>
+              <a href="/__login">Belépés</a>
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   }
   const initials = u.displayName
     .split(/\s+/)
@@ -63,7 +119,7 @@ function ProfileMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="app-profile" aria-label={`Profil: ${u.displayName}`}>
-          <span className="app-avatar">{initials}</span>
+          <span className="app-avatar">{error ? <AlertCircle size={18} /> : initials}</span>
           <span className="app-profile-name">{u.displayName}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -75,7 +131,25 @@ function ProfileMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {u.can.users && (
+        {error && (
+          <>
+            <DropdownMenuLabel className="max-w-72 whitespace-normal font-normal text-destructive">
+              A munkamenet ellenőrzése sikertelen; az utolsó ismert profilt látod.
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              onSelect={() => {
+                void refetch();
+              }}
+            >
+              <RefreshCw />
+              Újraellenőrzés
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href="/__login">Új belépés</a>
+            </DropdownMenuItem>
+          </>
+        )}
+        {u.can.family && (
           <DropdownMenuItem asChild>
             <Link to="/family" className="min-h-11">
               <Users />
@@ -140,6 +214,14 @@ export function Shell({
                       </Link>
                     </DropdownMenuItem>
                   ))}
+                  {(!me?.user || me.user.can.family) && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/family" className="min-h-12">
+                        <Users />
+                        Család és fiókok
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -188,7 +270,7 @@ export function Shell({
                     </Link>
                   </DropdownMenuItem>
                 ))}
-              {me?.user?.can.users && (
+              {(!me?.user || me.user.can.family) && (
                 <DropdownMenuItem asChild>
                   <Link to="/family" className="min-h-12">
                     <Users />

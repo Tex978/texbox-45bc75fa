@@ -16,6 +16,12 @@ import {
   endSession,
   db,
   authStorageUnavailable,
+  createChildProfile,
+  listChildProfiles,
+  updateChildProfile,
+  isOwner,
+  getUser,
+  revokeUserSessions,
 } from "@/lib/auth.server";
 import { can } from "@/lib/permissions";
 
@@ -25,13 +31,74 @@ beforeEach(() => {
 });
 
 describe("family accounts", () => {
+  it("keeps the existing admin and session after restarting the account store", () => {
+    const a = createUser({
+      username: "apa",
+      displayName: "Apa",
+      role: "admin",
+      password: "jelszo123",
+    });
+    const r = login("apa", "jelszo123", "local", "test");
+    if (!("token" in r)) throw new Error(r.error);
+    resetAuthDb();
+    expect(getUser(a.id)?.username).toBe("apa");
+    expect(sessionUser(r.token)?.id).toBe(a.id);
+    expect(isOwner(a.id)).toBe(true);
+  });
+  it("a parent can create a child profile without email, username or password", () => {
+    const parent = createUser({ username: "anya", displayName: "Anya", role: "adult" });
+    const id = createChildProfile(parent, "Bence", "star");
+    resetAuthDb();
+    expect(listChildProfiles()).toContainEqual({
+      id,
+      displayName: "Bence",
+      icon: "star",
+      disabled: false,
+      createdBy: parent.id,
+    });
+    expect(getUser(id)).toBeNull();
+  });
+  it("both parents can edit a child profile", () => {
+    const a = createUser({ username: "apa", displayName: "Apa", role: "admin" });
+    const b = createUser({ username: "anya", displayName: "Anya", role: "adult" });
+    const id = createChildProfile(a, "Bence");
+    updateChildProfile(b, id, "Benci", "cat", true);
+    expect(listChildProfiles()[0]).toMatchObject({
+      displayName: "Benci",
+      icon: "cat",
+      disabled: true,
+    });
+  });
+  it("a child cannot create child profiles even with a family override", () => {
+    const c = createUser({ username: "gyerek", displayName: "Gyerek", role: "child" });
+    expect(can("child", "family", { family: true })).toBe(false);
+    expect(() => createChildProfile({ ...c, permissions: { family: true } }, "Test")).toThrow(
+      "Csak szülő",
+    );
+  });
+  it("replacing and expiring invite links prevents activation", () => {
+    const u = createUser({ username: "anya", displayName: "Anya", role: "adult" });
+    const first = createInviteToken(u.id);
+    createInviteToken(u.id);
+    expect(() => acceptInvite(first, "jelszo123")).toThrow("lejárt");
+    const expired = createInviteToken(u.id, -1);
+    expect(() => acceptInvite(expired, "jelszo123")).toThrow("lejárt");
+  });
+  it("revoking sessions closes all of the selected account's logins", () => {
+    const u = createUser({ username: "anya", displayName: "Anya", role: "adult" });
+    const t = acceptInvite(createInviteToken(u.id), "jelszo123");
+    revokeUserSessions(u.id);
+    expect(sessionUser(t)).toBeNull();
+  });
   it("does not mistake the hosted preview virtual filesystem for broken NAS storage", () => {
     vi.stubGlobal("navigator", { userAgent: "Cloudflare-Workers" });
     try {
       expect(db()).toBeNull();
       expect(authStorageUnavailable()).toBe(false);
       expect(requirePermission(undefined, "home")).toBeNull();
-    } finally { vi.unstubAllGlobals(); }
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
   it("does not open permissions when NAS account storage is unavailable", () => {
     const old = process.env["DATA_DIR"];
