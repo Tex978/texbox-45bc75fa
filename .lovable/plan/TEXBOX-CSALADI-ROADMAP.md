@@ -194,3 +194,7 @@ Naptár CRUD + ismétlődés + alkalom-kivétel + feladathivatkozás kész izol�
 - Kész: `notifications` (UNIQUE recipient+source+event), `notification_settings` (verzió); címzett csak bejelentkezési fiók; gyermekfeladat-teljesítés és gyermek-jutalomkérés minden más jogosult szülőnek külön; döntés az érintett fióknak, kezelt profilnál a másik szülőnek; bevásárlás nem értesít; értesítés hibája nem görgeti vissza az üzleti tranzakciót.
 - Emlékeztetők: csak „emlékeztetés” jelölésű naptáresemény/feladat, fiókonként választott előidő (15 p/1 ó/3 ó/1 nap), Europe/Budapest, 10 perces ablak, utólagos pótlás nincs; a 2b/1 ütemező lease-tulajdonosa futtatja.
 - Nyitott: 7b push, élő NAS-ellenőrzés.
+
+## 8a – Családi jegyzetek és ügyek (fejlesztői környezetben kész, NAS-on nyitott)
+- Kész: `family_notes`, `family_note_events` (audit), `matter_task_links` (egy ügy → egy feladat); személyes elem csak a létrehozónak; közös elem felnőtteknek, gyereknek csak kifejezett megosztással; gyerek nem ír; közös elemet a létrehozó és a jogosult szülők szerkeszthetik, láthatóságot csak a létrehozó állít; archiválás fizikai törlés helyett.
+- Nyitott (8b): ügyhatáridő-emlékeztető, naptáresemény-kapcsolás, főoldali kártya.

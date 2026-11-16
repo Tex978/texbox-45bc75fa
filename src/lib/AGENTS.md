@@ -14,4 +14,5 @@
 - Personal dashboard layouts live in additive dashboard_prefs keyed user:/profile: with optimistic versions, normalised against server-side allowed cards and visible scenes on every read/write; never stored in the shared household store.
 - Timed scenes run only in the Node server process via scheduler.server (started from src/server.ts, idempotent via globalThis) under a SQLite lease; slots are claimed by UNIQUE(rule_id,slot), never caught up or retried, and every run re-checks owner, scene version and ACL through runScene. Enabling requires a live lease.
 - Notifications are in-app only, keyed UNIQUE(recipient,source,event) to login accounts; emitters run inside the business transaction but never throw, and timed reminders run only in the scheduler lease holder with a short no-catch-up window.
+- Family notes/matters live in family_notes with owner-only personal items, explicit child sharing and archive-only removal; matter→task goes through saveTask outside a notes transaction (saveTask opens its own) and is deduplicated by matter_task_links.
 <!-- AGENT-MEMORY:END -->

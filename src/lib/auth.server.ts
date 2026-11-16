@@ -161,13 +161,26 @@ export function db() {
         CREATE TABLE IF NOT EXISTS scheduler_lease(id INTEGER PRIMARY KEY CHECK(id=1), owner TEXT NOT NULL, expires_at INTEGER NOT NULL);
         COMMIT;`);
     }
-    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='notifications'").get()) {
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='notifications'").get()
+    ) {
       const notifBackup = `${dataDir()}/backups/pre-notifications-phase7a.db`;
       if (!fs.existsSync(notifBackup)) d.exec(`VACUUM INTO '${notifBackup.replaceAll("'", "''")}'`);
       d.exec(`BEGIN IMMEDIATE;
         CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT, recipient TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('approval','task','calendar','reward')), source TEXT NOT NULL, event TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', link TEXT NOT NULL, created_at INTEGER NOT NULL, read_at INTEGER, UNIQUE(recipient,source,event));
         CREATE INDEX IF NOT EXISTS notification_inbox ON notifications(recipient,read_at,id);
         CREATE TABLE IF NOT EXISTS notification_settings(user_id TEXT PRIMARY KEY, body TEXT NOT NULL, version INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+        COMMIT;`);
+    }
+    if (
+      !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='family_notes'").get()
+    ) {
+      const notesBackup = `${dataDir()}/backups/pre-family-notes-phase8a.db`;
+      if (!fs.existsSync(notesBackup)) d.exec(`VACUUM INTO '${notesBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS family_notes(id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('note','matter')), owner_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL, visibility TEXT NOT NULL CHECK(visibility IN ('personal','family')), child_visible INTEGER NOT NULL DEFAULT 0, pinned INTEGER NOT NULL DEFAULT 0, archived INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS family_note_events(id INTEGER PRIMARY KEY AUTOINCREMENT, note_id TEXT NOT NULL REFERENCES family_notes(id), actor TEXT NOT NULL, action TEXT NOT NULL, at INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS matter_task_links(note_id TEXT PRIMARY KEY REFERENCES family_notes(id), template_id TEXT NOT NULL REFERENCES task_templates(id), created_by TEXT NOT NULL, at INTEGER NOT NULL);
         COMMIT;`);
     }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).

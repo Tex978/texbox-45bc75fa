@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BookOpen, CalendarDays, Check, Plus, RefreshCw, ShoppingCart, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  Check,
+  NotebookPen,
+  Plus,
+  RefreshCw,
+  ShoppingCart,
+  Trash2,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Calendar } from "./Calendar";
+import { Notes } from "./Notes";
 import * as F from "@/lib/organizer.functions";
 import { MEALS, mealLabels, type RecipeInput } from "@/lib/organizer-schema";
 import { addDays } from "@/lib/task-schema";
@@ -708,8 +718,8 @@ export function Organizer() {
   return (
     <div className="tasks-area rewards-area">
       <p className="task-notice">
-        A listák, receptek, a heti menü és a naptár csak a saját NAS-on mentődnek, és minden
-        családtagnál közösek.
+        A listák, receptek, a heti menü, a naptár és a jegyzetek csak a saját NAS-on mentődnek; a
+        személyes jegyzetek csak a létrehozójuknak látszanak.
       </p>
       <div className="task-tabs" role="tablist">
         {[
@@ -717,6 +727,7 @@ export function Organizer() {
           ["Receptek", BookOpen],
           ["Heti menü", CalendarDays],
           ["Naptár", CalendarDays],
+          ["Jegyzetek és ügyek", NotebookPen],
         ].map(([t, I]) => {
           const Icon = I as typeof ShoppingCart;
           return (
@@ -738,6 +749,8 @@ export function Organizer() {
         <Recipes />
       ) : tab === "Naptár" ? (
         <Calendar />
+      ) : tab === "Jegyzetek és ügyek" ? (
+        <Notes />
       ) : (
         <Menu />
       )}
