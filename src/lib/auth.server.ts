@@ -7,6 +7,15 @@ import {
   type GuardState,
 } from "./data-guard.server";
 import { can, ROLES, PERMISSIONS, type Permission, type Role } from "./permissions";
+import {
+  AUDIT_LABELS,
+  DEFAULT_AVATAR,
+  describeUserAgent,
+  isAvatarColor,
+  isAvatarIcon,
+  passwordProblem,
+  type Avatar,
+} from "./profile-schema";
 type Sqlite = typeof import("node:sqlite");
 type Crypto = typeof import("node:crypto");
 const mod = <T>(name: string): T | null => {
@@ -46,6 +55,7 @@ export function resetAuthDb() {
   conn = undefined;
   lastGuard = null;
   attempts.clear();
+  pwAttempts.clear();
 }
 export function db() {
   if (isHostedAccountPreview()) return null;
@@ -183,6 +193,13 @@ export function db() {
         CREATE TABLE IF NOT EXISTS matter_task_links(note_id TEXT PRIMARY KEY REFERENCES family_notes(id), template_id TEXT NOT NULL REFERENCES task_templates(id), created_by TEXT NOT NULL, at INTEGER NOT NULL);
         COMMIT;`);
     }
+    if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='user_profiles'").get()) {
+      const profileBackup = `${dataDir()}/backups/pre-profile-phase1b.db`;
+      if (!fs.existsSync(profileBackup)) d.exec(`VACUUM INTO '${profileBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS user_profiles(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, icon TEXT NOT NULL, color TEXT NOT NULL, version INTEGER NOT NULL CHECK(version>=1), updated_at INTEGER NOT NULL);
+        COMMIT;`);
+    }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
     d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
       SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at
@@ -224,6 +241,8 @@ export type User = {
   disabled: boolean;
   hasPassword: boolean;
   permissions: Partial<Record<Permission, boolean>>;
+  avatar: Avatar;
+  profileVersion: number;
 };
 type UserRow = {
   id: string;
@@ -240,7 +259,15 @@ function rowToUser(r: UserRow): User {
     .all(r.id) as { key: string; allowed: number }[])
     if ((PERMISSIONS as readonly string[]).includes(p.key))
       perms[p.key as Permission] = !!p.allowed;
+  const prof = accountDb()
+    .prepare("SELECT icon,color,version FROM user_profiles WHERE user_id=?")
+    .get(r.id) as { icon: string; color: string; version: number } | undefined;
   return {
+    avatar: {
+      icon: isAvatarIcon(prof?.icon) ? prof.icon : DEFAULT_AVATAR.icon,
+      color: isAvatarColor(prof?.color) ? prof.color : DEFAULT_AVATAR.color,
+    },
+    profileVersion: Number(prof?.version ?? 0),
     id: r.id,
     username: r.username,
     displayName: r.display_name,
@@ -513,7 +540,7 @@ export function createChildProfile(parent: User, name: string, icon = "child") {
   const displayName = name.trim();
   if (!displayName || displayName.length > 60)
     throw new Error("A gyermek neve 1–60 karakter lehet.");
-  if (!["child", "star", "cat"].includes(icon)) throw new Error("Érvénytelen profilikon.");
+  if (!isAvatarIcon(icon) || icon === "initials") throw new Error("Érvénytelen profilikon.");
   const id = crypto().randomUUID();
   accountDb()
     .prepare(
@@ -532,7 +559,7 @@ export function updateChildProfile(
 ) {
   if (!userCan(parent, "family") || parent.role === "child")
     throw new Error("Csak szülő kezelhet gyermekprofilt.");
-  if (!name.trim() || name.trim().length > 60 || !["child", "star", "cat"].includes(icon))
+  if (!name.trim() || name.trim().length > 60 || !isAvatarIcon(icon) || icon === "initials")
     throw new Error("Érvénytelen gyermekprofil.");
   const r = accountDb()
     .prepare("UPDATE child_profiles SET display_name=?,icon=?,disabled=? WHERE id=?")
@@ -555,4 +582,178 @@ export function familyAccountStatus(id: string) {
     inviteExpiresAt: invite?.expires_at ?? null,
     sessions: Number(sessions.count),
   };
+}
+
+// ---- 1b: own profile, password and sessions (always scoped to the caller's own user id) ----
+function inTx<T>(fn: () => T): T {
+  const d = accountDb();
+  d.exec("BEGIN IMMEDIATE");
+  try {
+    const r = fn();
+    d.exec("COMMIT");
+    return r;
+  } catch (e) {
+    d.exec("ROLLBACK");
+    throw e;
+  }
+}
+export function updateOwnProfile(
+  me: User,
+  input: { displayName: string; icon: string; color: string; version: number },
+): User {
+  const name = String(input.displayName ?? "").trim();
+  if (!name || name.length > 60) throw new Error("A megjelenített név 1–60 karakter lehet.");
+  if (!isAvatarIcon(input.icon) || !isAvatarColor(input.color))
+    throw new Error("Érvénytelen profilikon vagy szín.");
+  inTx(() => {
+    const d = accountDb();
+    const u = d.prepare("SELECT disabled FROM users WHERE id=?").get(me.id) as
+      | { disabled: number }
+      | undefined;
+    if (!u || u.disabled) throw new Error("A fiók nem érhető el.");
+    const cur = d.prepare("SELECT version FROM user_profiles WHERE user_id=?").get(me.id) as
+      | { version: number }
+      | undefined;
+    if (Number(cur?.version ?? 0) !== Number(input.version))
+      throw new Error("A profilt közben egy másik eszközön módosították. Töltsd újra és próbáld meg ismét.");
+    d.prepare("UPDATE users SET display_name=? WHERE id=?").run(name, me.id);
+    d.prepare(
+      `INSERT INTO user_profiles(user_id,icon,color,version,updated_at) VALUES(?,?,?,1,?)
+       ON CONFLICT(user_id) DO UPDATE SET icon=excluded.icon,color=excluded.color,version=version+1,updated_at=excluded.updated_at`,
+    ).run(me.id, input.icon, input.color, Date.now());
+  });
+  audit(me.id, "profile-update", me.id);
+  const r = getUser(me.id);
+  if (!r) throw new Error("A mentett profil nem olvasható.");
+  return r;
+}
+
+// Per-account lock for wrong current passwords: 5 failures lock 5 minutes (per process).
+const pwAttempts = new Map<string, { n: number; until: number }>();
+export function changeOwnPassword(
+  me: User,
+  input: { current: string; next: string; signOutOthers: boolean },
+  currentToken: string | undefined,
+): { signedOut: number } {
+  const now = Date.now();
+  const a = pwAttempts.get(me.id);
+  if (a && a.until > now) throw new Error("Túl sok hibás próbálkozás. Várj 5 percet.");
+  const row = accountDb().prepare("SELECT * FROM users WHERE id=?").get(me.id) as
+    | UserRow
+    | undefined;
+  if (!row || row.disabled) throw new Error("A fiók nem érhető el.");
+  if (!verifyPassword(String(input.current ?? ""), row.password_hash)) {
+    const n = (a && a.until <= now && a.n >= 5 ? 0 : (a?.n ?? 0)) + 1;
+    pwAttempts.set(me.id, { n, until: n >= 5 ? now + 300_000 : 0 });
+    throw new Error("A jelenlegi jelszó nem megfelelő.");
+  }
+  pwAttempts.delete(me.id);
+  const problem = passwordProblem(String(input.next ?? ""), {
+    username: row.username,
+    displayName: row.display_name,
+  });
+  if (problem) throw new Error(problem);
+  if (input.current === input.next) throw new Error("Az új jelszó legyen más, mint a jelenlegi.");
+  let signedOut = 0;
+  inTx(() => {
+    const d = accountDb();
+    d.prepare("UPDATE users SET password_hash=? WHERE id=?").run(hashPassword(input.next), me.id);
+    if (input.signOutOthers)
+      signedOut = Number(
+        d
+          .prepare("DELETE FROM sessions WHERE user_id=? AND id_hash<>?")
+          .run(me.id, currentToken ? sha(currentToken) : "").changes,
+      );
+  });
+  audit(me.id, "password-change", me.id);
+  return { signedOut };
+}
+
+const publicSessionId = (idHash: string) => sha(`session-view:${idHash}`).slice(0, 24);
+export type SessionInfo = {
+  id: string;
+  device: string;
+  createdAt: number;
+  expiresAt: number;
+  current: boolean;
+};
+export function listOwnSessions(userId: string, currentToken: string | undefined): SessionInfo[] {
+  const cur = currentToken ? sha(currentToken) : "";
+  const rows = accountDb()
+    .prepare(
+      "SELECT id_hash,user_agent,created_at,expires_at FROM sessions WHERE user_id=? AND expires_at>? ORDER BY created_at DESC",
+    )
+    .all(userId, Date.now()) as {
+    id_hash: string;
+    user_agent: string | null;
+    created_at: number;
+    expires_at: number;
+  }[];
+  return rows.map((r) => ({
+    id: publicSessionId(r.id_hash),
+    device: describeUserAgent(r.user_agent),
+    createdAt: r.created_at,
+    expiresAt: r.expires_at,
+    current: r.id_hash === cur,
+  }));
+}
+export function revokeOwnSession(me: User, publicId: string, currentToken: string | undefined) {
+  const cur = currentToken ? sha(currentToken) : "";
+  const rows = accountDb()
+    .prepare("SELECT id_hash FROM sessions WHERE user_id=?")
+    .all(me.id) as { id_hash: string }[];
+  const hit = rows.find((r) => publicSessionId(r.id_hash) === publicId);
+  if (!hit) throw new Error("Ez az eszköz már ki van jelentkeztetve.");
+  if (hit.id_hash === cur)
+    throw new Error("A jelenlegi eszközt a Kijelentkezés menüponttal zárhatod le.");
+  accountDb().prepare("DELETE FROM sessions WHERE id_hash=? AND user_id=?").run(hit.id_hash, me.id);
+  audit(me.id, "session-revoke", me.id);
+}
+export function revokeOtherOwnSessions(me: User, currentToken: string | undefined) {
+  const n = Number(
+    accountDb()
+      .prepare("DELETE FROM sessions WHERE user_id=? AND id_hash<>?")
+      .run(me.id, currentToken ? sha(currentToken) : "").changes,
+  );
+  audit(me.id, "sessions-revoke-others", me.id);
+  return n;
+}
+
+export type AuditEntry = { at: number; action: string; label: string; actor: string; target: string };
+/** Own entries for everyone; family-wide entries only for account admins. Never returns raw targets. */
+export function listAudit(me: User, scope: "me" | "family", limit = 100): AuditEntry[] {
+  if (scope === "family" && !userCan(me, "users"))
+    throw new Error("A családi naplót csak admin láthatja.");
+  const d = accountDb();
+  const rows = (
+    scope === "me"
+      ? d
+          .prepare(
+            "SELECT user_id,action,target,at FROM audit_log WHERE user_id=? OR target=? ORDER BY id DESC LIMIT ?",
+          )
+          .all(me.id, me.id, Math.min(200, limit))
+      : d
+          .prepare("SELECT user_id,action,target,at FROM audit_log ORDER BY id DESC LIMIT ?")
+          .all(Math.min(200, limit))
+  ) as { user_id: string | null; action: string; target: string | null; at: number }[];
+  const names = new Map<string, string>();
+  for (const u of d.prepare("SELECT id,display_name FROM users").all() as {
+    id: string;
+    display_name: string;
+  }[])
+    names.set(u.id, u.display_name);
+  for (const c of d.prepare("SELECT id,display_name FROM child_profiles").all() as {
+    id: string;
+    display_name: string;
+  }[])
+    names.set(c.id, c.display_name);
+  return rows
+    .filter((r) => AUDIT_LABELS[r.action])
+    .map((r) => ({
+      at: r.at,
+      action: r.action,
+      label: AUDIT_LABELS[r.action] ?? r.action,
+      actor: (r.user_id && names.get(r.user_id)) || "Rendszer",
+      target: (r.target && r.target !== r.user_id && names.get(r.target)) || "",
+    }));
 }
