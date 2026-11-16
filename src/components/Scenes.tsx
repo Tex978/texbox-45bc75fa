@@ -358,11 +358,12 @@ export function Scenes() {
                         value={s.device}
                         onChange={(e) => {
                           const d = devices.data?.devices.find((d) => d.key === e.target.value);
-                          if (d)
+                          const first = d?.actions[0];
+                          if (d && first)
                             changeStep(i, {
                               device: d.key,
-                              action: d.actions[0],
-                              value: defaultValue(d.actions[0]),
+                              action: first,
+                              value: defaultValue(first),
                             });
                         }}
                       >
@@ -468,7 +469,9 @@ export function Scenes() {
                           disabled={i + dir < 0 || i + dir >= draft.steps.length}
                           onClick={() => {
                             const steps = [...draft.steps];
-                            [steps[i], steps[i + dir]] = [steps[i + dir], steps[i]];
+                            const a = steps[i], b = steps[i + dir];
+                            if (!a || !b) return;
+                            [steps[i], steps[i + dir]] = [b, a];
                             setDraft({ ...draft, steps });
                           }}
                         >

@@ -21,7 +21,7 @@ import {
 import { assertDeviceAccess, withDeviceLock } from "@/lib/device-access.server";
 import { type SceneInput, type DeviceCapability } from "@/lib/scene-schema";
 let dir: string, admin: User, adult: User, child: User;
-const devices: DeviceCapability[] = [
+const devices: [DeviceCapability, DeviceCapability] = [
   { key: "gree:192.168.1.2", name: "Klíma", online: true, actions: ["power", "temperature"] },
   { key: "blind:abc", name: "Redőny", online: true, actions: ["open", "position"] },
 ];
