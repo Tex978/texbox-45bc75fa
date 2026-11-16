@@ -1,196 +1,96 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  TRAIN_COLORS,
-  WAGON_ALLATIVE,
-  WAGON_NAME,
-  isCargoFull,
-  isCorrectStation,
-  makeCargoTarget,
-  makeTrain,
-  pickStations,
-  type Station,
-  type Train,
-} from "@/lib/train-game";
+import { makeRoute, type Passenger } from "@/lib/train-game";
 
-const MODES = [
-  { id: "station", label: "🚉 Állomások" },
-  { id: "cargo", label: "📦 Kocsi rakodása" },
-] as const;
-
-const LEVELS = [
-  { stations: 3, wagons: 3, label: "Könnyű" },
-  { stations: 4, wagons: 4, label: "Közepes" },
-  { stations: 5, wagons: 5, label: "Nehezebb" },
-];
-
-const ROUNDS = 5;
-const NEXT_DELAY_MS = 1600;
-
-type Mode = (typeof MODES)[number]["id"];
+const STOPS = 5;
+type Phase = "waiting" | "driving" | "boarded" | "done";
 
 export function TrainGame() {
-  const [mode, setMode] = useState<Mode>("station");
-  const [level, setLevel] = useState(0);
-  const [round, setRound] = useState(1);
-  const [train, setTrain] = useState<Train | null>(null);
-  const [stations, setStations] = useState<Station[]>([]);
-  const [target, setTarget] = useState(1);
-  const [loaded, setLoaded] = useState(0);
-  const [msg, setMsg] = useState("Várunk a vonatra!");
-  const [locked, setLocked] = useState(false);
-  const [finished, setFinished] = useState(false);
+  const [route, setRoute] = useState<Passenger[]>([]);
+  const [stop, setStop] = useState(0);
+  const [riders, setRiders] = useState<Passenger[]>([]);
+  const [phase, setPhase] = useState<Phase>("waiting");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Shuffle after mount so the server and the browser render the same first frame.
+  const reset = () => {
+    if (timer.current) clearTimeout(timer.current);
+    setRoute(makeRoute(STOPS));
+    setStop(0);
+    setRiders([]);
+    setPhase("waiting");
+  };
   useEffect(() => {
-    startGame(mode, level);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    reset();
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, []);
 
-  function nextTrain(l: number) {
-    const t = makeTrain(Math.random, LEVELS[l]!.wagons);
-    setTrain(t);
-    setStations(pickStations(t, LEVELS[l]!.stations, Math.random));
-    const want = makeCargoTarget(Math.random, LEVELS[l]!.wagons);
-    setTarget(want);
-    setLoaded(0);
-    setLocked(false);
-    setMsg(
-      mode === "station"
-        ? "Melyik állomásra menjen a vonat?"
-        : `Rakj ${want} ${WAGON_NAME}t a vonatba!`,
-    );
-  }
-
-  function startGame(m: Mode, l: number) {
-    setMode(m);
-    setLevel(l);
-    setRound(1);
-    setFinished(false);
-    nextTrain(l);
-  }
-
-  function advance() {
-    if (round >= ROUNDS) {
-      setFinished(true);
-      setMsg("🎉 Ügyes vagy! Megvan az összes vonat!");
+  const current = route[stop];
+  const go = () => {
+    if (phase === "driving" || phase === "done") return;
+    if (phase === "boarded") {
+      // leave the station, next animal appears
+      if (stop + 1 >= route.length) {
+        setPhase("done");
+        return;
+      }
+      setStop((s) => s + 1);
+      setPhase("waiting");
       return;
     }
-    setRound((r) => r + 1);
-    nextTrain(level);
-  }
+    setPhase("driving");
+    timer.current = setTimeout(() => {
+      if (current) setRiders((r) => [...r, current]);
+      setPhase("boarded");
+    }, 1400);
+  };
 
-  function tapStation(s: Station) {
-    if (!train || locked) return;
-    if (isCorrectStation(train, s)) {
-      setLocked(true);
-      setMsg(`Igen! A vonat ${TRAIN_COLORS[train.colorIndex]!.allative} ment! 👏`);
-      setTimeout(advance, NEXT_DELAY_MS);
-    } else {
-      setMsg("Az nem jó állomás, próbáld újra! 🙂");
-    }
-  }
-
-  function loadWagon() {
-    if (locked || isCargoFull(target, loaded)) return;
-    const n = loaded + 1;
-    setLoaded(n);
-    if (isCargoFull(target, n)) {
-      setLocked(true);
-      setMsg("Megvan a kocsik száma! 🚂");
-      setTimeout(advance, NEXT_DELAY_MS);
-    } else {
-      setMsg(`${n} ${WAGON_NAME} – még kell!`);
-    }
-  }
-
-  const color = train ? TRAIN_COLORS[train.colorIndex]! : null;
-  const cols =
-    stations.length >= 5
-      ? "grid-cols-2 sm:grid-cols-3"
-      : stations.length === 4
-        ? "grid-cols-2"
-        : "grid-cols-3";
+  const atStation = phase === "boarded";
+  const msg =
+    phase === "done"
+      ? "Megérkeztünk! Mindenki felszállt! 🎉"
+      : phase === "boarded" && current
+        ? `${current.sound} Felszállt a ${current.name}! Nyomd meg, és mehetünk tovább!`
+        : phase === "driving"
+          ? "Csú-csú! 🚂"
+          : current
+            ? `A ${current.name} vár az állomáson. Nyomd meg a gombot!`
+            : "";
 
   return (
-    <section className="train-game space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {MODES.map((m) => (
-          <Button
-            key={m.id}
-            size="lg"
-            variant={mode === m.id ? "default" : "outline"}
-            onClick={() => startGame(m.id, level)}
-          >
-            {m.label}
-          </Button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {LEVELS.map((l, i) => (
-          <Button
-            key={l.label}
-            variant={level === i ? "default" : "outline"}
-            onClick={() => startGame(mode, i)}
-          >
-            {l.label}
-          </Button>
-        ))}
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        {round}. / {ROUNDS}. vonat
-      </p>
-      <p className="min-h-10 text-xl font-semibold" aria-live="polite">
-        {msg}
-      </p>
-
-      {color && (
-        <div
-          className="train-strip"
-          role="img"
-          aria-label={`Színes vonat ${train?.wagons ?? 0} kocsival`}
-        >
-          <span className="train-engine">🚂</span>
-          {Array.from({ length: train?.wagons ?? 0 }).map((_, i) => (
-            <span key={i} className="train-wagon" style={{ background: color.hex }} />
-          ))}
-        </div>
-      )}
-
-      {mode === "station" ? (
-        <div className={`grid max-w-xl gap-3 ${cols}`}>
-          {stations.map((s) => (
-            <button
-              key={s.colorIndex}
-              type="button"
-              onClick={() => tapStation(s)}
-              aria-label={`${s.label} állomás`}
-              className="train-station"
-              style={{ background: s.hex }}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="train-count" aria-hidden="true">
-            {Array.from({ length: target }).map((_, i) => (
-              <span key={i} className={i < loaded ? "train-slot train-slot-full" : "train-slot"} />
-            ))}
+    <section className="space-y-4">
+      <p className="text-lg font-medium" aria-live="polite">{msg}</p>
+      <div className="relative h-40 overflow-hidden rounded-xl border bg-muted">
+        {/* station */}
+        {phase !== "done" && current && (
+          <div className="absolute right-4 bottom-8 flex flex-col items-center">
+            <span className={`text-5xl transition-opacity ${atStation ? "opacity-0" : "opacity-100"}`}>
+              {current.emoji}
+            </span>
+            <span className="rounded bg-background px-2 text-xs">🚉 {stop + 1}. állomás</span>
           </div>
-          <Button size="lg" disabled={locked} onClick={loadWagon}>
-            📦 Rakj egy kocsit!
-          </Button>
+        )}
+        {/* train */}
+        <div
+          className="absolute bottom-6 flex items-end gap-1 text-4xl transition-[left] duration-[1400ms] ease-in-out"
+          style={{ left: phase === "driving" || atStation ? "calc(100% - 9rem - " + riders.length * 2.75 + "rem)" : "1rem" }}
+        >
+          {[...riders].reverse().map((r) => (
+            <span key={r.name} className="rounded-md bg-background px-1">{r.emoji}</span>
+          ))}
+          <span className="inline-block -scale-x-100">🚂</span>
         </div>
-      )}
-
-      {finished && (
-        <Button size="lg" onClick={() => startGame(mode, level)}>
-          Új játék
+        <div className="absolute inset-x-0 bottom-4 h-1 bg-foreground/30" />
+      </div>
+      {phase === "done" ? (
+        <Button size="lg" className="h-16 w-full text-xl" onClick={reset}>Új utazás 🚂</Button>
+      ) : (
+        <Button size="lg" className="h-16 w-full text-xl" onClick={go} disabled={phase === "driving"}>
+          {phase === "boarded" ? "Tovább! 🚂" : "Indulj, vonat! 🚂"}
         </Button>
       )}
+      <p className="text-sm text-muted-foreground">Utasok: {riders.map((r) => r.emoji).join(" ") || "még senki"}</p>
     </section>
   );
 }
