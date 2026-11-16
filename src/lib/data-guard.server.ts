@@ -22,7 +22,9 @@ export const markerPath = () => `${dataDir()}/${MARKER_NAME}`;
 export const dbPath = () => `${dataDir()}/texbox.db`;
 const isHosted = () => globalThis.navigator?.userAgent === "Cloudflare-Workers";
 // Unit tests run against fresh temp folders; only there may a new folder initialise itself.
-const testAutoInit = () => !!env("VITEST") && env("TEXBOX_TEST_REQUIRE_INIT") !== "1";
+// The local development server (never a production build) behaves the same way.
+const testAutoInit = () =>
+  (!!env("VITEST") || import.meta.env?.DEV === true) && env("TEXBOX_TEST_REQUIRE_INIT") !== "1";
 
 export type Marker = {
   version: 1;
@@ -145,6 +147,10 @@ export function ensureReady(): GuardState {
   const fs = fsMod();
   if (!fs) return g;
   try {
+    if (g.status === "blocked" && g.code === "dir-missing" && testAutoInit() && !env("VITEST")) {
+      fs.mkdirSync(dataDir(), { recursive: true });
+      return ensureReady();
+    }
     if (g.status === "adoptable") {
       writeMarker(fs, newMarker("existing-data", exists(fs, dbPath()), exists(fs, stateFile())));
       return inspectGuard();
