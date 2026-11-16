@@ -23,7 +23,10 @@ export const Route = createFileRoute("/media")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { title: "Média és NAS – TexBox" },
-      { name: "description", content: "Plex aktivitás, friss médiák, letöltések és tárhely egy helyen." },
+      {
+        name: "description",
+        content: "Plex aktivitás, friss médiák, letöltések és tárhely egy helyen.",
+      },
       { property: "og:title", content: "Média és NAS – TexBox" },
       {
         property: "og:description",

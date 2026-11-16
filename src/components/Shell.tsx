@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/lib/auth.functions";
@@ -37,18 +37,31 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-const allNav = [
-  { to: "/", label: "Áttekintő", icon: LayoutDashboard },
-  { to: "/search", label: "Keresés", icon: Search },
+// Five primary areas; every older page stays reachable through "Több" and keeps its URL.
+export const primaryNav = [
+  { to: "/", label: "Főoldal", icon: LayoutDashboard, match: ["/"] },
+  { to: "/home", label: "Otthon", icon: House, match: ["/home"] },
+  { to: "/tasks", label: "Feladatok", icon: ClipboardList, match: ["/tasks"] },
+  { to: "/organizer", label: "Család", icon: Users, match: ["/organizer", "/rewards", "/family"] },
+  {
+    to: "/media",
+    label: "Média",
+    icon: Clapperboard,
+    match: ["/media", "/search", "/downloads", "/library", "/streaming"],
+  },
+] as const;
+export const moreNav = [
+  { to: "/search", label: "Filmek és sorozatok keresése", icon: Search },
   { to: "/downloads", label: "Letöltések", icon: Download },
   { to: "/library", label: "Tárhely", icon: HardDrive },
-  { to: "/home", label: "Okosotthon", icon: House },
-  { to: "/tasks", label: "Feladatok", icon: ClipboardList },
-  { to: "/rewards", label: "Ajándékbolt", icon: Gift },
-  { to: "/organizer", label: "Családi szervező", icon: ShoppingCart },
-  { to: "/settings", label: "Kapcsolatok", icon: Cable },
+  { to: "/organizer", label: "Bevásárlás, receptek, menü, naptár", icon: ShoppingCart },
+  { to: "/rewards", label: "Pontjaim és ajándékbolt", icon: Gift },
+  { to: "/family", label: "Családi fiókok és jogosultságok", icon: UserRound },
+  { to: "/home", label: "Okosotthon és energia", icon: House },
+  { to: "/settings", label: "Kapcsolatok és állapot", icon: Cable },
 ] as const;
-const primaryTabs: string[] = ["/", "/search", "/downloads", "/home"];
+export const isActiveArea = (path: string, match: readonly string[]) =>
+  match.some((m) => (m === "/" ? path === "/" : path === m || path.startsWith(`${m}/`)));
 export const meQuery = {
   queryKey: ["me"],
   queryFn: () => getMe(),
@@ -189,7 +202,42 @@ export function Shell({
   className?: string;
 }) {
   const me = useQuery(meQuery).data;
-  const nav = allNav.filter((n) => n.to !== "/settings" || !me?.user || me.user.can.settings);
+  const path = useRouterState({ select: (r) => r.location.pathname });
+  const more = moreNav.filter(
+    (n) =>
+      (n.to !== "/settings" || !me?.user || me.user.can.settings) &&
+      (n.to !== "/family" || !me?.user || me.user.can.family),
+  );
+  const moreMenu = (side: "top" | "bottom") => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" type="button" className="app-more" aria-label="További oldalak">
+          <MoreHorizontal size={20} strokeWidth={1.8} />
+          <span>Több</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side={side} className="min-w-64">
+        {className.includes("smart-home") &&
+          primaryNav.map(({ to, label, icon: Icon }) => (
+            <DropdownMenuItem key={`p${to}`} asChild>
+              <Link to={to} className="min-h-12">
+                <Icon />
+                {label}
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        {className.includes("smart-home") && <DropdownMenuSeparator />}
+        {more.map(({ to, label, icon: Icon }) => (
+          <DropdownMenuItem key={to} asChild>
+            <Link to={to} className="min-h-12">
+              <Icon />
+              {label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
   return (
     <div className={`app-shell min-h-screen bg-background text-foreground ${className}`}>
       <a href="#main-content" className="app-skip-link">
@@ -197,101 +245,48 @@ export function Shell({
       </a>
       <header className="app-header border-b border-border">
         <div className="app-header-inner">
-          <div className="app-brand">
+          <Link to="/" className="app-brand" aria-label="TexBox főoldal">
             <span className="app-brand-icon">
               <Server size={18} strokeWidth={1.7} />
             </span>
-            <span className="app-brand-name">NAS Vezérlő</span>
-          </div>
+            <span className="app-brand-name">TexBox</span>
+          </Link>
           {demo && <span className="app-demo">DEMÓ</span>}
-          {className.includes("smart-home") && (
-            <div className="home-app-menu">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Alkalmazás menü"
-                    title="Alkalmazás menü"
-                  >
-                    <Menu />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-52">
-                  {nav.map(({ to, label, icon: Icon }) => (
-                    <DropdownMenuItem key={to} asChild>
-                      <Link to={to} className="min-h-12">
-                        <Icon />
-                        {label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                  {(!me?.user || me.user.can.family) && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/family" className="min-h-12">
-                        <Users />
-                        Család és fiókok
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-          <div className="app-profile-slot">
-            <ProfileMenu />
-          </div>
           <nav className="app-nav" aria-label="Főmenü">
-            {nav.map(({ to, label, icon: Icon }) => (
-              <Link key={to} to={to} activeOptions={{ exact: true }}>
+            {primaryNav.map(({ to, label, icon: Icon, match }) => (
+              <Link
+                key={to}
+                to={to}
+                data-status={isActiveArea(path, match) ? "active" : undefined}
+                aria-current={isActiveArea(path, match) ? "page" : undefined}
+              >
                 <Icon size={17} strokeWidth={1.7} />
                 {label}
               </Link>
             ))}
           </nav>
+          <div className="app-header-more">{moreMenu("bottom")}</div>
+          <div className="app-profile-slot">
+            <ProfileMenu />
+          </div>
         </div>
       </header>
       <main id="main-content" tabIndex={-1} className="app-main">
         {children}
       </main>
       {!className.includes("smart-home") && (
-        <nav className="app-tabbar" aria-label="Gyors menü">
-          {nav
-            .filter((n) => primaryTabs.includes(n.to))
-            .map(({ to, label, icon: Icon }) => (
-              <Link key={to} to={to} activeOptions={{ exact: true }}>
-                <Icon size={22} strokeWidth={1.8} />
-                <span>{label}</span>
-              </Link>
-            ))}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" type="button" aria-label="További oldalak">
-                <MoreHorizontal size={22} strokeWidth={1.8} />
-                <span>Több</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="top" className="min-w-56">
-              {nav
-                .filter((n) => !primaryTabs.includes(n.to))
-                .map(({ to, label, icon: Icon }) => (
-                  <DropdownMenuItem key={to} asChild>
-                    <Link to={to} className="min-h-12">
-                      <Icon />
-                      {label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              {(!me?.user || me.user.can.family) && (
-                <DropdownMenuItem asChild>
-                  <Link to="/family" className="min-h-12">
-                    <Users />
-                    Család
-                  </Link>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <nav className="app-tabbar" aria-label="Fő területek">
+          {primaryNav.map(({ to, label, icon: Icon, match }) => (
+            <Link
+              key={to}
+              to={to}
+              data-status={isActiveArea(path, match) ? "active" : undefined}
+              aria-current={isActiveArea(path, match) ? "page" : undefined}
+            >
+              <Icon size={22} strokeWidth={1.8} />
+              <span>{label}</span>
+            </Link>
+          ))}
         </nav>
       )}
     </div>
