@@ -7,6 +7,7 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [ ] 2a élő NAS: frissítés és data-mentés után két eszközös jelenetmentés, gyermek ACL, valódi gyártói ACK és fizikai állapot ellenőrzése; innen az otthoni eszközök nem érhetők el.
 - [ ] 2b: tartós időzítés/automatizálás, DST/kiesési szabályok; még nincs scheduler.
 - [x] 3. fázis alap: NAS SQLite feladat/sablon CRUD, Budapest ismétlődés, vállalás, gyermek szülői jóváhagyása/visszaküldés/elutasítás, audit és egyedi approval-forrás, Feladatok oldal + kompakt mai widget. Pontledger nincs.
+- [x] 3. ellenőrzés: 133 teszt sikeres (35 fájl), célzott új fájlok lintje hiba/figyelmeztetés nélkül; 390/768/1280 px publikus előnézet nem csordul túl, böngészőhiba nincs. Mentett gyermekfeladat teljes UI-folyamata izolált valódi SQLite-val ellenőrizve; élő NAS nem tesztelt.
 - [ ] 3. élő NAS elfogadás: teljes data-mentés után frissítés, régi session/integrációk, kéttelefonos CRUD/claim/approval és másnapi ismétlődés; NAS innen nem elérhető.
 - [ ] 3. későbbi bővítés: értesítés-kiküldés, forgó kiosztás, teljes lezárt feladatarchívum felülete (adatok megőrizve).
 - [ ] 4. fázis: kizárólag személyes pontszámla és jutalombolt.
