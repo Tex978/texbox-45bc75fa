@@ -10,6 +10,8 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 - [x] 3. ellenőrzés: 133 teszt sikeres (35 fájl), célzott új fájlok lintje hiba/figyelmeztetés nélkül; 390/768/1280 px publikus előnézet nem csordul túl, böngészőhiba nincs. Mentett gyermekfeladat teljes UI-folyamata izolált valódi SQLite-val ellenőrizve; élő NAS nem tesztelt.
 - [ ] 3. élő NAS elfogadás: teljes data-mentés után frissítés, régi session/integrációk, kéttelefonos CRUD/claim/approval és másnapi ismétlődés; NAS innen nem elérhető.
 - [ ] 3. későbbi bővítés: értesítés-kiküldés, forgó kiosztás, teljes lezárt feladatarchívum felülete (adatok megőrizve).
+- [x] 3b adatmegőrzés (kód): fail-closed data-mappa őr (`.texbox-instance.json` jelző, opcionális TEXBOX_INSTANCE_ID), hiányzó texbox.db / nas-state.json / data mappa / írási jog esetén hibaoldal üres példány helyett, explicit „UJ TELEPITES” megerősítés új, üres mappánál, régi telepítések automatikus felismerése, admin-only csak olvasó tárolási állapotkártya, új compose minta (texbox, create_host_path:false, Watchtower tiltva) és mentés/visszaállítás leírás. 145 teszt sikeres (36 fájl), célzott lint hibamentes (a shared-store korábbi any-hibáin kívül).
+- [ ] 3b élő Synology elfogadás: új texbox compose mellett a régi adatok felismerése (nincs „Új telepítés” oldal), Adattárolás állapota kártya „Külön csatolt kötet”, konténer újraindítás/frissítés után változatlan fiókok és szobák, csak egy 3050-es példány; innen nem ellenőrizhető.
 - [ ] 4. fázis: kizárólag személyes pontszámla és jutalombolt.
 - [ ] 5. fázis: bevásárlás, receptek/menü, naptár.
 - [ ] 6. fázis: személyes kiegyensúlyozott főoldal és öt fő terület.

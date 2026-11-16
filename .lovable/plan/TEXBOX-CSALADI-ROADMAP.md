@@ -112,6 +112,17 @@ Sablonszerkesztés a jövőbeli, még érintetlen nyitott előfordulásokat gene
 
 Táblák: task_templates, task_occurrences, task_claims, task_submissions, task_decisions; személyes pont ledger a 4. fázissal közös tranzakcióban. Elfogadás: ismétlés és DST, párhuzamos vállalás, újraindítás utáni egyediség, két szülő egyidejű jóváhagyása csak egyszer ír pontot; gyermek nem ír pontot/jóváhagyást közvetlen handlerrel.
 
+## 3b – adatmegőrzési megbízhatóság (kód kész, élő NAS-próba nyitott)
+
+- [x] A fiók-adatbázis nem jön létre üresen: a data mappát a kód nem hozza létre; jelző nélküli üres mappánál „Új TexBox-telepítés?” oldal (APP_PASSWORD + `UJ TELEPITES`), csak utána első admin.
+- [x] `.texbox-instance.json` jelző rögzíti a már létrejött texbox.db és nas-state.json fájlokat; hiányuk, hiányzó/olvashatatlan/írhatatlan mappa, sérült jelző vagy eltérő TEXBOX_INSTANCE_ID → 503 hibaoldal, semmi nem íródik.
+- [x] Régi (jelző előtti) telepítés meglévő fájlok alapján automatikusan átvéve, adatok változatlanok.
+- [x] nas-state.json ENOENT csak megerősített, még sosem írt telepítésnél jelent üres beállítást.
+- [x] Admin-only, csak olvasó „Adattárolás állapota” (útvonalak, jelenlét, jogosultság, WAL, mentések, /proc/self/mountinfo alapú csatolásvizsgálat); titkot nem ad vissza.
+- [x] deploy compose: texbox projekt, hosszú bind `create_host_path: false`, DATA_DIR/DATA_FILE, Watchtower tiltva; TELEPITES.md különbségtáblával, mentés/visszaállítás leírással. Automatikus törlés/restore nincs.
+- Korlát: teljesen új üres mappában jelző sincs — ezt csak a kézi megerősítés és a TEXBOX_INSTANCE_ID szűkíti, abszolút garanciát nem ad.
+- [ ] Élő Synology: meglévő data felismerése, állapotkártya, újraindítás/frissítés utáni megmaradás, egyetlen 3050-es példány.
+
 ## 4. fázis – személyes pontok és jutalombolt
 
 - Minden családtagnak – felnőtteknek is – kizárólag saját pontszámla. NINCS közös családi egyenleg vagy közös feladatpont.
