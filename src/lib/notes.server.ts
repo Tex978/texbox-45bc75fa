@@ -194,6 +194,10 @@ export function itemHistory(user: User, id: string) {
 /** Explicit, idempotent: one Feladatok task per matter (PRIMARY KEY note_id), 0 points, via the tasks ACL.
  * Fully synchronous, so two clicks in the single Node process cannot interleave. */
 export function matterToTask(user: User, id: string, saveTask: (u: User, input: never) => string) {
+  // One transaction: the task, the link and the audit row commit together or not at all.
+  return tx(() => matterToTaskInTx(user, id, saveTask));
+}
+function matterToTaskInTx(user: User, id: string, saveTask: (u: User, input: never) => string) {
   const u = current(user),
     r = row(id);
   if (r.kind !== "matter" || !canSee(u, r) || !canEdit(u, r))

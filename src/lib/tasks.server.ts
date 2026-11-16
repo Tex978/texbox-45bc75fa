@@ -51,6 +51,19 @@ function person(key: string) {
 }
 function tx<T>(fn: () => T): T {
   const d = store();
+  // Nested inside a caller's transaction (e.g. matter→task): use a savepoint so both commit together.
+  if ((d as { isTransaction?: boolean }).isTransaction) {
+    d.exec("SAVEPOINT task_tx");
+    try {
+      const result = fn();
+      d.exec("RELEASE task_tx");
+      return result;
+    } catch (e) {
+      d.exec("ROLLBACK TO task_tx");
+      d.exec("RELEASE task_tx");
+      throw e;
+    }
+  }
   d.exec("BEGIN IMMEDIATE");
   try {
     const result = fn();

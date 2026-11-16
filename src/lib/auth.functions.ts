@@ -22,7 +22,15 @@ import {
   updateUser,
   userCount,
   userCan,
+  updateOwnProfile,
+  changeOwnPassword,
+  listOwnSessions,
+  revokeOwnSession,
+  revokeOtherOwnSessions,
+  listAudit,
+  type User,
 } from "./auth.server";
+import type { Avatar } from "./profile-schema";
 import { PERMISSIONS, ROLES, type Permission, type Role } from "./permissions";
 
 export type Me = {
@@ -32,6 +40,7 @@ export type Me = {
     username: string;
     displayName: string;
     role: Role;
+    avatar: Avatar;
     can: Record<Permission, boolean>;
   };
 };
@@ -47,7 +56,14 @@ export const getMe = createServerFn({ method: "GET" }).handler(async (): Promise
   >;
   return {
     mode: "accounts",
-    user: { id: u.id, username: u.username, displayName: u.displayName, role: u.role, can: c },
+    user: {
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName,
+      role: u.role,
+      avatar: u.avatar,
+      can: c,
+    },
   };
 });
 
@@ -93,8 +109,9 @@ export const familyList = createServerFn({ method: "GET" }).handler(async () => 
     owner: isOwner(me.id),
     children: listChildProfiles(),
     users: listUsers().map(
-      ({ id, username, displayName, role, disabled, hasPassword, permissions }) => ({
+      ({ id, username, displayName, role, disabled, hasPassword, permissions, avatar }) => ({
         id,
+        avatar,
         username,
         displayName,
         role,
@@ -190,3 +207,64 @@ export const getStorageStatus = createServerFn({ method: "GET" }).handler(async 
   const { storageReport } = await import("./data-guard.server");
   return storageReport();
 });
+
+// ---- 1b: own account. Every handler resolves the caller from the session cookie; no user id is accepted. ----
+const self = (): User => {
+  if (isHostedAccountPreview() || db() === null)
+    throw new Error(
+      "A saját profil a Synology NAS-on kezelhető; ez az előnézet nem éri el a családi fiókokat, így itt semmi nem mentődik.",
+    );
+  if (authStorageUnavailable())
+    throw new Error("A NAS fióktárolója nem olvasható. A fiókbeállítások biztonsági okból szünetelnek.");
+  const u = requirePermission(getCookie(SESSION_COOKIE));
+  if (!u) throw new Error("Saját profilhoz előbb hozd létre az admin fiókot a NAS-címeden (/__setup).");
+  return u;
+};
+export const profileGet = createServerFn({ method: "GET" }).handler(async () => {
+  const u = self();
+  return {
+    id: u.id,
+    username: u.username,
+    displayName: u.displayName,
+    role: u.role,
+    owner: isOwner(u.id),
+    avatar: u.avatar,
+    version: u.profileVersion,
+    hasPassword: u.hasPassword,
+  };
+});
+export const profileUpdate = createServerFn({ method: "POST" })
+  .inputValidator((d: { displayName: string; icon: string; color: string; version: number }) => ({
+    displayName: String(d?.displayName ?? ""),
+    icon: String(d?.icon ?? ""),
+    color: String(d?.color ?? ""),
+    version: Number(d?.version ?? -1),
+  }))
+  .handler(async ({ data }) => {
+    const u = updateOwnProfile(self(), data);
+    return { version: u.profileVersion };
+  });
+export const passwordChange = createServerFn({ method: "POST" })
+  .inputValidator((d: { current: string; next: string; signOutOthers: boolean }) => ({
+    current: String(d?.current ?? ""),
+    next: String(d?.next ?? ""),
+    signOutOthers: d?.signOutOthers !== false,
+  }))
+  .handler(async ({ data }) => changeOwnPassword(self(), data, getCookie(SESSION_COOKIE)));
+export const sessionsList = createServerFn({ method: "GET" }).handler(async () =>
+  listOwnSessions(self().id, getCookie(SESSION_COOKIE)),
+);
+export const sessionRevoke = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => ({ id: String(d?.id ?? "").slice(0, 64) }))
+  .handler(async ({ data }) => {
+    revokeOwnSession(self(), data.id, getCookie(SESSION_COOKIE));
+    return { ok: true };
+  });
+export const sessionsRevokeOthers = createServerFn({ method: "POST" }).handler(async () => ({
+  count: revokeOtherOwnSessions(self(), getCookie(SESSION_COOKIE)),
+}));
+export const auditList = createServerFn({ method: "GET" })
+  .inputValidator((d: { scope: "me" | "family" }) => ({
+    scope: d?.scope === "family" ? ("family" as const) : ("me" as const),
+  }))
+  .handler(async ({ data }) => listAudit(self(), data.scope));
