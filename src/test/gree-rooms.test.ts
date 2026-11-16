@@ -6,9 +6,18 @@ describe("browser climate rooms", () => {
     expect(parseGreeRooms("broken")).toEqual({ rooms: [], assignments: {} });
   });
   it("retains assignments by stable IP even if a unit disappears or is renamed", () => {
-    expect(parseGreeRooms(JSON.stringify({ rooms: ["Nappali"], assignments: { "192.168.1.60": "Nappali", gone: "Nappali", invalid: "Kitalált" } })).assignments).toEqual({ "192.168.1.60": "Nappali", gone: "Nappali" });
+    expect(
+      parseGreeRooms(
+        JSON.stringify({
+          rooms: ["Nappali"],
+          assignments: { "192.168.1.60": "Nappali", gone: "Nappali", invalid: "Kitalált" },
+        }),
+      ).assignments,
+    ).toEqual({ "192.168.1.60": "Nappali", gone: "Nappali" });
   });
   it("renames a custom room and its unit assignments together", () => {
-    expect(renameGreeRoom({ rooms: ["Háló"], assignments: { a: "Háló" } }, "Háló", "Hálószoba")).toEqual({ rooms: ["Hálószoba"], assignments: { a: "Hálószoba" } });
+    expect(
+      renameGreeRoom({ rooms: ["Háló"], assignments: { a: "Háló" } }, "Háló", "Hálószoba"),
+    ).toEqual({ rooms: ["Hálószoba"], assignments: { a: "Hálószoba" } });
   });
 });
