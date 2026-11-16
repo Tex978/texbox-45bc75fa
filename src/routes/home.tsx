@@ -8,7 +8,7 @@ import { Blinds as BlindsIcon, Cable, Check, ChevronRight, DoorOpen, Droplets, F
 import { Link } from "@tanstack/react-router";
 import { getSolar, getThermometers, saveThermometerMeta, xiaomiSendCode, xiaomiVerify, getPurifiers, purifierAction, getLocks } from "@/lib/nas.functions";
 import { visibleThermometers, type ThermometerMeta } from "@/lib/thermometer-meta";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Blinds, blindsQuery as bq } from "@/components/Blinds";
 import { Appliances, appliancesQuery } from "@/components/Appliances";
@@ -16,6 +16,8 @@ import { Tuya, tuyaQuery } from "@/components/Tuya";
 import { Gree, greeQuery } from "@/components/Gree";
 import { SOLAR_REFRESH_MS } from "@/lib/growatt-cache";
 import { ThermometerHistory } from "@/components/ThermometerHistory";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { buildHomeDevices, groupByRoom, type HomeDevice } from "@/lib/home-devices";
 const tq = queryOptions({ queryKey: ["thermo"], queryFn: () => getThermometers(), refetchInterval: 120000 });
 const pq = queryOptions({ queryKey: ["purifier"], queryFn: () => getPurifiers(), refetchInterval: 60000 });
 const lq = queryOptions({ queryKey: ["locks"], queryFn: () => getLocks(), refetchInterval: 60000 });
@@ -174,12 +176,31 @@ function usePref<T>(key: string, initial: T) {
   const update = (next: T) => { setValue(next); try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* ignore */ } };
   return [value, update] as const;
 }
-function useSystemLight() {
-  const [light, setLight] = useState(false);
-  useEffect(() => { const m = window.matchMedia("(prefers-color-scheme: light)"); setLight(m.matches); const f = () => setLight(m.matches); m.addEventListener("change", f); return () => m.removeEventListener("change", f); }, []);
-  return light;
+function useMedia(query: string) {
+  const [match, setMatch] = useState(false);
+  useEffect(() => { const m = window.matchMedia(query); setMatch(m.matches); const f = () => setMatch(m.matches); m.addEventListener("change", f); return () => m.removeEventListener("change", f); }, [query]);
+  return match;
 }
 function greeting() { const h = new Date().getHours(); return h < 10 ? "Jó reggelt" : h < 18 ? "Szép napot" : "Jó estét"; }
+const catOf = (id: CategoryId) => CATEGORIES.find((c) => c.id === id)!;
+const fmt = (n: number) => n.toLocaleString("hu-HU", { maximumFractionDigits: 1 });
+const avg = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+
+function DeviceTile({ d, onOpen }: { d: HomeDevice; onOpen: (c: CategoryId) => void }) {
+  const Icon = catOf(d.category).icon;
+  return <button type="button" className={`hd-tile ${d.active ? "hd-tile-on" : ""} ${d.online ? "" : "hd-tile-offline"} hd-cat-${d.category}`} onClick={() => onOpen(d.category)} aria-label={`${d.name}: ${d.state}. Vezérlés megnyitása`}>
+    <span className="hd-tile-top"><span className="hd-tile-icon"><Icon size={22} strokeWidth={1.8} /></span>{d.value && <span className="hd-tile-value">{d.value}</span>}</span>
+    <span className="hd-tile-name">{d.name}</span>
+    <span className="hd-tile-state"><span className={`hd-dot ${d.online ? "hd-dot-on" : "hd-dot-off"}`} />{d.state}{d.room ? ` · ${d.room}` : ""}</span>
+  </button>;
+}
+function TileGrid({ list, onOpen }: { list: HomeDevice[]; onOpen: (c: CategoryId) => void }) {
+  return <div className="hd-grid">{list.map((d) => <DeviceTile key={d.key} d={d} onOpen={onOpen} />)}</div>;
+}
+function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+  return <div className="hd-section-title"><h2>{children}</h2>{action}</div>;
+}
+
 function Home() {
   const { data } = useSuspenseQuery(q);
   const qc = useQueryClient();
@@ -190,16 +211,22 @@ function Home() {
   const { data: gree } = useSuspenseQuery(greeQuery);
   const { data: appliances } = useSuspenseQuery(appliancesQuery);
   const { data: tuya } = useSuspenseQuery(tuyaQuery);
+  const { data: purifiers } = useSuspenseQuery(pq);
+  const { data: locks } = useSuspenseQuery(lq);
   const [view, setView] = useState("overview");
-  const [category, setCategory] = useState<CategoryId>("sensors");
+  const [category, setCategory] = useState<CategoryId | "all">("all");
+  const [panel, setPanel] = useState<CategoryId>("sensors");
+  const [sheet, setSheet] = useState<CategoryId | null>(null);
   const [favorites, setFavorites] = usePref<CategoryId[]>("home-favorites", ["sensors", "blinds"]);
   const [theme, setTheme] = usePref<Theme>("home-theme", "system");
   const [hello, setHello] = useState("Otthon");
   useEffect(() => setHello(greeting()), []);
-  const systemLight = useSystemLight();
+  const systemLight = useMedia("(prefers-color-scheme: light)");
+  const desktop = useMedia("(min-width: 1024px)");
   const light = theme === "light" || (theme === "system" && systemLight);
+  useEffect(() => { document.body.classList.toggle("home-light-portal", light); return () => document.body.classList.remove("home-light-portal"); }, [light]);
   const selectView = (id: string) => { setView(id); window.scrollTo({ top: 0, behavior: "instant" }); };
-  const openCategory = (id: CategoryId) => { setCategory(id); selectView("devices"); };
+  const openDevice = (id: CategoryId) => { setPanel(id); if (!(desktop && view === "devices")) setSheet(id); };
   const toggleFavorite = (id: CategoryId) => setFavorites(favorites.includes(id) ? favorites.filter((f) => f !== id) : [...favorites, id]);
   const sections = [
     { id: "overview", name: "Otthon", icon: House },
@@ -209,102 +236,145 @@ function Home() {
     { id: "more", name: "Több", icon: Settings2 },
   ];
   const shownThermometers = visibleThermometers(thermometers.sensors, thermometers.meta);
-  const tuyaShown = tuya.devices.filter((d) => !tuya.meta[d.id]?.hidden);
-  const statuses = [...shownThermometers.map((s) => s.online), ...gree.units.map((u) => u.online), ...tuyaShown.map((d) => d.online)];
-  const online = statuses.filter(Boolean).length; const offline = statuses.length - online;
-  const temperatures = shownThermometers.flatMap((sensor) => sensor.temp == null ? [] : [sensor.temp]);
-  const climateValue = temperatures.length ? `${Math.min(...temperatures).toLocaleString("hu-HU")}–${Math.max(...temperatures).toLocaleString("hu-HU")}°` : "–";
+  const devices = buildHomeDevices({ sensors: shownThermometers, sensorMeta: thermometers.meta, gree: gree.units, purifiers: purifiers.purifiers, blinds: blinds.blinds, tuya: tuya.devices, tuyaMeta: tuya.meta, appliances: appliances.appliances, locks: locks.locks });
+  const online = devices.filter((d) => d.online).length; const offline = devices.length - online;
+  const activeCount = devices.filter((d) => d.active && d.category !== "sensors").length;
+  const temps = shownThermometers.flatMap((s) => s.temp == null ? [] : [s.temp]);
+  const hums = shownThermometers.flatMap((s) => s.hum == null ? [] : [s.hum]);
   const anyDemo = data.demo || thermometers.demo || blinds.demo;
-  const summaries = [
-    { id: "sensors" as const, title: "Hőmérséklet", value: climateValue, detail: `${shownThermometers.length} hőmérő · ${gree.units.length} klíma${thermometers.demo ? " · Minta" : ""}`, icon: Thermometer, tone: "climate" },
-    { id: "energy" as const, title: "Napelem", value: data.error ? "–" : `${(data.currentW / 1000).toLocaleString("hu-HU", { maximumFractionDigits: 2 })} kW`, detail: data.error ? "Kapcsolati hiba" : `Ma ${data.todayKwh.toLocaleString("hu-HU", { maximumFractionDigits: 1 })} kWh${data.demo ? " · Minta" : ""}`, icon: Sun, tone: "energy" },
-    { id: "blinds" as const, title: "Árnyékolás", value: `${blinds.blinds.length}`, detail: `redőny${blinds.demo ? " · Minta" : ""}`, icon: BlindsIcon, tone: "blinds" },
-    { id: "tuya" as const, title: "Eszközök", value: `${appliances.appliances.length + tuyaShown.length}`, detail: appliances.error || tuya.error ? "Kapcsolati hiba" : "Bosch · Smart Life", icon: Power, tone: "devices" },
-  ];
-  const rooms = Object.entries(shownThermometers.reduce<Record<string, typeof shownThermometers>>((acc, s) => { const room = thermometers.meta[s.did]?.room?.trim(); if (room) (acc[room] ||= []).push(s); return acc; }, {}));
-  const unassigned = shownThermometers.filter((s) => !thermometers.meta[s.did]?.room?.trim());
-  const fmt = (n: number) => n.toLocaleString("hu-HU", { maximumFractionDigits: 1 });
+  const { rooms, other } = groupByRoom(devices);
+  const count = (id: CategoryId) => devices.filter((d) => d.category === id).length;
+  const errors: Partial<Record<CategoryId, boolean>> = { sensors: !!(thermometers.error || thermometers.verifyUrl), gree: !!gree.error, air: !!purifiers.error, blinds: !!blinds.error, tuya: !!tuya.error, bosch: !!appliances.error, locks: !!locks.error };
   const ThemeIcon = theme === "system" ? SunMoon : theme === "light" ? Sun : Moon;
   const nextTheme: Record<Theme, Theme> = { system: "light", light: "dark", dark: "system" };
   const themeName: Record<Theme, string> = { system: "Rendszer szerint", light: "Világos", dark: "Sötét" };
+  const favDevices = devices.filter((d) => favorites.includes(d.category));
+  const filtered = category === "all" ? devices : devices.filter((d) => d.category === category);
+  const sheetCat = sheet ? catOf(sheet) : null;
+  const solarKw = data.error ? null : data.currentW / 1000;
+
   return (
-    <Shell demo={anyDemo} className={`smart-home ${light ? "home-light" : ""}`}>
-      <header className="home-hero">
-        <div className="min-w-0">
-          <p className="home-hero-kicker">{hello}</p>
-          <h1 className="home-hero-title">Okosotthon</h1>
-          <div className="home-hero-status" aria-label="Eszközök állapota">
-            <span className="home-pill home-pill-on"><Wifi size={14} />{online} online</span>
-            <span className={`home-pill ${offline ? "home-pill-off" : ""}`}><WifiOff size={14} />{offline} offline</span>
+    <Shell demo={anyDemo} className={`smart-home hd ${light ? "home-light" : ""}`}>
+      <div className="hd-layout">
+        <nav className="hd-nav" role="tablist" aria-label="Okosotthon nézetek">
+          <div className="hd-nav-brand"><House size={20} /><span>Otthonom</span></div>
+          {sections.map(({ id, name, icon: Icon }) => <button type="button" key={id} id={`tab-${id}`} role="tab" aria-selected={view === id} aria-controls="home-panel" className={view === id ? "hd-nav-active" : ""} onClick={() => selectView(id)}><Icon size={22} strokeWidth={view === id ? 2.3 : 1.7} /><span>{name}</span></button>)}
+        </nav>
+
+        <div className="hd-content">
+          <header className="hd-header">
+            <div className="min-w-0">
+              <p className="hd-kicker">{hello}</p>
+              <h1 className="hd-title">{view === "overview" ? "Otthonom" : sections.find((s) => s.id === view)?.name}</h1>
+            </div>
+            <div className="hd-header-actions">
+              <Button variant="ghost" size="icon" className="hd-round" onClick={() => setTheme(nextTheme[theme])} title={`Téma: ${themeName[theme]}`} aria-label={`Téma váltása (most: ${themeName[theme]})`}><ThemeIcon /></Button>
+              <Button variant="ghost" size="icon" className="hd-round" onClick={refresh} disabled={refreshing} title="Frissítés" aria-label="Okosotthon frissítése"><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button>
+            </div>
+          </header>
+
+          <div id="home-panel" role="tabpanel" aria-labelledby={`tab-${view}`} className="hd-panel">
+            {view === "overview" && <div className="hd-overview">
+              <section className="hd-hero" aria-label="Otthoni körülmények">
+                <div className="hd-hero-main">
+                  <span className="hd-hero-label"><Thermometer size={15} />Bent most</span>
+                  <strong className="hd-hero-temp">{temps.length ? `${fmt(avg(temps))}°` : "–"}</strong>
+                  <span className="hd-hero-sub">{temps.length > 1 ? `${fmt(Math.min(...temps))}° – ${fmt(Math.max(...temps))}° · ` : ""}{shownThermometers.length} hőmérő{thermometers.demo ? " · Minta" : ""}</span>
+                </div>
+                <div className="hd-hero-stats">
+                  <div><Droplets size={16} /><strong>{hums.length ? `${Math.round(avg(hums))}%` : "–"}</strong><span>Pára</span></div>
+                  <button type="button" onClick={() => selectView("energy")}><Sun size={16} /><strong>{solarKw != null ? `${fmt(solarKw)} kW` : "–"}</strong><span>{data.error ? "Napelem hiba" : `Ma ${fmt(data.todayKwh)} kWh`}</span></button>
+                  <div><Power size={16} /><strong>{activeCount}</strong><span>Bekapcsolva</span></div>
+                </div>
+                <div className="hd-hero-status">
+                  <span className="hd-pill hd-pill-on"><Wifi size={14} />{online} online</span>
+                  <span className={`hd-pill ${offline ? "hd-pill-off" : ""}`}><WifiOff size={14} />{offline} offline</span>
+                </div>
+              </section>
+
+              <section className="hd-block hd-quick-block">
+                <SectionTitle>Gyors elérés</SectionTitle>
+                <div className="hd-quick">{CATEGORIES.map(({ id, name, icon: Icon }) => count(id) > 0 || errors[id] ? <button type="button" key={id} className={`hd-quick-btn hd-cat-${id}`} onClick={() => openDevice(id)}><span className="hd-quick-icon"><Icon size={24} strokeWidth={1.8} /></span><span>{name}</span>{errors[id] ? <em className="hd-quick-err">hiba</em> : <em>{count(id)}</em>}</button> : null)}</div>
+              </section>
+
+              <section className="hd-block hd-fav-block">
+                <SectionTitle action={<button type="button" className="hd-link" onClick={() => selectView("more")}>Szerkesztés<ChevronRight size={14} /></button>}>Kedvencek</SectionTitle>
+                {favDevices.length === 0 ? <p className="hd-empty">Nincs kedvenc eszköz. A „Több” fülön csillaggal választhatsz.</p> : <TileGrid list={favDevices.slice(0, desktop ? 12 : 8)} onOpen={openDevice} />}
+              </section>
+
+              <section className="hd-block hd-rooms-block">
+                <SectionTitle action={rooms.length > 0 ? <button type="button" className="hd-link" onClick={() => selectView("rooms")}>Összes<ChevronRight size={14} /></button> : undefined}>Szobák</SectionTitle>
+                {rooms.length === 0 ? <p className="hd-empty">Még nincs szoba megadva. A hőmérők, redőnyök és Smart Life eszközök beállításában adhatsz meg helyet.</p>
+                  : <div className="hd-room-row">{rooms.map(([room, list]) => <RoomCard key={room} room={room} list={list} onClick={() => selectView("rooms")} />)}</div>}
+              </section>
+            </div>}
+
+            {view === "rooms" && <>
+              {rooms.length === 0 && <p className="hd-empty">Még nincs szoba megadva. A hőmérők, redőnyök és Smart Life eszközök beállításában adhatsz meg helyet.</p>}
+              {rooms.map(([room, list]) => <section key={room} className="hd-block">
+                <RoomHeader room={room} list={list} />
+                <TileGrid list={list} onOpen={openDevice} />
+              </section>)}
+              {other.length > 0 && <section className="hd-block"><SectionTitle>Egyéb eszközök</SectionTitle><TileGrid list={other} onOpen={openDevice} /></section>}
+            </>}
+
+            {view === "devices" && <>
+              <div className="hd-filters" role="tablist" aria-label="Eszköztípusok">
+                <button type="button" role="tab" aria-selected={category === "all"} className={`hd-filter ${category === "all" ? "hd-filter-active" : ""}`} onClick={() => setCategory("all")}><LayoutGrid size={16} />Összes<em>{devices.length}</em></button>
+                {CATEGORIES.map(({ id, name, icon: Icon }) => <button type="button" key={id} role="tab" aria-selected={category === id} className={`hd-filter ${category === id ? "hd-filter-active" : ""}`} onClick={() => { setCategory(id); setPanel(id); }}><Icon size={16} />{name}<em>{errors[id] ? "!" : count(id)}</em></button>)}
+              </div>
+              <div className="hd-devices">
+                <div className="hd-devices-list">
+                  {(category === "all" ? CATEGORIES : [catOf(category)]).map(({ id, name, icon: Icon }) => { const list = filtered.filter((d) => d.category === id); return <section key={id} className="hd-block">
+                    <SectionTitle action={<button type="button" className="hd-link" onClick={() => openDevice(id)}>Vezérlés<ChevronRight size={14} /></button>}><Icon size={18} className="hd-title-icon" />{name}</SectionTitle>
+                    {list.length > 0 ? <TileGrid list={list} onOpen={openDevice} /> : <button type="button" className="hd-empty-card" onClick={() => openDevice(id)}>{errors[id] ? "Kapcsolati hiba vagy ellenőrzés szükséges – megnyitás" : "Nincs megjeleníthető eszköz – beállítások megnyitása"}<ChevronRight size={16} /></button>}
+                  </section>; })}
+                </div>
+                {desktop && <aside className="hd-detail" aria-label={`${catOf(panel).name} vezérlés`}><CategoryPanel id={panel} /></aside>}
+              </div>
+            </>}
+
+            {view === "energy" && <div className="hd-energy"><SmartEnergy data={data} /></div>}
+
+            {view === "more" && <div className="hd-more">
+              <section><SectionTitle>Kedvencek a kezdőlapon</SectionTitle>
+                <div className="home-settings-list">{CATEGORIES.map(({ id, name, icon: Icon }) => { const on = favorites.includes(id); return <button type="button" key={id} className="home-setting" aria-pressed={on} onClick={() => toggleFavorite(id)}><span className="home-chip-icon"><Icon size={18} /></span><span className="flex-1 text-left">{name}</span><Star size={20} className={on ? "home-star-on" : "text-muted-foreground"} /></button>; })}</div></section>
+              <section><SectionTitle>Megjelenés</SectionTitle>
+                <div className="home-segment" role="radiogroup" aria-label="Téma">{(["system", "light", "dark"] as Theme[]).map((t) => <button type="button" key={t} role="radio" aria-checked={theme === t} className={theme === t ? "home-segment-active" : ""} onClick={() => setTheme(t)}>{themeName[t]}</button>)}</div>
+                <SectionTitle>Eszközkezelők</SectionTitle>
+                <div className="home-settings-list">{CATEGORIES.map(({ id, name, icon: Icon }) => <button type="button" key={id} className="home-setting" onClick={() => openDevice(id)}><span className="home-chip-icon"><Icon size={18} /></span><span className="flex-1 text-left">{name}</span><ChevronRight size={18} className="text-muted-foreground" /></button>)}</div>
+                <p className="hd-empty">Átnevezés, hely megadása és elrejtés az egyes eszköztípusok fogaskerék gombjával.</p>
+                <Link to="/settings" className="home-setting mt-3"><span className="home-chip-icon"><Cable size={18} /></span><span className="flex-1">Kapcsolatok és fiókok</span><ChevronRight size={18} className="text-muted-foreground" /></Link>
+              </section>
+            </div>}
           </div>
         </div>
-        <div className="home-hero-actions">
-          <Button variant="ghost" size="icon" className="home-round" onClick={() => setTheme(nextTheme[theme])} title={`Téma: ${themeName[theme]}`} aria-label={`Téma váltása (most: ${themeName[theme]})`}><ThemeIcon /></Button>
-          <Button variant="ghost" size="icon" className="home-round" onClick={refresh} disabled={refreshing} title="Frissítés" aria-label="Okosotthon frissítése"><RefreshCw className={refreshing ? "animate-spin" : ""} /></Button>
-        </div>
-      </header>
-
-      <div id="home-panel" role="tabpanel" aria-labelledby={`tab-${view}`} className="home-view-panel">
-        {view === "overview" && <>
-          <div className="home-chip-row">{summaries.map(({ id, title, value, detail, icon: Icon, tone }) => <button type="button" key={id} className={`home-chip home-tone-${tone}`} onClick={() => id === "energy" ? selectView("energy") : openCategory(id)}>
-            <span className="home-chip-icon"><Icon size={20} strokeWidth={1.75} /></span>
-            <span className="home-chip-label">{title}</span><strong>{value}</strong><span className="home-chip-detail">{detail}</span>
-          </button>)}</div>
-          <h2 className="home-heading">Gyorsműveletek</h2>
-          <div className="home-quick-row">
-            <button type="button" className="home-quick" onClick={() => openCategory("blinds")}><BlindsIcon size={20} />Redőnyök</button>
-            <button type="button" className="home-quick" onClick={() => openCategory("gree")}><Snowflake size={20} />Klímák</button>
-            <button type="button" className="home-quick" onClick={() => openCategory("tuya")}><Lightbulb size={20} />Lámpák, aljzatok</button>
-            <button type="button" className="home-quick" onClick={() => openCategory("bosch")}><WashingMachine size={20} />Háztartási gépek</button>
-            <button type="button" className="home-quick" onClick={() => openCategory("locks")}><LockKeyhole size={20} />Zárak</button>
-          </div>
-          {rooms.length > 0 && <><div className="home-heading-row"><h2 className="home-heading">Szobák</h2><button type="button" className="home-link" onClick={() => selectView("rooms")}>Összes<ChevronRight size={14} /></button></div>
-            <div className="home-room-strip">{rooms.slice(0, 6).map(([room, list]) => <RoomCard key={room} room={room} list={list} fmt={fmt} onClick={() => selectView("rooms")} />)}</div></>}
-          <div className="home-heading-row"><h2 className="home-heading">Kedvencek</h2><button type="button" className="home-link" onClick={() => selectView("more")}>Szerkesztés<ChevronRight size={14} /></button></div>
-          {favorites.length === 0 ? <p className="home-empty">Nincs kedvenc. A „Több” fülön választhatsz.</p>
-            : <div className="home-dashboard-grid">{CATEGORIES.filter((c) => favorites.includes(c.id)).map((c) => <CategoryPanel key={c.id} id={c.id} />)}</div>}
-        </>}
-
-        {view === "rooms" && <>
-          <h2 className="home-heading">Szobák</h2>
-          {rooms.length === 0 ? <p className="home-empty">Még nincs szoba. A hőmérők eszközkezelőjében adhatsz meg helyet (pl. Nappali).</p>
-            : <div className="home-room-grid">{rooms.map(([room, list]) => <section key={room} className="home-room">
-              <RoomCard room={room} list={list} fmt={fmt} />
-              <ul className="home-room-list">{list.map((s) => <li key={s.did}><span className={`status-dot ${s.online ? "bg-home-success" : "bg-muted-foreground"}`} /><span className="min-w-0 flex-1 truncate">{thermometers.meta[s.did]?.name || s.name}</span><span className="tabular-nums">{s.temp != null ? `${fmt(s.temp)}°` : "–"}</span>{s.hum != null && <span className="tabular-nums text-muted-foreground">{s.hum}%</span>}</li>)}</ul>
-            </section>)}</div>}
-          {unassigned.length > 0 && <><h2 className="home-heading">Hely nélküli hőmérők</h2><ul className="home-room-list home-settings-list">{unassigned.map((s) => <li key={s.did}><span className={`status-dot ${s.online ? "bg-home-success" : "bg-muted-foreground"}`} /><span className="min-w-0 flex-1 truncate">{thermometers.meta[s.did]?.name || s.name}</span><span className="tabular-nums">{s.temp != null ? `${fmt(s.temp)}°` : "–"}</span>{s.hum != null && <span className="tabular-nums text-muted-foreground">{s.hum}%</span>}</li>)}</ul></>}
-          <p className="home-note">A szobákat a hőmérők helye alapján csoportosítjuk. A többi eszköz az Eszközök fülön, típus szerint érhető el.</p>
-        </>}
-
-        {view === "devices" && <>
-          <div className="home-filter-row" role="tablist" aria-label="Eszköztípusok">{CATEGORIES.map(({ id, name, icon: Icon }) => <button type="button" key={id} role="tab" aria-selected={category === id} className={`home-filter ${category === id ? "home-filter-active" : ""}`} onClick={() => setCategory(id)}><Icon size={16} />{name}</button>)}</div>
-          <CategoryPanel id={category} />
-        </>}
-
-        {view === "energy" && <SmartEnergy data={data} />}
-
-        {view === "more" && <>
-          <h2 className="home-heading">Kedvencek a kezdőlapon</h2>
-          <div className="home-settings-list">{CATEGORIES.map(({ id, name, icon: Icon }) => { const on = favorites.includes(id); return <button type="button" key={id} className="home-setting" aria-pressed={on} onClick={() => toggleFavorite(id)}><span className="home-chip-icon"><Icon size={18} /></span><span className="flex-1 text-left">{name}</span><Star size={20} className={on ? "home-star-on" : "text-muted-foreground"} /></button>; })}</div>
-          <h2 className="home-heading">Megjelenés</h2>
-          <div className="home-segment" role="radiogroup" aria-label="Téma">{(["system", "light", "dark"] as Theme[]).map((t) => <button type="button" key={t} role="radio" aria-checked={theme === t} className={theme === t ? "home-segment-active" : ""} onClick={() => setTheme(t)}>{themeName[t]}</button>)}</div>
-          <h2 className="home-heading">Eszközkezelők</h2>
-          <div className="home-settings-list">{CATEGORIES.map(({ id, name, icon: Icon }) => <button type="button" key={id} className="home-setting" onClick={() => openCategory(id)}><span className="home-chip-icon"><Icon size={18} /></span><span className="flex-1 text-left">{name}</span><ChevronRight size={18} className="text-muted-foreground" /></button>)}</div>
-          <p className="home-note">Átnevezés és elrejtés az egyes eszköztípusok fogaskerék gombjával.</p>
-          <Link to="/settings" className="home-setting mt-3"><span className="home-chip-icon"><Cable size={18} /></span><span className="flex-1">Kapcsolatok és fiókok</span><ChevronRight size={18} className="text-muted-foreground" /></Link>
-        </>}
       </div>
 
-      <nav className="home-tabbar" role="tablist" aria-label="Okosotthon nézetek">{sections.map(({ id, name, icon: Icon }) => <button type="button" key={id} id={`tab-${id}`} role="tab" aria-selected={view === id} aria-controls="home-panel" className={view === id ? "home-tab-active" : ""} onClick={() => selectView(id)}><Icon size={22} strokeWidth={view === id ? 2.2 : 1.75} /><span>{name}</span></button>)}</nav>
+      <Sheet open={sheet != null} onOpenChange={(o) => { if (!o) setSheet(null); }}>
+        <SheetContent side={desktop ? "right" : "bottom"} className={`smart-home hd hd-sheet ${light ? "home-light" : ""}`}>
+          {sheetCat && <>
+            <SheetHeader className="hd-sheet-header"><span className={`hd-tile-icon hd-cat-${sheetCat.id}`}><sheetCat.icon size={22} /></span><div><SheetTitle>{sheetCat.name}</SheetTitle><SheetDescription>{count(sheetCat.id)} eszköz · teljes vezérlés</SheetDescription></div></SheetHeader>
+            <div className="hd-sheet-body"><CategoryPanel id={sheetCat.id} /></div>
+          </>}
+        </SheetContent>
+      </Sheet>
     </Shell>
   );
 }
-function RoomCard({ room, list, fmt, onClick }: { room: string; list: { temp?: number | null; hum?: number | null; online: boolean }[]; fmt: (n: number) => string; onClick?: () => void }) {
-  const temps = list.flatMap((s) => s.temp == null ? [] : [s.temp]); const hums = list.flatMap((s) => s.hum == null ? [] : [s.hum]);
-  const avg = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
-  const off = list.filter((s) => !s.online).length;
-  const body = <><span className="home-room-name"><DoorOpen size={16} />{room}</span>
-    <strong className="tabular-nums">{temps.length ? `${fmt(avg(temps))}°` : "–"}</strong>
-    <span className="home-chip-detail">{hums.length ? <><Droplets size={12} className="inline" /> {Math.round(avg(hums))}% · </> : null}{list.length} eszköz{off ? ` · ${off} offline` : ""}</span></>;
-  return onClick ? <button type="button" className="home-room-card" onClick={onClick}>{body}</button> : <div className="home-room-card">{body}</div>;
+function roomStats(list: HomeDevice[]) {
+  const temps = list.filter((d) => d.category === "sensors" && d.value).map((d) => Number(d.value!.replace("°", "").replace(",", ".")));
+  return { temp: temps.length ? `${fmt(avg(temps))}°` : null, active: list.filter((d) => d.active && d.category !== "sensors").length, offline: list.filter((d) => !d.online).length, cats: [...new Set(list.map((d) => d.category))] };
+}
+function RoomCard({ room, list, onClick }: { room: string; list: HomeDevice[]; onClick: () => void }) {
+  const s = roomStats(list);
+  return <button type="button" className="hd-room" onClick={onClick}>
+    <span className="hd-room-head"><span className="hd-room-name">{room}</span>{s.temp && <strong>{s.temp}</strong>}</span>
+    <span className="hd-room-icons">{s.cats.map((c) => { const I = catOf(c).icon; return <span key={c} className={`hd-cat-${c}`}><I size={15} /></span>; })}</span>
+    <span className="hd-room-meta">{list.length} eszköz{s.active ? ` · ${s.active} aktív` : ""}{s.offline ? ` · ${s.offline} offline` : ""}</span>
+  </button>;
+}
+function RoomHeader({ room, list }: { room: string; list: HomeDevice[] }) {
+  const s = roomStats(list);
+  return <div className="hd-room-header"><div><h2>{room}</h2><p>{list.length} eszköz{s.active ? ` · ${s.active} aktív` : ""}{s.offline ? ` · ${s.offline} offline` : ""}</p></div>{s.temp && <strong>{s.temp}</strong>}</div>;
 }
