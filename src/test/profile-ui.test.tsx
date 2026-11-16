@@ -42,10 +42,16 @@ import { ProfilePage } from "@/components/Profile";
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   resetAuthDb();
   if (dir) rmSync(dir, { recursive: true, force: true });
 });
 it("saves own profile, changes password and revokes another device through the real SQLite-backed UI", async () => {
+  vi.stubGlobal("ResizeObserver", class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  });
   dir = mkdtempSync(join(tmpdir(), "texbox-profile-ui-"));
   process.env["DATA_DIR"] = dir;
   resetAuthDb();
@@ -73,7 +79,7 @@ it("saves own profile, changes password and revokes another device through the r
   fireEvent.click(screen.getByRole("button", { name: "Jelszó módosítása" }));
   await screen.findByText("Jelszó módosítva.");
   expect(sessionUser(other)?.id).toBe(user.id);
-  fireEvent.click(screen.getByRole("button", { name: "Kijelentkeztetés", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /^Kijelentkeztetés$/ }));
   await screen.findByText("Eszköz kijelentkeztetve.");
   expect(sessionUser(other)).toBeNull();
   expect(sessionUser(token)?.id).toBe(user.id);
