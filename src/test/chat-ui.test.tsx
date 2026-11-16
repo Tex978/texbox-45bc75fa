@@ -10,6 +10,7 @@ import { chatSend, chatList, chatStatus, chatMarkRead, chatReact } from "@/lib/c
 let token: string, dir: string;
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
 vi.mock("@/lib/chat.functions", () => ({
+  chatDraftFiles: async()=>[],
   chatUnread: async () => chatStatus(token),
   chatMessages: async ({ data }: { data: { before?: number } }) => chatList(token, data.before),
   chatMessageSend: async ({ data }: { data: Parameters<typeof chatSend>[1] }) =>
