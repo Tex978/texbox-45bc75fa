@@ -1,5 +1,15 @@
 # Aktuális családi központ – 2026-11-16
 Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/TEXBOX-CSALADI-ROADMAP.md`.
+## TEXBOX 1.0 lezárás – irányadó mai státusz
+- [x] Egyetlen lezáró fejlesztői QA-kör: 243 Vitest-teszt / 54 fájl és 8 Python Gree-próba sikeres; célzott lint tiszta; automatikus ellenőrzés legutóbbi eredménye `build OK` (típushibák nélkül).
+- [x] Két reprodukált P1 javítva: beváltási idempotencia idegen fiók/személy/jutalom esetén tiltott; futó jelenet eredeti verzióját minden lépés és adapter újraengedélyezése ellenőrzi. Nincs új modul, séma, migráció vagy NAS-snapshot ebben a körben.
+- [x] 14 meglévő útvonal × 390/768/1280 px, Streaming-átirányítás, billentyűzetes tartalomugrás és Több menü: publikus előnézetben rendben, nincs vízszintes kilógás vagy böngésző-futáshiba. Izolált SQLite-alapú profil/jelszó/munkamenet UI-próba kész.
+- [x] Átadási jegyzet: `TEXBOX-1.0-ATADAS.md`. Az 1.0 fejlesztői QA lezárva a dokumentált ellenőrzési korlátokkal; a lentebbi korábbi státuszok történeti mérföldkövek, nem új kötelező fejlesztési feladatok.
+- [ ] Éles Synology átvétel: teljes /data mentés, tartós bind, régi fiók/szoba restart és image-frissítés után, két szülő/gyermekjogok/értesítések, scheduler indulás és kizárólag tulajdonos által jóváhagyott eszközpróba. Innen nincs NAS-elérés.
+- [ ] Külön production Node/Docker image fordítás és bejelentkezett böngészős NAS-folyamat: ebben a környezetben nem igazolt; az automatikus `build OK` nem bizonyítja a NAS-image működését.
+- Opcionális 2.0 backlog (nem 1.0 akadály): 7b push, 2b/2 szenzortrigger, 1c admin/eszköz/szobajog-finomítás, 6c konkrét eszközkedvencek, 8b ügyemlékeztető/naptárkapcsolás, fájlfeltöltés, drag-drop és kozmetika.
+
+## Korábbi fázisok részletes, történeti ellenőrzési naplója
 - [x] 1. fázis: stabil profilmenü, felnőtt meghívás, tulajdonosi védelem, külön gyermekprofil; 98 teszt sikeres, automatikus build OK; 390/1280 px publikus állapot ellenőrizve, izolált valódi SQLite + UI mentés/újranyitás tesztelve. Érintett lint hibamentes egy figyelmeztetéssel; teljes lint korábbi 671 hibája nyitott.
 - [ ] NAS elfogadás: meglévő admin/session, két eszközös mentés, felnőtt aktiválás/reset, Docker-frissítés; helyi NAS nem érhető el innen.
 - [x] 1b (fejlesztői környezetben): `/profile` Saját profil (név, beépített ikon+szín, felhasználónév nem módosítható), jelszócsere jelenlegi jelszóval (min. 10 karakter, erősségjelző, 5 hibás próba után 5 perc zár, opcionálisan más eszközök kijelentkeztetése), Bejelentkezett eszközeim (egyszerű böngésző/rendszer címke, belépés/lejárat, jelenlegi jelölése, egyedi és „minden más” kijelentkeztetés), saját eseménynapló, admin családi fiókeseménynapló szűrővel, családtag-kártyák avatarral/szereppel/meghívóstátusszal, kategorizált jogkapcsolók, bővített gyermekikonok. Szerverfüggvény-POST-ok Origin-ellenőrzése. `user_profiles` additív tábla, előtte `pre-profile-phase1b.db`. Ügy→feladat egy tranzakcióban (savepoint). Élő NAS-on ellenőrizendő.
@@ -102,4 +112,4 @@ Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/T
 
 - [x] 8a (fejlesztői környezetben): Családi szervező → „Jegyzetek és ügyek” fül — jegyzetek (kategória, https-link, rövid lista, kitűzés, személyes/felnőtt/gyerekkel megosztott) és ügyek (felelős, határidő, státusz, prioritás), keresés/szűrés, archívum+visszaállítás, előzmények, verzióütközés, „Közelgő ügyek”, explicit idempotens „Feladat létrehozása” (0 pont). `pre-family-notes-phase8a.db` mentés. Élő NAS-on ellenőrizendő.
 - [ ] 8b: ügyhatáridő-emlékeztető (értesítési beállítással), ügyből naptáresemény létrehozása/hivatkozása, főoldali ügy-kártya.
-- [ ] Későbbi: 7b push, 1c, 8b ügyemlékeztetők, 6c eszközkedvencek, 2b/2 szenzortriggerek, végső QA.
+- Opcionális 2.0: 7b push, 1c, 8b ügyemlékeztetők, 6c eszközkedvencek, 2b/2 szenzortriggerek; az 1.0 végső fejlesztői QA fent lezárva, éles NAS átvétel külön nyitott.
