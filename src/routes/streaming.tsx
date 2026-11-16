@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Shell, Poster } from "@/components/Shell";
+import { Shell, Poster, PageHeader } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { MediaDetail } from "@/components/MediaDetail";
 import { Cable, Check, ChevronLeft, ChevronRight, Film, Flame, Plus, Sparkles, Star, Tv } from "lucide-react";
@@ -59,7 +59,7 @@ function Streaming() {
   const providerName = data?.providers.find((p) => p.id === provider)?.name;
   return <Shell>
     <div className="flex flex-wrap items-end justify-between gap-4">
-      <div><h1>Streaming újdonságok</h1><p className="mt-1 text-sm text-muted-foreground">Csak olyan címek, amelyeket a TMDB szerint Magyarországon előfizetéssel nézhetsz.</p></div>
+      <PageHeader title="Streaming újdonságok" subtitle="Csak olyan címek, amelyeket a TMDB szerint Magyarországon előfizetéssel nézhetsz." />
       <div className="media-segment" aria-label="Médiatípus">{(["Film", "Sorozat"] as const).map((v) => <Button key={v} variant={type === v ? "default" : "ghost"} aria-pressed={type === v} onClick={() => { setType(v); reset(); }}>{v === "Film" ? <Film size={17} /> : <Tv size={17} />}{v === "Film" ? "Filmek" : "Sorozatok"}</Button>)}</div>
     </div>
     {data && !data.configured ? <div className="mt-8 rounded-lg border border-border bg-card p-6"><p className="font-medium">A streaming felfedezőhöz TMDB-kapcsolat kell.</p><p className="mt-1 text-sm text-muted-foreground">A TMDB adja meg, melyik cím melyik szolgáltatónál érhető el Magyarországon.</p><Button asChild className="mt-4"><Link to="/settings"><Cable size={16} />Kapcsolatok</Link></Button></div> : <>

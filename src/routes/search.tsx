@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Shell, Poster } from "@/components/Shell";
+import { Shell, Poster, PageHeader } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { MediaDetail } from "@/components/MediaDetail";
 import { Plus, Check, Film, Tv, Sparkles, CalendarDays, Flame, TrendingUp, Star, Search as SearchIcon, ChevronLeft, ChevronRight, Cable, SlidersHorizontal, X } from "lucide-react";
@@ -68,7 +68,7 @@ function Search() {
     catch { setState((s) => ({ ...s, [key]: "error" })); }
   };
   return <Shell demo={!!data?.demo}>
-    <div className="flex flex-wrap justify-between items-end gap-4"><h1>Filmek és sorozatok</h1><span className="text-xs text-muted-foreground">{data?.items.length || 0} találat</span></div>
+    <PageHeader title="Filmek és sorozatok" subtitle={`${data?.items.length || 0} találat`} />
     <div className="media-toolbar">
       <div className="media-segment" aria-label="Médiatípus">{(["Film", "Sorozat"] as const).map((value) => <Button key={value} variant={type === value ? "default" : "ghost"} aria-pressed={type === value} onClick={() => { setType(value); setFiltersRaw((f) => normalizeFilters(f, value)); setPage(1); }}>{value === "Film" ? <Film size={17} /> : <Tv size={17} />}{value === "Film" ? "Filmek" : "Sorozatok"}</Button>)}</div>
       <div className="media-search-inputs flex min-w-0 flex-1 sm:max-w-lg gap-2">

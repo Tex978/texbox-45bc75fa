@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { Shell, Card, Bar } from "@/components/Shell";
+import { Shell, Card, Bar, PageHeader } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, Trash2 } from "lucide-react";
 import { getTorrents, torrentAction } from "@/lib/nas.functions";
@@ -26,7 +26,7 @@ function Downloads() {
   };
   return (
     <Shell demo={data.demo}>
-      <h1 className="mb-6 font-display text-3xl font-bold">Letöltések</h1>
+      <PageHeader title="Letöltések" subtitle={`${data.list.length} torrent · ${data.list.filter((t) => !t.paused).length} aktív`} />
       <div className="space-y-3">{data.list.map((t) => (
         <Card key={t.hash} className="app-download">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
