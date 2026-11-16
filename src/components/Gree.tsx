@@ -253,7 +253,7 @@ export function Gree({
   const list = data.units.filter(
     (u) =>
       roomFilter === "all" ||
-      (roomFilter === "none" ? !state.assignments[u.ip] : state.assignments[u.ip] === roomFilter),
+      (roomFilter === "none" ? !state.assignments[u.ip] : `room:${state.assignments[u.ip]}` === roomFilter),
   );
   const selected = list.find((u) => u.ip === (selectedIp ?? localSelected)) ?? list[0];
   const select = (ip: string) => {
@@ -286,7 +286,7 @@ export function Gree({
           <div className="gree-room-filters" aria-label="Klímák szobaszűrője">
             {[
               { id: "all", label: "Összes" },
-              ...state.rooms.map((r) => ({ id: r, label: r })),
+              ...state.rooms.map((r) => ({ id: `room:${r}`, label: r })),
               { id: "none", label: "Szoba nélkül" },
             ].map(({ id, label }) => (
               <Button
@@ -403,7 +403,7 @@ export function Gree({
             room={room}
             onSave={(name) => {
               save(renameGreeRoom(state, room, name));
-              if (roomFilter === room) setRoomFilter(name.trim());
+                if (roomFilter === `room:${room}`) setRoomFilter(`room:${name.trim()}`);
             }}
           />
         ))}

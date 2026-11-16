@@ -739,7 +739,7 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .hd .gree-row-selected { border-color: var(--primary); background: color-mix(in oklab, var(--primary) 6%, var(--card)); }
 .hd .gree-unit-select { min-width: 0; height: auto; min-height: 52px; justify-content: flex-start; padding: 4px; white-space: normal; text-align: left; }
 .hd .gree-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground); overflow-wrap: anywhere; }
-.hd .gree-detail-anchor { min-width: 0; scroll-margin-top: 16px; }
+.hd .gree-detail-anchor { order: -1; min-width: 0; scroll-margin-top: 16px; }
 .hd .gree-detail { padding: 20px; border-radius: 16px; }
 .hd .gree-temperature { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 0; }
 .hd .gree-temperature > div { display: flex; align-items: center; gap: 20px; }
