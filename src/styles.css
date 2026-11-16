@@ -799,3 +799,52 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .stream-provider:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .stream-provider img, .stream-provider-all { width: 2.75rem; height: 2.75rem; border-radius: .75rem; object-fit: cover; }
 .stream-provider-all { display: grid; place-items: center; background: var(--secondary); color: var(--secondary-foreground); font-weight: 700; font-size: .8rem; }
+
+/* ===== Unified app frame (M6) ===== */
+.page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.page-subtitle { margin-top: 6px; font-size: 14px; color: var(--muted-foreground); }
+.page-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.empty-state { display: grid; justify-items: center; gap: 8px; padding: 32px 16px; border: 1px dashed var(--border); border-radius: calc(var(--radius) + 4px); text-align: center; }
+.empty-state-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--secondary); color: var(--primary); }
+.app-tabbar { display: none; }
+
+.ov-hero { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; overflow: hidden; padding: 28px; margin-bottom: 16px; border: 1px solid var(--border); border-radius: calc(var(--radius) + 8px); background: radial-gradient(120% 140% at 0% 0%, color-mix(in oklch, var(--primary) 22%, var(--card)), var(--card) 60%); }
+.ov-hero h1 { font-size: 34px !important; font-weight: 700 !important; }
+.ov-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--primary); margin-bottom: 6px; }
+.ov-hero-photo { height: 120px; width: auto; max-width: 60px; object-fit: contain; opacity: .9; margin-bottom: -28px; pointer-events: none; }
+.ov-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.ov-stat { display: grid; gap: 6px; padding: 16px; border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); background: var(--card); color: var(--muted-foreground); }
+.ov-stat b { font-size: 26px; font-weight: 700; color: var(--foreground); line-height: 1.1; }
+.ov-stat-label { font-size: 12px; }
+.ov-shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 32px; }
+.ov-shortcut { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); background: var(--card); font-size: 14px; font-weight: 600; transition: border-color 160ms, transform 160ms; }
+.ov-shortcut:hover { border-color: var(--primary); transform: translateY(-1px); }
+.ov-shortcut:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ov-shortcut span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: color-mix(in oklch, var(--primary) 16%, var(--card)); color: var(--primary); }
+.ov-block { margin-bottom: 32px; }
+.ov-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 18px; font-weight: 650; }
+.ov-title svg { color: var(--primary); }
+.ov-streams, .ov-volumes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.ov-stream { padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+.poster-row { display: grid; grid-auto-flow: column; grid-auto-columns: 150px; gap: 14px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.poster-row figure { scroll-snap-align: start; min-width: 0; }
+.poster-row figcaption { margin-top: 6px; font-size: 12px; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.poster-row figcaption span { color: var(--muted-foreground); }
+
+@media (max-width: 767px) {
+  .app-shell:not(.smart-home) .app-nav { display: none; }
+  .app-shell:not(.smart-home) .app-header-inner { padding: 10px 16px; flex-wrap: nowrap; }
+  .app-shell:not(.smart-home) .app-main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .app-tabbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; inset: auto 0 0 0; z-index: 40; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: color-mix(in oklch, var(--background) 88%, transparent); backdrop-filter: blur(14px); }
+  .app-tabbar a, .app-tabbar button { display: grid; justify-items: center; gap: 3px; min-height: 54px; padding: 6px 2px; border-radius: 12px; font-size: 10.5px; font-weight: 600; color: var(--muted-foreground); background: none; }
+  .app-tabbar a[data-status="active"] { color: var(--primary); background: color-mix(in oklch, var(--primary) 12%, transparent); }
+  .app-tabbar a:focus-visible, .app-tabbar button:focus-visible { outline: 2px solid var(--ring); }
+  .ov-hero { padding: 20px; }
+  .ov-hero h1 { font-size: 26px !important; }
+  .ov-hero-photo { height: 92px; max-width: 44px; margin-bottom: -20px; }
+  .ov-stats { gap: 8px; }
+  .ov-stat { padding: 12px; }
+  .ov-stat b { font-size: 20px; }
+  .ov-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .poster-row { grid-auto-columns: 118px; gap: 10px; }
+}
