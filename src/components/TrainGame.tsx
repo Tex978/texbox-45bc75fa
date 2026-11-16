@@ -106,7 +106,11 @@ export function TrainGame() {
 
   const color = train ? TRAIN_COLORS[train.colorIndex]! : null;
   const cols =
-    stations.length >= 5 ? "grid-cols-2 sm:grid-cols-3" : stations.length === 4 ? "grid-cols-2" : "grid-cols-3";
+    stations.length >= 5
+      ? "grid-cols-2 sm:grid-cols-3"
+      : stations.length === 4
+        ? "grid-cols-2"
+        : "grid-cols-3";
 
   return (
     <section className="train-game space-y-4">
@@ -142,7 +146,11 @@ export function TrainGame() {
       </p>
 
       {color && (
-        <div className="train-strip" role="img" aria-label={`Színes vonat ${train?.wagons ?? 0} kocsival`}>
+        <div
+          className="train-strip"
+          role="img"
+          aria-label={`Színes vonat ${train?.wagons ?? 0} kocsival`}
+        >
           <span className="train-engine">🚂</span>
           {Array.from({ length: train?.wagons ?? 0 }).map((_, i) => (
             <span key={i} className="train-wagon" style={{ background: color.hex }} />

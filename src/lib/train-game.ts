@@ -46,7 +46,10 @@ export function pickColor(count: number, rand: () => number): number {
 /** A train with a colour and 1..maxWagons wagons; the count drives the loading game. */
 export function makeTrain(rand: () => number, maxWagons = 4): Train {
   const max = Math.max(1, Math.min(maxWagons, 9));
-  return { colorIndex: pickColor(TRAIN_COLORS.length, rand), wagons: 1 + Math.floor(unit(rand) * max) };
+  return {
+    colorIndex: pickColor(TRAIN_COLORS.length, rand),
+    wagons: 1 + Math.floor(unit(rand) * max),
+  };
 }
 
 /**

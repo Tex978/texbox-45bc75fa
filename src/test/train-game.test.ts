@@ -51,12 +51,8 @@ it("station list has the requested size with no duplicate colours", () => {
 
 it("only the matching platform is accepted", () => {
   const t = { colorIndex: 1, wagons: 2 };
-  const wrong = pickStations(t, 4, seq([0.9, 0.5, 0.2, 0.7, 0.3])).find(
-    (s) => s.colorIndex !== 1,
-  )!;
-  const right = pickStations(t, 4, seq([0.9, 0.5, 0.2, 0.7, 0.3])).find(
-    (s) => s.colorIndex === 1,
-  )!;
+  const wrong = pickStations(t, 4, seq([0.9, 0.5, 0.2, 0.7, 0.3])).find((s) => s.colorIndex !== 1)!;
+  const right = pickStations(t, 4, seq([0.9, 0.5, 0.2, 0.7, 0.3])).find((s) => s.colorIndex === 1)!;
   expect(isCorrectStation(t, wrong)).toBe(false);
   expect(isCorrectStation(t, right)).toBe(true);
 });
