@@ -204,9 +204,7 @@ describe("4b reward shop", () => {
     expect(() =>
       redeem(mom, { rewardId: r, requestId: req, expectedPrice: 0, person: `profile:${profile}` }),
     ).toThrow();
-    expect(() =>
-      redeem(mom, { rewardId: reward(0), requestId: req, expectedPrice: 0 }),
-    ).toThrow();
+    expect(() => redeem(mom, { rewardId: reward(0), requestId: req, expectedPrice: 0 })).toThrow();
     expect(redeem(mom, { rewardId: r, requestId: req, expectedPrice: 0 })).toEqual(original);
     expect(pointsOverview(mom).rewards.find((x) => x.id === r)?.stock).toBe(1);
   });

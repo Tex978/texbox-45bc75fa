@@ -287,9 +287,17 @@ export function redeem(
     const u = current(user),
       key = input.person ?? me(u);
     const dup = store()
-      .prepare("SELECT id,status,requested_by,person_key,reward_id FROM redemptions WHERE request_id=?")
+      .prepare(
+        "SELECT id,status,requested_by,person_key,reward_id FROM redemptions WHERE request_id=?",
+      )
       .get(input.requestId) as
-      | { id: string; status: RedemptionStatus; requested_by: string; person_key: string; reward_id: string }
+      | {
+          id: string;
+          status: RedemptionStatus;
+          requested_by: string;
+          person_key: string;
+          reward_id: string;
+        }
       | undefined;
     if (dup) {
       if (dup.requested_by !== u.id || dup.person_key !== key || dup.reward_id !== input.rewardId)
