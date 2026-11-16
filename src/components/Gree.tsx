@@ -367,7 +367,7 @@ export function Gree({
       <details className="gree-room-editor">
         <summary>Szobák szerkesztése</summary>
         <p className="my-3 text-xs text-muted-foreground">
-          A szobabeosztás csak ebben a böngészőben mentődik.
+          A szobabeosztás a NAS-on mentődik, minden eszközön ugyanaz.
         </p>
         <form
           className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"

@@ -1,5 +1,6 @@
+import { useSharedPref } from "@/lib/use-shared-pref";
 import { queryOptions, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SmartSection as Card } from "@/components/SmartHomeUI";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowDown, Square, Settings2, Check, X, ChevronDown, ChevronRight, Power, Play, Lightbulb, WashingMachine, Droplets, Battery, Minus, Plus, LogOut, QrCode } from "lucide-react";
@@ -9,7 +10,6 @@ export const appliancesQuery = queryOptions({ queryKey: ["hc"], queryFn: () => g
 const STATE: Record<string, string> = { Inactive: "kikapcsolva", Ready: "készenlét", DelayedStart: "késleltetett indítás", Run: "fut", Pause: "szünetel", ActionRequired: "beavatkozás kell", Finished: "kész", Error: "hiba", Aborting: "leáll" };
 const TYPE: Record<string, string> = { Washer: "Mosógép", Dryer: "Szárító", WasherDryer: "Mosó-szárító", Dishwasher: "Mosogatógép", Oven: "Sütő", FridgeFreezer: "Hűtő", Refrigerator: "Hűtő", Freezer: "Fagyasztó", CoffeeMaker: "Kávéfőző", Hob: "Főzőlap", Hood: "Páraelszívó" };
 type Meta = Record<string, { name?: string; hidden?: boolean }>;
-const KEY = "hc-meta";
 
 function Device({ a, label }: { a: Appliance; label: string }) {
   const qc = useQueryClient();
@@ -48,10 +48,10 @@ export function Appliances() {
   const qc = useQueryClient();
   const [link, setLink] = useState<{ code: string; url: string } | null>(null);
   const [msg, setMsg] = useState("");
-  const [meta, setMeta] = useState<Meta>({});
+  const { value: metaRaw, save: saveMeta } = useSharedPref<Meta>("hc-meta", {});
+  const meta: Meta = metaRaw && typeof metaRaw === "object" ? metaRaw : {};
   const [edit, setEdit] = useState(false);
-  useEffect(() => { try { setMeta(JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { /* */ } }, []);
-  const upd = (id: string, v: { name?: string; hidden?: boolean }) => setMeta((m) => { const n = { ...m, [id]: { ...m[id], ...v } }; localStorage.setItem(KEY, JSON.stringify(n)); return n; });
+  const upd = (id: string, v: { name?: string; hidden?: boolean }) => void saveMeta({ ...meta, [id]: { ...meta[id], ...v } });
   const start = async () => { setMsg(""); const r = await hcStartLink(); if (r.ok) setLink({ code: r.code, url: r.url }); else setMsg(r.error); };
   const finish = async () => { const r = await hcFinishLink(); if (r.ok) { setLink(null); qc.invalidateQueries({ queryKey: ["hc"] }); } else setMsg(r.error); };
   const label = (a: Appliance) => meta[a.haId]?.name || a.name || TYPE[a.type] || a.type;

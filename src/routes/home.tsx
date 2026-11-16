@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/sheet";
 import { buildHomeDevices, groupByRoom, type HomeDevice } from "@/lib/home-devices";
 import { useGreeRooms } from "@/lib/gree-rooms";
+import { useSharedPref } from "@/lib/use-shared-pref";
 const tq = queryOptions({
   queryKey: ["thermo"],
   queryFn: () => getThermometers(),
@@ -478,25 +479,9 @@ function CategoryPanel({
   return <Locks />;
 }
 type Theme = "system" | "light" | "dark";
-function usePref<T>(key: string, initial: T) {
-  const [value, setValue] = useState<T>(initial);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) setValue(JSON.parse(raw));
-    } catch {
-      /* ignore */
-    }
-  }, [key]);
-  const update = (next: T) => {
-    setValue(next);
-    try {
-      localStorage.setItem(key, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
-  };
-  return [value, update] as const;
+function usePref<T>(key: "home-favorites" | "home-theme", initial: T) {
+  const { value, save } = useSharedPref<T>(key, initial);
+  return [value, (next: T) => void save(next)] as const;
 }
 function useMedia(query: string) {
   const [match, setMatch] = useState(false);
