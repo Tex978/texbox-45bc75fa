@@ -27,6 +27,7 @@ export function MemoryGame() {
   useEffect(() => {
     if (open.length !== 2) return;
     const [a, b] = open.map((i) => deck[i]);
+    if (!a || !b) return;
     if (a.emoji === b.emoji) {
       setFound((f) => [...f, a.emoji]);
       setLast(a.name);
@@ -38,7 +39,7 @@ export function MemoryGame() {
   }, [open, deck]);
 
   const flip = (i: number) => {
-    if (open.length >= 2 || open.includes(i) || found.includes(deck[i].emoji)) return;
+    if (open.length >= 2 || open.includes(i) || found.includes(deck[i]?.emoji ?? "")) return;
     setOpen((o) => [...o, i]);
   };
   const won = deck.length > 0 && found.length === deck.length / 2;
