@@ -1,3 +1,16 @@
+# Aktuális családi központ – 2026-11-16
+Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/TEXBOX-CSALADI-ROADMAP.md`.
+- [ ] 1. fázis: stabil profilmenü, felnőtt meghívás, tulajdonosi védelem, külön gyermekprofil, automata és telefon/PC ellenőrzés.
+- [ ] NAS elfogadás: meglévő admin/session, két eszközös mentés, felnőtt aktiválás/reset, Docker-frissítés; helyi NAS nem érhető el innen.
+- [ ] 1b: saját profil, audit/munkamenet részletek, személyes kedvencek és ACL alap.
+- [ ] 2. fázis: szerkeszthető kézi jelenetek valós eszközképességekkel; 2b tartós automatizálás.
+- [ ] 3. fázis: ismétlődő feladatok, vállalás és szülői jóváhagyás.
+- [ ] 4. fázis: kizárólag személyes pontszámla és jutalombolt.
+- [ ] 5. fázis: bevásárlás, receptek/menü, naptár.
+- [ ] 6. fázis: személyes kiegyensúlyozott főoldal és öt fő terület.
+- [ ] Opcionális energia-idősor: csak külön tárolási jóváhagyás után.
+
+## Korábbi mérföldkövek (történeti, nem a mai funkciólista)
 # TexBox átfogó fejlesztés (jóváhagyott terv)
 - [x] Belépési hiba: a hosted előnézet virtuális tárolójának elkülönítése a NAS-tól; valódi NAS tárolási hibánál a védelem megmarad, családi fiókoknál egyértelmű korlátjelzés.
 - [x] Aktuális kör: Streaming a Keresésben, régi URL átirányítva; személyes NAS-szűrők; jogosultság/titokkezelés, energiahiány, műveleti visszajelzések és mobil használat javítva; automatikus build OK, 390/1440 px ellenőrizve. Teljes lintben korábbi formázási és any-típus hibák maradtak; NAS családi/hardveres ellenőrzés frissítést igényel.

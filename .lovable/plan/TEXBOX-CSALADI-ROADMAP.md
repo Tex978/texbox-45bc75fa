@@ -1,0 +1,124 @@
+# TEXBOX – egyeztetett családi központ
+
+Állapot: 2026-11-16. Meglévő projekt, magyar felület; az első fázis megvalósítása folyamatban. Ez a dokumentum az elfogadott teljes célt és a későbbi körök elfogadási feltételeit őrzi. Nem egy új projekt terve.
+
+## Változatlan alap és minden fázis kapuja
+
+- Synology Docker / TanStack Start / Node 22, `/data/texbox.db` és `/data/nas-state.json`. Nincs automatikus Cloud-migráció, fizetős szolgáltatás vagy Home Assistant függőség.
+- Meglévő fiókok, titkok, eszközök és beállítások megőrzése. Minden sémafejlesztés additív, tranzakciós és frissítés előtti konzisztens mentéssel védett. A titkosítási kulcs nem változhat; külön kell megőrizni.
+- A hosted előnézet nem a NAS: nincs NAS-fiókmentés, hardveres ellenőrzés vagy valódi kapcsolatállapot állítása. Sikertelen mentés nem lehet sikernek feltüntetve.
+- Megmarad Plex, NAS, Radarr, Sonarr, qBittorrent, Xiaomi ellenőrzés és előzmények, Gree részletes kiválasztott panel és gyorskapcsolók, redőnyök/csoportvezérlés, Tuya/Smart Life, Bosch/Home Connect, légtisztító, zár, Growatt és előzmények. Parancsokat, pollingot és query key-ket nem cserélünk pusztán UI-fejlesztés miatt.
+- Streaming a Keresésben marad; `/streaming` kompatibilis átirányítás. Letöltések, Tárhely, Energia, Kapcsolatok mind elérhető marad.
+- Valós mérések; célhőmérséklet nem aktuális szobahőmérséklet. Hiányzó energiaadat nem nulla és nem becslés. Integrációs hibák láthatók.
+- Magyar, olvasható tipográfia, egységes ikonok/témák, telefonos alsó menü és PC navigáció, tablet, billentyűzet/fókusz, legalább 44 px érintési cél. Nincs díszgomb vagy nem működő makett.
+- Minden fázis: célzott és regressziós tesztek, automatikus build ellenőrzése, lint, mobil/desktop ellenőrzés, konkrét fájllista, NAS-on maradó ellenőrzés. Nincs automatikus publikálás.
+
+## Audit – forrásból igazolt jelenlegi állapot
+
+Vizsgált területek: auth.server/auth.functions/app-gate/start/server, permissions, family, Shell, router cache, shared-store/shared-prefs/prefs, media-preferences, home, EnergyHistory, streaming redirect, Dockerfile/compose, tesztek.
+
+- Létező felnőtt/gyermek loginfiókok: scrypt jelszóhash, véletlen token hashként, HttpOnly/SameSite süti, 30 nap alapértelmezett lejárat; HTTPS-nél Secure. Közös jelszó csak az első admin létrehozásához.
+- Meglévő meghívó és reset közös, egyszer használható, 72 órás token; e-mailküldő nincs. Tiltás törli a munkameneteket. Admin és felnőtt és gyermek szerep, funkciószintű szerveroldali guard, meglévő CSRF middleware. Az első admin nem hozható létre ismét, ha már vannak fiókok.
+- Profilmenü korábban csak sikeres getMe eredménynél látszott. Hibánál/betöltésnél/open módban null volt: ez bizonyított UI-hiba. A NAS-on konkrét eltűnés pontos kiváltó oka nem rekonstruálható a NAS naplója és sütije nélkül; nem állítjuk, hogy a fiók törlődött.
+- NAS tárolási hiba fail-closed; Workers előnézet elkülönítve. Korábban getMe a hibás NAS-tárolót open állapotnak is nevezhette, ez külön állapottal javítandó.
+- JSON közös állapot atomikus fájlcserével, opcionális AES-GCM titkosítással; kapcsolati titkok nem adhatók kliensnek. Régi sütik csak hiányzó értékbe migrálnak. Téma/okosotthon-kedvencek még háztartásiak; média szűrők már felhasználónként külön NAS-kulccsal.
+- Mentés: napi névvel SQLite snapshot a tároló megnyitásakor, 14 példány; nem külön, éjfélkor futó mentőszolgáltatás. Külső NAS/Hyper Backup továbbra is szükséges.
+- Hiányzott a külön, e-mail/jelszó nélküli gyermekprofil, tulajdonosi elkülönítés, munkamenetszám/lezárás és őszinte meghívóstátusz.
+- Még nincs feladat, pont, jutalom, szervező, szerkeszthető jelenet vagy tartós automatizálás. Szoba/eszközszintű ACL és személyes főoldal szintén következő feladat; ezek nem kész képességek.
+
+## 1. fázis – stabil fiókok és család
+
+Megfogható eredmény: meglévő admin megtartása, stabil profilmenü, működő felnőtt meghívás/aktiválás/reset, külön szülői gyermekprofil.
+
+- [x] Látható fiókbetöltés/lekérdezési hiba/preview/tárolási hiba, újrapróbálás; visszatéréskor és időszakosan frissülő munkamenet. Lejárt sütinél egyértelmű újrabelépés.
+- [x] Család elérhető avatarból, mobil Több és Okosotthon alkalmazásmenüből.
+- [x] `family_meta` tulajdonosi jelölés, `child_profiles` külön tábla; a users/sessions/invites és titkok átírása nélkül. Első meglévő aktív admin jelölése tulajdonosnak, új telepítésen az első admin. Több régi admin esetén ellenőrizni kell a kijelölt tulajdonost a frissítés után.
+- [x] Kötelező `backups/pre-family-phase1.db` frissítés előtti snapshot; hiba esetén nincs új családi séma és a hozzáférés lezárva marad.
+- [x] Szülői gyermekprofil saját névvel/ikonnal, szerkesztés, inaktiválás; mindkét szülő kezelheti. Nem önálló hitelesítő fiók. A régi gyermek-loginfiókok változatlanul megmaradnak; automatikus összevonás nincs.
+- [x] Felnőtt meghívás, státusz, linkmásolás, reset, aktív munkamenetszám és admin által lezárás. Nincs „levél elküldve” állítás.
+- [x] Tulajdonosi fiók nem törölhető/tiltható/lefokozható; adminfiókok módosítása, létrehozása/resetje tulajdonosi művelet. Felnőtt nem kap kapcsolati titok/fiókadmin jogosultságot.
+- [ ] Saját profil szerkesztése, auditnapló olvasható felülete és munkamenetek egyenkénti listája/lezárása: 1b.
+- [ ] Szoba/eszköz/jelenet ACL: a 2. fázis biztonsági előfeltétele; addig a meglévő funkciójogok élnek.
+- [ ] Személyes kedvencek/téma/főoldal és értesítések migrációja: 1b/6. Meglévő közös értékek nem törölhetők; először személyes másolat, majd személyes módosítások.
+
+Elfogadás: régi admin/session változatlan újranyitás után; jelszó helyett hash; egyszer használható és lejáró meghívás, új link érvényteleníti a régit; két szülő szerkeszthet gyermeket; gyermek tiltott jogosultságot override-dal sem kap; profilnév a mentés után új sessionben visszaolvasható; NAS hiba nem open; előnézet nem mutat mentési sikert; mobil/desktop kezelhető.
+
+## Jogosultsági mátrix és auth-flow
+
+| Művelet | Tulajdonos | Családi admin | Felnőtt | Gyermek/profil |
+|---|---|---|---|---|
+| Kritikus adminfiók kezelés | igen | nem | nem | nem |
+| Kapcsolati beállítások | meglévő adminjog | meglévő adminjog, további szűkítés 1b | nem | nem |
+| Felnőtt meghívás/reset/tiltás | igen | nem-admin célra | nem | nem |
+| Gyermekprofil kezelés | igen | igen | igen | nem |
+| Szoba és jelenet/feladat/jutalom szerkesztés | igen | igen | szülői jog szerint | nem |
+| Eszköz/jelenet indítás | eszköz ACL | eszköz ACL | eszköz ACL | explicit engedély |
+| Saját pont/jutalom/értesítések | saját | saját | saját | saját, szülő jóváhagyása |
+
+A jövőbeli mátrix további sorai nem jelentenek már megvalósított szerverjogot. Minden olvasó/író handler saját ellenőrzést kap; UI rejtése nem védelem. Szülői szerep nem jogosít biztonsági titkok kezelésére.
+
+Belépés: username+jelszó → szerver validál → hash-elt, lejáró session → HttpOnly süti → getMe ellenőrzés → profil. Meghívás: admin készít felnőtt fiókot → linket másol → címzett állít jelszót → link elfogy, régi sessionök megszűnnek → új session. Reset ugyanilyen admin által átadott egyszer használható link; nincs önkényes e-mailküldés. Gyermekprofil: szülő menti és kezeli, nincs login.
+
+## 2. fázis – Okosotthon jelenetek, aztán automatizálás
+
+1. Valós eszközképességek katalógusa; támogatott műveletek adapterei a meglévő parancsokhoz. Gree on/off/mód/célhőfok/fan, fény on/off/fényerő és redőny csak ha tényleg támogatott.
+2. NAS-on szerkeszthető jelenetek: név, ikon, szín, családi/személyes láthatóság, engedélyezett indítók; több eszköz, sorrend és validálás. Jó reggelt/Elindulunk/Filmnézés/Jó éjszakát csak választható sablon, nem bekötött demó.
+3. Eszköz/szoba és jelenet ACL; futtatáskor minden mögöttes eszköz jogosultságát újra ellenőrizni. Per-eszköz zárolás, műveletnapló, részleges hiba/eredmény. Kézi indítás Otthon és Főoldal.
+4. Külön 2b automatizálás: idő/hét napja, engedélyezés, tartós NAS scheduler, újraindítás utáni visszaállás, duplázás elleni run-key. Esemény/érzékelő trigger csak valós vendor támogatással. Leállás alatti pótlás és Europe/Budapest DST szabály külön döntés.
+
+Javasolt táblák: scenes, scene_actions, scene_acl, device_acl, scene_runs, scene_action_results; automation_rules/runs csak 2b. Modulok: scenes.server/functions, capability adapter, SceneEditor/SceneRun, home/index. Elfogadás: UI mentés és új eszközről visszaolvasás; több eszköz valódi futtatása NAS-on; jogosulatlan kézi RPC tiltva; egy hibás eszköz eredménye látszik; dupla indítás védett; scheduler újraindítás teszt. Éles zár/redőny/klímaparancs előtt tulajdonosi próbajóváhagyás.
+
+## 3. fázis – feladatok
+
+- Közös/személyes, vállalható/kijelölt/forgó, kategória, pont, felelős, határidő. Appon belüli sablon és szerkesztő.
+- Napi/heti/havi/egyedi nap/kétheti/egyszeri ismétlődés; NAS szerver generál konkrét előfordulásokat, egyedi template+date kulcs, Europe/Budapest.
+- Tranzakciós vállalás, nincs két felelős ugyanarra az egyszeri vállalható feladatra. Felnőtt teljesítés automatikus személyes pont; gyermek egyik szülő jóváhagyására vár, visszaküldhető. Szülő kicsi helyett jelölhet. Napló és értesítés.
+- Kompakt mai widget; Ma/Heti/Közös/Kezelés nézet.
+
+Táblák: task_templates, task_occurrences, task_claims, task_submissions, task_decisions; személyes pont ledger a 4. fázissal közös tranzakcióban. Elfogadás: ismétlés és DST, párhuzamos vállalás, újraindítás utáni egyediség, két szülő egyidejű jóváhagyása csak egyszer ír pontot; gyermek nem ír pontot/jóváhagyást közvetlen handlerrel.
+
+## 4. fázis – személyes pontok és jutalombolt
+
+- Minden családtagnak – felnőtteknek is – kizárólag saját pontszámla. NINCS közös családi egyenleg vagy közös feladatpont.
+- Append-only személyes ledger, egyedi forráskulcs, tranzakciós jóváírás/visszavonás/okkal admin korrekció; saját történet és cél.
+- Admin/szülő által appon belül szerkeszthető jutalom képpel/címmel/pontárral/kategóriával/joggal/készlettel/korláttal, kívánságlista, beváltási történet és állapot.
+- Felnőtt beváltás szabadon, azonnali terhelés, opcionális átadásra vár. Gyermek: pontfoglalás → egyik szülő jóváhagyásakor atomikus levonás; elutasításkor felszabadítás. Mindkét szülő látja; egyetlen döntés. Negatív rendelkezésre álló egyenleg tilos.
+- Opcionális későbbi kihívás teljesített feladatszámon, közös pont nélkül; nem alapprioritás.
+
+Táblák: point_accounts/ledger, point_holds, rewards, reward_limits, redemptions, wishlist/goals. Elfogadás: két párhuzamos beváltás/két jóváhagyás/ismételt submit/rollback/stock verseny; gyermek nem módosíthat árat vagy pontot. Minden egyenleg a személyhez kötött, régi gyermek-login és új profil összerendelése csak jóváhagyott veszteségmentes tervvel.
+
+## 5. fázis – családi szervező
+
+- Bevásárlás: közös szinkronlista, mennyiség/kategória/bolt/visszatérő termék/ki vásárolta. Kipipálás önmagában nem ad feladatpontot.
+- Receptek: adag/hozzávaló, heti menü, listára összevont mennyiségek; főzés explicit feladathoz kapcsolható.
+- Színkódolt közös naptár: esemény/program/ügyintézés/határidő, ismétlés/emlékeztető; teendővé alakítás egyedi kapcsolókulccsal.
+- Jegyzet/kívánság/karbantartás/dokumentum opcionális későbbi bővítés.
+
+Táblák: shopping_lists/items, recurring_products, recipes/ingredients, meal_plan, calendar_events/occurrences/reminders; revízió/optimista konkurenciakezelés. Kezdetben hitelesített rövid polling vagy bizonyított NAS push, új külső szolgáltatás nélkül. Elfogadás: két telefon párhuzamos módosítása nem veszít adatot; adagváltás/egységösszevonás; ismétlődő naptár nem dupláz feladatot; értesítés és DST; listapipa nem pontforrás.
+
+## 6. fázis – kiegyensúlyozott főoldal és navigáció
+
+- Személyes köszöntő/értesítés; FELÜL kedvenc okoseszközök és kézi jelenetek, KÖZVETLENÜL ALATTA mai személyes/közös teendők; majd kompakt naptár/bevásárlás/mai menü/saját pont/jutalom.
+- NAS-ra mentett személyes widget sorrend/láthatóság; üres és irreleváns elemek kicsik. Közös adatok és személyes főoldal szétválasztva.
+- Öt terület: Főoldal, Otthon, Feladatok, Család (szervező/jutalom), Média. Meglévő fiókkezelés a Családon belül; Letöltések/Tárhely/Energia/Kapcsolatok logikus aloldal vagy Több. Régi URL-ek maradnak vagy átirányítanak.
+- Mobil alsó menü/PC oldalsáv/tablet, egyszerű gyermeknézet, szülői jóváhagyásszámláló; világos és sötét, hozzáférhetőség. Meglévő jó funkciókat fokozatosan integrálni, nem egyszerre lecserélni.
+
+Elfogadás: összes régi oldal elérhető, streaming továbbra is Search; billentyűzet és telefon; személyes rendezés két sessionből visszajön; gyermek nem lát védett adatot cache-ből; kijelentkezés cache/história takarítás; nincs makettadat.
+
+## Opcionális külön fázis – NAS energia-idősor
+
+A Growatt inverteres napi kW és heti/havi/éves kWh meglévő valódi API-előzményeit megőrizzük. Saját mérésgyűjtést nem kezdünk ebben a körben. Új tároláshoz külön tulajdonosi jóváhagyás, megőrzési idő/tárhely és mérési gyakoriság döntés; a 15 perces védelmet nem megkerülni. Időbélyeg/időzóna/duplikáció/kiesés/újraindítás, nyers érték versus aggregátum, export/backup tesztek; hiány nem szintetikus adat.
+
+## Backup / telepítés / rollback
+
+1. Frissítés előtt a NAS-on állítsd le a konténert és mentsd a TELJES csatolt data könyvtárat (db, WAL/SHM, JSON, backups) és a korábbi képtagot. A titkosítási kulcsot külön biztonságos helyen őrizd, ne chatben.
+2. Az első fázis külön konzisztens snapshotot készít a SQLite-ról a családi táblák előtt; meglévő admin/session/hash/JSON nem módosul. Az új táblák IF NOT EXISTS-szel és egy tranzakcióban készülnek; nincs DROP vagy users ALTER.
+3. Ugyanaz a volume, port, hálózat és meglévő env; új kötelező env nincs. APP_PASSWORD, opcionális TEXBOX_SECRET_KEY, SESSION_DAYS, DATA_DIR/DATA_FILE meglévő szabályok maradnak. Dockerfile/compose nem változik.
+4. Rollback: konténer leállítása, korábbi képtag indítása ugyanazzal a data-val. Régi kód az additív új táblákat figyelmen kívül hagyja. Adatbázis visszaállítása csak tényleges sérülés esetén, leállítva, aktuális teljes mentés után; a snapshot utáni új profilok elvesznének, ezért ne állíts vissza vakon.
+5. NAS elfogadás: régi admin saját címen belép, avatar stabil oldalváltás/fókusz/újraindítás után; felnőtt meghívás másik telefonról aktiválható; gyermek mentés két szülőnél azonos; reset/tiltás régi sessiont bezár; kapcsolatok és eszközvezérlők változatlanul olvashatók. Hosted preview nem bizonyítja ezeket.
+
+## Nyitott tulajdonosi döntések és sorrend
+
+Elsőként: 1. fázis NAS-próbája. Utána 1b profil/audit/ACL alap rövid biztonsági lépés, majd a kért 2. fázis kézi jelenetei. Az automatizálás külön mérföldkő, a feladat/pont szoros tranzakciós kapcsolattal a következő kettő. Szervező és végleges főoldal ezekre épül.
+
+Nem szükséges új kulcs az első fázishoz. Később dönteni kell e-mailküldő opcionális bevezetéséről, tulajdonosváltás biztonságos folyamatáról, szülői funkciójogokról, gyermek önálló belépéséről, push értesítések csatornájáról, automatizálás kiesés/DST viselkedéséről és energia saját tárolásáról. Egyik sincs automatikusan bekapcsolva.

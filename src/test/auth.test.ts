@@ -32,7 +32,12 @@ beforeEach(() => {
 
 describe("family accounts", () => {
   it("keeps the existing admin and session after restarting the account store", () => {
-    const a = createUser({ username: "apa", displayName: "Apa", role: "admin", password: "jelszo123" });
+    const a = createUser({
+      username: "apa",
+      displayName: "Apa",
+      role: "admin",
+      password: "jelszo123",
+    });
     const r = login("apa", "jelszo123", "local", "test");
     if (!("token" in r)) throw new Error(r.error);
     resetAuthDb();
@@ -44,7 +49,13 @@ describe("family accounts", () => {
     const parent = createUser({ username: "anya", displayName: "Anya", role: "adult" });
     const id = createChildProfile(parent, "Bence", "star");
     resetAuthDb();
-    expect(listChildProfiles()).toContainEqual({ id, displayName: "Bence", icon: "star", disabled: false, createdBy: parent.id });
+    expect(listChildProfiles()).toContainEqual({
+      id,
+      displayName: "Bence",
+      icon: "star",
+      disabled: false,
+      createdBy: parent.id,
+    });
     expect(getUser(id)).toBeNull();
   });
   it("both parents can edit a child profile", () => {
@@ -52,12 +63,18 @@ describe("family accounts", () => {
     const b = createUser({ username: "anya", displayName: "Anya", role: "adult" });
     const id = createChildProfile(a, "Bence");
     updateChildProfile(b, id, "Benci", "cat", true);
-    expect(listChildProfiles()[0]).toMatchObject({ displayName: "Benci", icon: "cat", disabled: true });
+    expect(listChildProfiles()[0]).toMatchObject({
+      displayName: "Benci",
+      icon: "cat",
+      disabled: true,
+    });
   });
   it("a child cannot create child profiles even with a family override", () => {
     const c = createUser({ username: "gyerek", displayName: "Gyerek", role: "child" });
     expect(can("child", "family", { family: true })).toBe(false);
-    expect(() => createChildProfile({ ...c, permissions: { family: true } }, "Test")).toThrow("Csak szülő");
+    expect(() => createChildProfile({ ...c, permissions: { family: true } }, "Test")).toThrow(
+      "Csak szülő",
+    );
   });
   it("replacing and expiring invite links prevents activation", () => {
     const u = createUser({ username: "anya", displayName: "Anya", role: "adult" });
@@ -79,7 +96,9 @@ describe("family accounts", () => {
       expect(db()).toBeNull();
       expect(authStorageUnavailable()).toBe(false);
       expect(requirePermission(undefined, "home")).toBeNull();
-    } finally { vi.unstubAllGlobals(); }
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
   it("does not open permissions when NAS account storage is unavailable", () => {
     const old = process.env["DATA_DIR"];
