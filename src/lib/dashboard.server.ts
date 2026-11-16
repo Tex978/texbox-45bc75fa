@@ -53,7 +53,7 @@ function allowedCards(t: Target): CardId[] {
 }
 const sceneIds = (t: Target) => (t.user ? listScenes(t.user).map((s) => s.id) : []);
 type Row = { body: string; version: number; updated_at: number };
-export function getDashboard(user: User, key?: string) {
+export function getDashboard(user: User, key?: string | undefined) {
   const u = current(user);
   const t = target(u, key);
   const row = store()
@@ -79,7 +79,12 @@ export function getDashboard(user: User, key?: string) {
 /** Optimistic concurrency: version 0 creates, otherwise it must equal the stored version. */
 export function saveDashboard(
   user: User,
-  input: { person?: string; version: number; prefs: unknown; reset?: boolean },
+  input: {
+    person?: string | undefined;
+    version: number;
+    prefs: unknown;
+    reset?: boolean | undefined;
+  },
 ) {
   const u = current(user);
   const t = target(u, input.person);
