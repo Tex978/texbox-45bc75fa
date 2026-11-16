@@ -203,6 +203,19 @@ export function db() {
         CREATE TABLE IF NOT EXISTS user_profiles(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, icon TEXT NOT NULL, color TEXT NOT NULL, version INTEGER NOT NULL CHECK(version>=1), updated_at INTEGER NOT NULL);
         COMMIT;`);
     }
+    // Mandatory snapshot before additive chat tables; no existing rows are rewritten.
+    if (
+      ["chat_messages", "chat_receipts"].some(
+        (name) => !d.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name),
+      )
+    ) {
+      const chatBackup = `${dataDir()}/backups/pre-chat-phase9b.db`;
+      if (!fs.existsSync(chatBackup)) d.exec(`VACUUM INTO '${chatBackup.replaceAll("'", "''")}'`);
+      d.exec(`BEGIN IMMEDIATE;
+        CREATE TABLE IF NOT EXISTS chat_messages(id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id TEXT NOT NULL, request_id TEXT NOT NULL, text TEXT NOT NULL CHECK(length(text)>0 AND length(text)<=1000), sender_name TEXT NOT NULL, sender_icon TEXT NOT NULL, sender_color TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(sender_id,request_id));
+        CREATE TABLE IF NOT EXISTS chat_receipts(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, last_read_id INTEGER NOT NULL DEFAULT 0 CHECK(last_read_id>=0), read_at INTEGER NOT NULL);
+        COMMIT;`);
+    }
     // Idempotent, exactly-once backfill of approved task snapshots (UNIQUE source per occurrence).
     d.exec(`INSERT OR IGNORE INTO point_ledger(person_key,delta,kind,source,reason,actor,at)
       SELECT person_key,points,'task','task:'||occurrence_id,'Jóváhagyott feladat (visszamenőleges könyvelés)',approved_by,approved_at
