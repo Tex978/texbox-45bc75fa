@@ -26,11 +26,16 @@ export const Route = createFileRoute("/organizer")({
 function OrganizerPage() {
   return (
     <Shell>
-      <PageHeader title="Családi szervező" actions={
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/games"><Puzzle size={16} /> Gyerek játékok</Link>
-        </Button>
-      } />
+      <PageHeader
+        title="Családi szervező"
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/games">
+              <Puzzle size={16} /> Gyerek játékok
+            </Link>
+          </Button>
+        }
+      />
       <Organizer />
     </Shell>
   );

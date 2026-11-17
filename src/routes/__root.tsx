@@ -87,7 +87,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Otthon, családi teendők és média a saját TexBoxban." },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "TexBox – Otthon és család" },
-      { property: "og:description", content: "Otthon, családi teendők és média a saját TexBoxban." },
+      {
+        property: "og:description",
+        content: "Otthon, családi teendők és média a saját TexBoxban.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
