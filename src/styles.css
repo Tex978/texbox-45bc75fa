@@ -1148,6 +1148,7 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .hd-tile-icon { width: 34px; height: 34px; border-radius: 10px; }
 .hd-tile-value { font-size: 23px; }
 .hd-tile-name { font-size: 14px; }
+.hd .hd-room-action { font-size: 11px; gap: 6px; padding-inline: 6px; white-space: nowrap; }
 .hd .smart-device, .en-card, .en-flow, .en-hero, .en-ring, .hd-detail { border-radius: var(--radius); }
 .hd-room { background: var(--card); border-color: transparent; padding: 18px; }
 .hd-room-name { font-size: 15px; }
@@ -1245,6 +1246,7 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .hd-nav, .org-tabs { margin-bottom: 16px; }
   .app-main h1, .hd .hd-title { font-size: 23px; }
   .cal-day { padding: 4px; min-height: 72px; }
+  .organizer-area .cal-month .cal-chip { min-height: 12px; height: 12px; border-left-width: 4px; }
 }
 @media (min-width: 1024px) {
   .hd-overview { grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); gap: 24px; }
