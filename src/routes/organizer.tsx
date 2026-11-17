@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Shell, PageHeader } from "@/components/Shell";
 import { Organizer } from "@/components/Organizer";
+import { Puzzle } from "lucide-react";
 
 export const Route = createFileRoute("/organizer")({
   head: () => ({
@@ -25,10 +26,16 @@ export const Route = createFileRoute("/organizer")({
 function OrganizerPage() {
   return (
     <Shell>
-      <PageHeader title="Családi szervező" />
-      <Button asChild variant="outline" className="mb-4">
-        <Link to="/games">🐾 Gyerek játékok</Link>
-      </Button>
+      <PageHeader
+        title="Családi szervező"
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/games">
+              <Puzzle size={16} /> Gyerek játékok
+            </Link>
+          </Button>
+        }
+      />
       <Organizer />
     </Shell>
   );

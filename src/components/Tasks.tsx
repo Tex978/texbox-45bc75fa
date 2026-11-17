@@ -482,9 +482,6 @@ export function Tasks() {
           </Button>
         )}
       </div>
-      <p className="task-notice">
-        A pontérték a későbbi személyes pontszámlához tartozik; pontjóváírás még nem történik.
-      </p>
       {query.error && (
         <p role="alert" className="text-destructive">
           Frissítési hiba: {query.error.message}

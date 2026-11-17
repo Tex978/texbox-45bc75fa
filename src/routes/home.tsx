@@ -563,7 +563,7 @@ function DeviceTile({
       {unit && <GreeQuickControls unit={unit} />}
       <Button
         variant="ghost"
-        className="h-11 w-full gap-2 text-xs text-muted-foreground"
+        className="hd-room-action h-11 w-full gap-2 text-xs text-muted-foreground"
         onClick={() => onRoom(d.key)}
       >
         <DoorOpen size={14} /> Szoba módosítása

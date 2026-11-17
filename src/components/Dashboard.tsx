@@ -185,7 +185,13 @@ function HomeQuick({ favorites = [] }: { favorites?: string[] }) {
     ? favorites.map((id) => all.find((s) => s.id === id)).filter((s) => !!s)
     : all.slice(0, 3);
   return (
-    <Widget title="Otthon gyorsan" icon={House} to="/home" link="Okosotthon" className="dash-wide">
+    <Widget
+      title="Otthon gyorsan"
+      icon={House}
+      to="/home"
+      link="Okosotthon"
+      className="dash-wide dash-home"
+    >
       {(temps.length > 0 ||
         hums.length > 0 ||
         (solar.data && !solar.data.demo && !solar.data.error)) && (
@@ -290,7 +296,7 @@ function TodayCard({ child }: { child: boolean }) {
       to="/tasks"
       link="Összes"
       q={q}
-      className="dash-wide"
+      className="dash-wide dash-tasks"
     >
       {pending > 0 && (
         <Link to="/tasks" className="dash-alert">
@@ -473,7 +479,7 @@ function MediaCard() {
       to="/media"
       link="Részletek"
       q={q}
-      className="dash-wide"
+      className="dash-wide dash-media"
     >
       {d && (
         <div className="dash-stats">
