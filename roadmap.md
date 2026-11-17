@@ -1,4 +1,5 @@
 # Aktuális családi központ – 2026-11-16
+- [ ] Jóváhagyott Refined Dark vizuális kör: közös megjelenés és navigáció, főoldali hierarchia, Otthon, Család, Média, profil/chat; meglévő funkciók változatlanul. Teljes regresszió és 360/390/768/1280 képi QA; éles NAS/deploy kizárva.
 - [x] Gyerek játékok (/games): háziállatos memóriajáték (6/8/12 kártya) és vonatos játék (állomások színezése + kocsirakodás 1–5 kocsig), 3–4 éves szintre. 6 új logikai teszt, 284/284 teszt sikeres, build OK; 360/390/768/1280 px Playwright-folyamat végigjátszva, nincs böngészőhiba. Éles NAS-on nem ellenőrizve.
 Részletes jóváhagyott követelmények és elfogadási kapuk: `.lovable/plan/TEXBOX-CSALADI-ROADMAP.md`.
 ## TEXBOX 1.0 lezárás – irányadó mai státusz
