@@ -1122,6 +1122,7 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .task-row { border-color: transparent; padding: 20px; }
 .task-done { border-color: var(--home-success); }
 .task-row h2 { font-size: 17px; }
+.task-tabs [aria-selected="true"] { background: var(--secondary); color: var(--foreground); box-shadow: none; }
 .task-overview { padding: 14px 0; margin-bottom: 18px; }
 .task-notice { font-size: 12px; border-left-color: var(--border); margin-bottom: 16px; }
 .hd-layout { display: block; }
@@ -1176,6 +1177,7 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
 .dash-list li:has(.dash-task-open) small { grid-column: 1; }
 .dash-task-open { grid-column: 2; grid-row: 1 / 3; min-height: 44px; display: inline-flex; align-items: center; font-size: 12px; color: var(--primary); }
 .dash-alert { padding: 8px 12px; min-height: 44px; display: flex; align-items: center; }
+.dash-hero > .dash-alert { width: fit-content; margin-top: 12px; background: none; padding: 0; color: var(--primary); font-weight: 500; }
 .dash-big { font-size: 26px; font-weight: 600; }
 .dash-editor { background: var(--card); border-radius: var(--radius); padding: 20px; }
 .organizer-area .org-section { margin-top: 0; gap: 16px; }
@@ -1218,6 +1220,9 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .app-tabbar a[data-status="active"] { color: var(--foreground); background: var(--secondary); }
   .app-tabbar a[data-status="active"] svg { color: var(--primary); }
   .page-header { margin-bottom: 20px; }
+  .ov-stat { padding: 14px 12px; align-content: start; }
+  .ov-stat b { font-size: 21px; white-space: nowrap; }
+  .ov-stat-label { font-size: 11px; min-height: 34px; }
 }
 @media (max-width: 767px) {
   .dash-grid { grid-template-columns: minmax(0,1fr); gap: 0; }
@@ -1229,6 +1234,8 @@ a.home-setting { border-radius: var(--home-radius); border: 1px solid var(--bord
   .dash-live-stats strong { font-size: 23px; }
   .dash-big { font-size: 24px; }
   .hd-hero { padding: 16px; gap: 12px; }
+  .hd-hero { grid-template-columns: minmax(0,.9fr) minmax(0,1.6fr); }
+  .hd-hero-stats span { text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
   .hd-hero-stats svg { display: none; }
   .hd-hero-stats span { font-size: 11px; white-space: normal; }
   .hd-hero-stats strong { font-size: 14px; }
